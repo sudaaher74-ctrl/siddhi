@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/data";
 import Link from "next/link";
 
 export default function Sidebar() {
-  const [active, setActive] = useState(0);
+  const pathname = usePathname();
 
   return (
     <aside className="w-full lg:w-[196px] flex-none flex flex-col gap-1 bg-panel border border-border rounded-[14px] p-[14px_10px] backdrop-blur-[20px]">
@@ -15,34 +15,33 @@ export default function Sidebar() {
           ARCHERX<em className="not-italic text-accent">AI</em>
         </div>
       </div>
-      {navItems.map((item, i) => (
-        <Link
-          key={item.label}
-          href="#"
-          className={`flex items-center gap-[10px] p-[8px_10px] rounded-lg border-0 bg-transparent text-[12.5px] font-medium text-left cursor-pointer hover:bg-white/5 transition-colors ${
-            i === active ? "bg-accent-hover text-[#ffb0aa]" : "text-white/60"
-          }`}
-          onClick={(e) => {
-            e.preventDefault();
-            setActive(i);
-          }}
-        >
-          <span
-            className={`w-[7px] h-[7px] flex-none ${
-              i === active ? "bg-accent" : "bg-white/30"
-            } ${
-              item.dotShape === "circle"
-                ? "rounded-full"
-                : item.dotShape === "square"
-                ? "rounded-[2px]"
-                : "rounded-[1px]"
+      {navItems.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={`flex items-center gap-[10px] p-[8px_10px] rounded-lg border-0 bg-transparent text-[12.5px] font-medium text-left cursor-pointer hover:bg-white/5 transition-colors ${
+              isActive ? "bg-accent-hover text-[#ffb0aa]" : "text-white/60"
             }`}
-          />
-          {item.label}
-        </Link>
-      ))}
-      <div className="mt-auto flex items-center gap-[9px] p-[9px_8px] rounded-[10px] bg-white/5 border border-white/5">
-        <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-[#ff5a4e] to-[#8d2f28] flex items-center justify-center text-white font-sans font-semibold text-[11px]">
+          >
+            <span
+              className={`w-[7px] h-[7px] flex-none ${
+                isActive ? "bg-accent" : "bg-white/30"
+              } ${
+                item.dotShape === "circle"
+                  ? "rounded-full"
+                  : item.dotShape === "square"
+                  ? "rounded-[2px]"
+                  : "rounded-[1px]"
+              }`}
+            />
+            {item.label}
+          </Link>
+        );
+      })}
+      <div className="mt-auto flex items-center gap-[9px] p-[9px_8px] rounded-[10px] bg-white/5 border border-white/5 pt-4">
+        <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-[#ff5a4e] to-[#8d2f28] flex items-center justify-center text-white font-sans font-semibold text-[11px] flex-shrink-0">
           AM
         </div>
         <div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
+import Sidebar from "@/components/Sidebar";
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -22,7 +23,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${instrumentSans.variable} ${plexMono.variable}`}>{children}</body>
+      <body className={`${instrumentSans.variable} ${plexMono.variable} bg-[radial-gradient(1200px_600px_at_20%_-10%,rgba(255,90,78,0.07),transparent_60%),var(--surface)]`}>
+        <div className="flex flex-col lg:flex-row gap-[14px] p-[14px] min-h-screen">
+          <Sidebar />
+          <main className="flex-1 min-w-0 flex flex-col gap-[12px]">
+            {children}
+          </main>
+        </div>
+      </body>
     </html>
   );
 }

@@ -1,10 +1,10 @@
 import { Search } from "lucide-react";
 
-export default function TopBar() {
+export default function TopBar({ title = "Dashboard" }: { title?: string }) {
   return (
     <header className="flex flex-col md:flex-row md:items-center gap-3 md:gap-[12px]">
       <div>
-        <h1 className="text-[19px] font-bold text-text tracking-[-0.01em]">Dashboard</h1>
+        <h1 className="text-[19px] font-bold text-text tracking-[-0.01em]">{title}</h1>
         <div className="text-[11.5px] text-text-dim">Thu 16 Jul 2026 · SAI Range, Sonipat · 70m ranking round</div>
       </div>
       <div className="md:ml-auto flex items-center gap-2 p-[7px_12px] rounded-full bg-white/5 border border-border text-white/50 text-[12px] w-full md:w-[220px] cursor-pointer">

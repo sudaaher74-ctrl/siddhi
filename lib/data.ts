@@ -1,7 +1,7 @@
 // Mock data for the Range Command dashboard (design option 1a).
 // Replace with real API/DB queries when the backend lands.
 
-export type NavItem = { label: string; dotShape: "circle" | "square" | "bar" };
+export type NavItem = { label: string; href: string; dotShape: "circle" | "square" | "bar" };
 export type Kpi = { label: string; value: string; delta: string; deltaColor: string };
 export type ArrowTile = { v: string; c: string };
 export type Session = {
@@ -14,17 +14,19 @@ export type Session = {
   note: string;
 };
 
-export const navItems: NavItem[] = [
-  "Dashboard",
-  "Practice",
-  "Score Entry",
-  "Analytics",
-  "AI Coach",
-  "Equipment",
-  "Tournaments",
-  "Goals",
-].map((label, i) => ({
-  label,
+const navLinks = [
+  { label: "Dashboard", href: "/" },
+  { label: "Practice", href: "/practice" },
+  { label: "Score Entry", href: "/score-entry" },
+  { label: "Analytics", href: "/analytics" },
+  { label: "AI Coach", href: "/ai-coach" },
+  { label: "Equipment", href: "/equipment" },
+  { label: "Tournaments", href: "/tournaments" },
+  { label: "Goals", href: "/goals" },
+];
+
+export const navItems: NavItem[] = navLinks.map((item, i) => ({
+  ...item,
   dotShape: i % 3 === 0 ? "circle" : i % 3 === 1 ? "square" : "bar",
 }));
 
