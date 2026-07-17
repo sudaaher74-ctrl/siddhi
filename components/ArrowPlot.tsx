@@ -2,12 +2,12 @@ import { arrowPlotPoints } from "@/lib/data";
 
 export default function ArrowPlot() {
   return (
-    <div className="card col">
-      <div className="card-head">
-        <div className="card-title">Arrow plot</div>
-        <div className="card-meta">END 12–14 · 70m</div>
+    <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
+      <div className="flex items-baseline gap-[10px]">
+        <h2 className="text-[13px] font-semibold text-text-mid">Arrow plot</h2>
+        <div className="ml-auto font-mono font-medium text-[10px] text-white/40">END 12–14 · 70m</div>
       </div>
-      <svg viewBox="0 0 230 230" className="plot-svg">
+      <svg viewBox="0 0 230 230" className="w-full max-w-[230px] mx-auto mt-[10px]">
         {/* Target face rings */}
         <circle cx="115" cy="115" r="110" fill="#dfe1e4" />
         <circle cx="115" cy="115" r="88" fill="#17181b" />
@@ -28,15 +28,15 @@ export default function ArrowPlot() {
         {/* Group circle */}
         <circle cx="112" cy="110" r="26" fill="none" stroke="#ff5a4e" strokeWidth="1.5" strokeDasharray="4 4" />
       </svg>
-      <div className="plot-legend">
+      <div className="flex gap-[14px] justify-center mt-[10px] text-[10.5px] text-white/50">
         <span>
-          Group ⌀ <span className="strong">9.4cm</span>
+          Group ⌀ <span className="text-text-mid font-semibold">9.4cm</span>
         </span>
         <span>
-          Bias <span className="coral">↖ 1.2cm</span>
+          Bias <span className="text-accent-soft font-semibold">↖ 1.2cm</span>
         </span>
         <span>
-          X-ring <span className="gold">4/18</span>
+          X-ring <span className="text-gold font-semibold">4/18</span>
         </span>
       </div>
     </div>

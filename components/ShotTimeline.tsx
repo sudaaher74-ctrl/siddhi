@@ -2,30 +2,30 @@ import { arrowTimeline } from "@/lib/data";
 
 export default function ShotTimeline() {
   return (
-    <div className="card">
-      <div className="card-head">
-        <div className="card-title">Shot timeline</div>
-        <div className="timeline-head-note">last 36 arrows · click to replay</div>
-        <button className="replay-btn">▶ REPLAY</button>
+    <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
+      <div className="flex items-baseline gap-[10px]">
+        <h2 className="text-[13px] font-semibold text-text-mid">Shot timeline</h2>
+        <div className="text-[11px] text-white/40 ml-[10px]">last 36 arrows · click to replay</div>
+        <button className="ml-auto font-mono font-semibold text-[11px] text-accent-soft bg-transparent border-0 cursor-pointer p-0">▶ REPLAY</button>
       </div>
-      <div className="timeline-grid">
+      <div className="flex gap-1 mt-3 flex-wrap">
         {arrowTimeline.map((a, i) => (
           <div
             key={i}
-            className="arrow-tile"
+            className="w-[26px] h-[32px] flex-none rounded-[6px] bg-white/5 border border-white/10 border-b-2 flex items-center justify-center font-mono font-semibold text-[11px] cursor-pointer hover:bg-white/10 transition-colors"
             style={{ color: a.c, borderBottomColor: a.c }}
           >
             {a.v}
           </div>
         ))}
       </div>
-      <div className="timeline-foot">
+      <div className="flex gap-4 mt-3 text-[11px] text-text-dim">
         <span>Ends 9–14</span>
         <span>
-          Best end <span className="gold">58</span>
+          Best end <span className="text-gold font-semibold">58</span>
         </span>
         <span>
-          Drop after arrow <span className="coral">90</span> · −4.1%
+          Drop after arrow <span className="text-accent-soft font-semibold">90</span> · −4.1%
         </span>
       </div>
     </div>

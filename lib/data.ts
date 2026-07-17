@@ -112,3 +112,21 @@ export const arrowPlotPoints: Array<[number, number]> = [
   [108, 104], [122, 112], [99, 118], [116, 99], [127, 121], [104, 127],
   [133, 96], [94, 99], [121, 132], [138, 118], [88, 130], [112, 86],
 ];
+
+export const scoreTrendData = [
+  { session: 1, score: 8.52 },
+  { session: 2, score: 8.63 },
+  { session: 3, score: 8.56 },
+  { session: 4, score: 8.82 },
+  { session: 5, score: 8.74 },
+  { session: 6, score: 8.92 },
+  { session: 7, score: 8.86 },
+  { session: 8, score: 9.12 },
+  { session: 9, score: 9.03 },
+  { session: 10, score: 9.24 },
+  { session: 11, score: 9.16 },
+  { session: 12, score: 9.33 },
+  { session: 13, score: 9.26 },
+  { session: 14, score: 9.47 },
+  { session: 15, score: 9.41 },
+];

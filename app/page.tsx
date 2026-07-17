@@ -10,17 +10,17 @@ import SessionsTable from "@/components/SessionsTable";
 
 export default function DashboardPage() {
   return (
-    <div className="app">
+    <div className="flex flex-col lg:flex-row gap-[14px] p-[14px] min-h-screen bg-[radial-gradient(1200px_600px_at_20%_-10%,rgba(255,90,78,0.07),transparent_60%),var(--surface)]">
       <Sidebar />
-      <main className="main">
+      <main className="flex-1 min-w-0 flex flex-col gap-[12px]">
         <TopBar />
         <KpiGrid />
-        <div className="charts-row">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.55fr_1fr_1fr] gap-[12px]">
           <ScoreTrend />
           <ArrowPlot />
           <PerformanceRadar />
         </div>
-        <div className="row2">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.55fr_1fr] gap-[12px]">
           <ShotTimeline />
           <PracticeHeatmap />
         </div>

@@ -2,27 +2,33 @@ import { sessions } from "@/lib/data";
 
 export default function SessionsTable() {
   return (
-    <div className="sessions">
-      <div className="sessions-head">
-        <span>Session</span>
-        <span>Type</span>
-        <span>Arrows</span>
-        <span>Score</span>
-        <span>Avg</span>
-        <span>10+X</span>
-        <span>AI note</span>
-      </div>
-      {sessions.map((s, i) => (
-        <div className="session-row" key={i}>
-          <span className="name">{s.name}</span>
-          <span className="type">{s.type}</span>
-          <span className="mono">{s.arrows}</span>
-          <span className="score">{s.score}</span>
-          <span className="mono">{s.avg}</span>
-          <span className="mono">{s.tens}</span>
-          <span className="note">{s.note}</span>
-        </div>
-      ))}
+    <div className="bg-panel border border-border rounded-[14px] p-[6px_16px_10px] overflow-x-auto">
+      <table className="w-full text-left border-collapse min-w-[700px]">
+        <thead>
+          <tr className="border-b border-white/5 text-[9.5px] tracking-[0.1em] uppercase text-white/40 font-semibold">
+            <th className="py-[10px] font-semibold">Session</th>
+            <th className="py-[10px] font-semibold">Type</th>
+            <th className="py-[10px] font-semibold">Arrows</th>
+            <th className="py-[10px] font-semibold">Score</th>
+            <th className="py-[10px] font-semibold">Avg</th>
+            <th className="py-[10px] font-semibold">10+X</th>
+            <th className="py-[10px] font-semibold">AI note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sessions.map((s, i) => (
+            <tr className="border-b border-white/5 text-[12px] text-[#d9dbde] hover:bg-white/5 transition-colors" key={i}>
+              <td className="py-[9px] font-semibold text-text-mid">{s.name}</td>
+              <td className="py-[9px] text-white/55">{s.type}</td>
+              <td className="py-[9px] font-mono">{s.arrows}</td>
+              <td className="py-[9px] font-mono text-gold font-semibold">{s.score}</td>
+              <td className="py-[9px] font-mono">{s.avg}</td>
+              <td className="py-[9px] font-mono">{s.tens}</td>
+              <td className="py-[9px] text-[11px] text-white/50">{s.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
