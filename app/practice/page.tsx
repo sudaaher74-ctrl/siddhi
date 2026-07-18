@@ -1,17 +1,27 @@
 import TopBar from "@/components/TopBar";
+import PracticeHeatmap from "@/components/PracticeHeatmap";
+import ShotTimeline from "@/components/ShotTimeline";
+import SessionsTable from "@/components/SessionsTable";
+import { Plus } from "lucide-react";
 
 export default function PracticePage() {
   return (
     <>
-      <TopBar title="Practice" />
-      <div className="flex-1 flex flex-col items-center justify-center bg-panel border border-border rounded-[14px] p-8 text-center mt-4 h-[400px]">
-        <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-          <div className="w-8 h-8 rounded-full bg-accent/20 animate-pulse" />
-        </div>
-        <h2 className="text-xl font-semibold text-text-mid mb-2">Practice Module</h2>
-        <p className="text-sm text-text-dim max-w-sm">
-          This section is currently under construction. Check back soon for detailed practice drills and routines.
-        </p>
+      <div className="flex items-center justify-between">
+        <TopBar title="Practice Sessions" />
+        <button className="flex items-center gap-2 px-4 py-2 bg-accent text-panel font-semibold text-sm rounded-lg hover:bg-accent-hover transition-colors">
+          <Plus className="w-4 h-4" />
+          New Session
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.55fr_1fr] gap-[12px] mt-4">
+        <ShotTimeline />
+        <PracticeHeatmap />
+      </div>
+      
+      <div className="mt-4">
+        <SessionsTable />
       </div>
     </>
   );

@@ -1,17 +1,19 @@
 import TopBar from "@/components/TopBar";
+import ScorePad from "@/components/ScorePad";
+import ArrowPlot from "@/components/ArrowPlot";
 
 export default function ScoreEntryPage() {
   return (
     <>
       <TopBar title="Score Entry" />
-      <div className="flex-1 flex flex-col items-center justify-center bg-panel border border-border rounded-[14px] p-8 text-center mt-4 h-[400px]">
-        <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-          <div className="w-8 h-8 rounded-full bg-accent/20 animate-pulse" />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-[12px] mt-4">
+        <div>
+          <ScorePad />
         </div>
-        <h2 className="text-xl font-semibold text-text-mid mb-2">Score Entry</h2>
-        <p className="text-sm text-text-dim max-w-sm">
-          This section is currently under construction. Check back soon to log your arrow values.
-        </p>
+        <div>
+          <ArrowPlot />
+        </div>
       </div>
     </>
   );

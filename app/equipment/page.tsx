@@ -1,17 +1,45 @@
 import TopBar from "@/components/TopBar";
+import EquipmentCard from "@/components/EquipmentCard";
 
 export default function EquipmentPage() {
   return (
     <>
-      <TopBar title="Equipment" />
-      <div className="flex-1 flex flex-col items-center justify-center bg-panel border border-border rounded-[14px] p-8 text-center mt-4 h-[400px]">
-        <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-          <div className="w-8 h-8 rounded-full bg-accent/20 animate-pulse" />
-        </div>
-        <h2 className="text-xl font-semibold text-text-mid mb-2">Equipment Log</h2>
-        <p className="text-sm text-text-dim max-w-sm">
-          This section is currently under construction. Check back soon to track your bow setup and tuning.
-        </p>
+      <TopBar title="Equipment Setup" />
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[12px] mt-4">
+        <EquipmentCard 
+          title="Primary Recurve" 
+          type="Olympic Recurve"
+          status="active"
+          stats={[
+            { label: "Draw Weight", value: "42 lbs @ 29\"" },
+            { label: "Tiller", value: "+4mm top" },
+            { label: "Brace Height", value: "22.5 cm" },
+            { label: "Nocking Point", value: "+6mm" }
+          ]}
+        />
+        <EquipmentCard 
+          title="Backup Recurve" 
+          type="Olympic Recurve"
+          status="backup"
+          stats={[
+            { label: "Draw Weight", value: "40 lbs @ 29\"" },
+            { label: "Tiller", value: "+3mm top" },
+            { label: "Brace Height", value: "22.2 cm" },
+            { label: "Nocking Point", value: "+5mm" }
+          ]}
+        />
+        <EquipmentCard 
+          title="Indoor Arrows" 
+          type="Easton X23"
+          status="active"
+          stats={[
+            { label: "Spine", value: "475" },
+            { label: "Length", value: "29.5\"" },
+            { label: "Point Weight", value: "150 gr" },
+            { label: "Fletching", value: "4\" Feathers" }
+          ]}
+        />
       </div>
     </>
   );
