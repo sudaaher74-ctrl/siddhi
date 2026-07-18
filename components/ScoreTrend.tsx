@@ -11,10 +11,10 @@ export default function ScoreTrend() {
 
   return (
     <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
-      <div className="flex items-baseline gap-[10px]">
-        <h2 className="text-[13px] font-semibold text-text-mid">Score trend</h2>
-        <div className="text-[11px] text-white/40">avg per 36-arrow block</div>
-        <div className="ml-auto flex gap-[2px] bg-white/5 rounded-[7px] p-[2px]">
+      <div className="flex items-center sm:items-baseline justify-between sm:justify-start gap-2 sm:gap-[10px]">
+        <h2 className="text-[13px] font-semibold text-text-mid whitespace-nowrap">Score trend</h2>
+        <div className="text-[11px] text-white/40 hidden sm:block">avg per 36-arrow block</div>
+        <div className="sm:ml-auto flex gap-[2px] bg-white/5 rounded-[7px] p-[2px]">
           {PERIODS.map((p) => (
             <button
               key={p}
@@ -60,14 +60,14 @@ export default function ScoreTrend() {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex gap-4 mt-2 text-[11px] text-text-dim">
+      <div className="flex flex-wrap gap-2 sm:gap-4 mt-2 text-[11px] text-text-dim justify-between sm:justify-start">
         <span>
           <span className="text-accent-soft font-semibold">9.34</span> this week
         </span>
-        <span>
+        <span className="hidden sm:inline">
           <span className="text-text-mid font-semibold">9.11</span> 30-day avg
         </span>
-        <span className="ml-auto text-green font-semibold">▲ 2.1% wk / wk</span>
+        <span className="sm:ml-auto text-green font-semibold">▲ 2.1% wk / wk</span>
       </div>
     </div>
   );
