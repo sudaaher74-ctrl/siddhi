@@ -9,10 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#08090c",
-        surface: "#0a0c10",
-        panel: "rgba(255, 255, 255, 0.03)",
-        border: "rgba(255, 255, 255, 0.08)",
+        background: "var(--bg)",
+        surface: "var(--surface)",
+        panel: "var(--panel)",
+        border: "var(--border)",
         accent: {
           DEFAULT: "var(--accent)",
           soft: "var(--accent-soft)",
@@ -30,9 +30,9 @@ const config: Config = {
         green: "#7ee2a8",
         blue: "var(--blue)",
         text: {
-          DEFAULT: "#f2f3f5",
-          mid: "#eceded",
-          dim: "rgba(255, 255, 255, 0.45)",
+          DEFAULT: "var(--text)",
+          mid: "var(--text-mid)",
+          dim: "var(--text-dim)",
         },
       },
       fontFamily: {
