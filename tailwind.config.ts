@@ -58,8 +58,11 @@ const config: Config = {
           "50%": { opacity: "0.35" },
         },
         shootArrow: {
-          "0%": { transform: "translate(100px, 150px) scale(3)", opacity: "0" },
-          "20%": { opacity: "1" },
+          "0%": { transform: "translate(150px, 150px) scale(2.5)", opacity: "0" },
+          "15%": { transform: "translate(120px, 120px) scale(2.5)", opacity: "1" },
+          "50%": { transform: "translate(0, 0) scale(1)", opacity: "1" },
+          "65%": { transform: "translate(-1.5px, -1.5px) scale(1)", opacity: "1" }, /* Impact wobble */
+          "80%": { transform: "translate(1px, 1px) scale(1)", opacity: "1" },
           "100%": { transform: "translate(0, 0) scale(1)", opacity: "1" },
         },
       },

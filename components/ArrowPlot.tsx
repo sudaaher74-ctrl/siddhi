@@ -45,17 +45,23 @@ export default function ArrowPlot() {
         <circle cx="115" cy="115" r="77" fill="none" stroke="rgba(255,255,255,.15)" />
         <circle cx="115" cy="115" r="55" fill="none" stroke="rgba(255,255,255,.25)" />
         <circle cx="115" cy="115" r="33" fill="none" stroke="rgba(0,0,0,.15)" />
-        {/* Impacts */}
-        <g fill="#fff" stroke="#0a0c10" strokeWidth="1.4">
+        <g>
           {shots.map(({ cx, cy, isNew }, i) => (
-            <circle 
+            <g 
               key={i} 
-              cx={cx} 
-              cy={cy} 
-              r="4" 
               className={isNew ? "animate-shootArrow" : ""} 
               style={{ transformOrigin: `${cx}px ${cy}px` }} 
-            />
+            >
+              {/* Arrow Shaft (Angle pointing to bottom-right) */}
+              <line x1={cx} y1={cy} x2={cx + 18} y2={cy + 18} stroke="#1E293B" strokeWidth="1.5" strokeLinecap="round" />
+              
+              {/* Fletchings (Vanes) */}
+              <line x1={cx + 13} y1={cy + 13} x2={cx + 18} y2={cy + 9} stroke="#E53935" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1={cx + 13} y1={cy + 13} x2={cx + 9} y2={cy + 18} stroke="#4FC3F7" strokeWidth="1.5" strokeLinecap="round" />
+              
+              {/* Impact Dot (Hole in target) */}
+              <circle cx={cx} cy={cy} r="2.5" fill="#FFFFFF" stroke="#000000" strokeWidth="1" />
+            </g>
           ))}
         </g>
         {/* Group circle */}
