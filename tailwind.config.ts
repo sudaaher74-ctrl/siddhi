@@ -57,17 +57,17 @@ const config: Config = {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.35" },
         },
-        popIn: {
-          "0%": { transform: "scale(0)", opacity: "0" },
-          "70%": { transform: "scale(1.4)", opacity: "1" },
-          "100%": { transform: "scale(1)", opacity: "1" },
+        shootArrow: {
+          "0%": { transform: "translate(100px, 150px) scale(3)", opacity: "0" },
+          "20%": { opacity: "1" },
+          "100%": { transform: "translate(0, 0) scale(1)", opacity: "1" },
         },
       },
       animation: {
         dashin: "dashin 1.8s ease-out both",
         fadeup: "fadeup 0.5s both",
         pulseCustom: "pulseCustom 1.6s infinite",
-        popIn: "popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards",
+        shootArrow: "shootArrow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards",
       },
     },
   },

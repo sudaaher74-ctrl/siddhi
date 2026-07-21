@@ -5,24 +5,22 @@ import { arrowPlotPoints } from "@/lib/data";
 import Card from "@/components/ui/Card";
 
 export default function ArrowPlot() {
-  const [shots, setShots] = useState<[number, number][]>(arrowPlotPoints);
+  const [shots, setShots] = useState<{cx: number, cy: number, isNew: boolean}[]>(
+    arrowPlotPoints.map(([cx, cy]) => ({ cx, cy, isNew: false }))
+  );
   const svgRef = useRef<SVGSVGElement>(null);
 
   const handleSVGClick = (e: MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
     const svg = svgRef.current;
     
-    // Create an SVGPoint for future math
     const pt = svg.createSVGPoint();
-    
-    // Get point in global SVG space
     pt.x = e.clientX;
     pt.y = e.clientY;
     
-    // Matrix transform to map to the internal viewBox coordinates (0-230)
     const cursorPt = pt.matrixTransform(svg.getScreenCTM()?.inverse());
     
-    setShots([...shots, [cursorPt.x, cursorPt.y]]);
+    setShots([...shots, { cx: cursorPt.x, cy: cursorPt.y, isNew: true }]);
   };
   return (
     <Card>
@@ -49,13 +47,13 @@ export default function ArrowPlot() {
         <circle cx="115" cy="115" r="33" fill="none" stroke="rgba(0,0,0,.15)" />
         {/* Impacts */}
         <g fill="#fff" stroke="#0a0c10" strokeWidth="1.4">
-          {shots.map(([cx, cy], i) => (
+          {shots.map(({ cx, cy, isNew }, i) => (
             <circle 
               key={i} 
               cx={cx} 
               cy={cy} 
               r="4" 
-              className="animate-popIn" 
+              className={isNew ? "animate-shootArrow" : ""} 
               style={{ transformOrigin: `${cx}px ${cy}px` }} 
             />
           ))}
