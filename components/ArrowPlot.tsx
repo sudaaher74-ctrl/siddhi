@@ -22,11 +22,34 @@ export default function ArrowPlot() {
     
     setShots([...shots, { cx: cursorPt.x, cy: cursorPt.y, isNew: true }]);
   };
+  const handleUndo = () => {
+    setShots(shots.slice(0, -1));
+  };
+
+  const handleClear = () => {
+    setShots([]);
+  };
+
   return (
     <Card>
       <div className="flex items-baseline gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid">Arrow plot</h2>
-        <div className="ml-auto font-mono font-medium text-[10px] text-black/40">END 12–14 · 70m</div>
+        <div className="ml-auto flex items-center gap-3">
+          <button 
+            onClick={handleUndo}
+            disabled={shots.length === 0}
+            className="font-mono font-medium text-[10px] text-black/40 hover:text-accent-soft disabled:opacity-50 transition-colors"
+          >
+            UNDO
+          </button>
+          <button 
+            onClick={handleClear}
+            disabled={shots.length === 0}
+            className="font-mono font-medium text-[10px] text-black/40 hover:text-red-500 disabled:opacity-50 transition-colors"
+          >
+            CLEAR
+          </button>
+        </div>
       </div>
       <svg 
         ref={svgRef}
