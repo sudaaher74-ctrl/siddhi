@@ -13,9 +13,9 @@ export default function TopBar({ title = "Dashboard" }: { title?: string }) {
           Live
         </div>
       </div>
-      <div className="md:ml-auto hidden md:flex items-center gap-2 p-[7px_12px] rounded-full bg-white/5 border border-border text-white/50 text-[12px] w-[220px] cursor-pointer">
+      <div className="md:ml-auto hidden md:flex items-center gap-2 p-[7px_12px] rounded-full bg-black/5 border border-border text-black/50 text-[12px] w-[220px] cursor-pointer">
         <Search className="w-3.5 h-3.5" /> Search sessions, gear…
-        <span className="ml-auto font-mono font-medium text-[10px] border border-white/15 rounded-[4px] p-[1px_4px]">⌘K</span>
+        <span className="ml-auto font-mono font-medium text-[10px] border border-black/15 rounded-[4px] p-[1px_4px]">⌘K</span>
       </div>
       <div className="hidden md:flex items-center gap-[7px] p-[7px_13px] rounded-full bg-accent-subtle border border-accent/40 text-accent-soft text-[12px] font-semibold w-max">
         <span className="w-[7px] h-[7px] rounded-full bg-accent animate-pulseCustom" />

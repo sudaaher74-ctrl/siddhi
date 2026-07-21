@@ -5,7 +5,7 @@ export default function SessionsTable() {
     <div className="bg-panel border border-border rounded-[14px] p-[6px_16px_10px] overflow-x-auto">
       <table className="w-full text-left border-collapse min-w-[700px]">
         <thead>
-          <tr className="border-b border-white/5 text-[9.5px] tracking-[0.1em] uppercase text-white/40 font-semibold">
+          <tr className="border-b border-black/5 text-[9.5px] tracking-[0.1em] uppercase text-black/40 font-semibold">
             <th className="py-[10px] font-semibold">Session</th>
             <th className="py-[10px] font-semibold">Type</th>
             <th className="py-[10px] font-semibold">Arrows</th>
@@ -17,14 +17,14 @@ export default function SessionsTable() {
         </thead>
         <tbody>
           {sessions.map((s, i) => (
-            <tr className="border-b border-white/5 text-[12px] text-[#d9dbde] hover:bg-white/5 transition-colors" key={i}>
+            <tr className="border-b border-black/5 text-[12px] text-[#d9dbde] hover:bg-black/5 transition-colors" key={i}>
               <td className="py-[9px] font-semibold text-text-mid">{s.name}</td>
-              <td className="py-[9px] text-white/55">{s.type}</td>
+              <td className="py-[9px] text-black/55">{s.type}</td>
               <td className="py-[9px] font-mono">{s.arrows}</td>
               <td className="py-[9px] font-mono text-gold font-semibold">{s.score}</td>
               <td className="py-[9px] font-mono">{s.avg}</td>
               <td className="py-[9px] font-mono">{s.tens}</td>
-              <td className="py-[9px] text-[11px] text-white/50">{s.note}</td>
+              <td className="py-[9px] text-[11px] text-black/50">{s.note}</td>
             </tr>
           ))}
         </tbody>

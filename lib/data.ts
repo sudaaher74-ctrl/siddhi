@@ -36,8 +36,8 @@ export const kpis: Kpi[] = [
   { label: "Average", value: "9.18", delta: "▲ 0.21", deltaColor: "var(--target-blue)" },
   { label: "Accuracy", value: "87.3%", delta: "▲ 1.4%", deltaColor: "var(--target-blue)" },
   { label: "10 + X rate", value: "38%", delta: "▲ 3%", deltaColor: "var(--target-blue)" },
-  { label: "Consistency", value: "91", delta: "— steady", deltaColor: "rgba(255,255,255,.4)" },
-  { label: "Practice time", value: "2:41", delta: "of 3:30 plan", deltaColor: "rgba(255,255,255,.4)" },
+  { label: "Consistency", value: "91", delta: "— steady", deltaColor: "rgba(0,0,0,.4)" },
+  { label: "Practice time", value: "2:41", delta: "of 3:30 plan", deltaColor: "rgba(0,0,0,.4)" },
   { label: "Streak", value: "17d", delta: "🔥 best 23", deltaColor: "var(--accent-soft)" },
 ];
 
@@ -57,7 +57,7 @@ export const arrowTimeline: ArrowTile[] = Array.from({ length: 36 }, () => {
 });
 
 const HEAT_COLORS = [
-  "rgba(255,255,255,.045)",
+  "rgba(0,0,0,0.045)",
   "rgba(229, 57, 53, 0.22)",
   "rgba(229, 57, 53, 0.42)",
   "rgba(229, 57, 53, 0.68)",

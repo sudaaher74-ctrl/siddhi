@@ -5,7 +5,7 @@ export default function ArrowPlot() {
     <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
       <div className="flex items-baseline gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid">Arrow plot</h2>
-        <div className="ml-auto font-mono font-medium text-[10px] text-white/40">END 12–14 · 70m</div>
+        <div className="ml-auto font-mono font-medium text-[10px] text-black/40">END 12–14 · 70m</div>
       </div>
       <svg viewBox="0 0 230 230" className="w-full max-w-[230px] mx-auto mt-[10px]">
         {/* Target face rings */}
@@ -28,7 +28,7 @@ export default function ArrowPlot() {
         {/* Group circle */}
         <circle cx="112" cy="110" r="26" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="4 4" />
       </svg>
-      <div className="flex gap-[14px] justify-center mt-[10px] text-[10.5px] text-white/50">
+      <div className="flex gap-[14px] justify-center mt-[10px] text-[10.5px] text-black/50">
         <span>
           Group ⌀ <span className="text-text-mid font-semibold">9.4cm</span>
         </span>

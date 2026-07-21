@@ -27,16 +27,16 @@ export default function MobileNav() {
     <>
       {/* Slide-up Menu Drawer */}
       <div 
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-white/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setMenuOpen(false)}
       >
         <div 
           className={`absolute bottom-16 left-4 right-4 bg-[#0a0c10] border border-border rounded-2xl p-4 transition-transform duration-300 ${menuOpen ? 'translate-y-0' : 'translate-y-8'}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-black/5">
             <h3 className="text-[14px] font-bold text-text">More Options</h3>
-            <button onClick={() => setMenuOpen(false)} className="p-1 bg-white/5 rounded-full text-white/70 hover:text-white">
+            <button onClick={() => setMenuOpen(false)} className="p-1 bg-black/5 rounded-full text-black/70 hover:text-black">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -50,7 +50,7 @@ export default function MobileNav() {
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-colors ${
-                    isActive ? 'bg-accent/10 border-accent/20 text-accent' : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10'
+                    isActive ? 'bg-accent/10 border-accent/20 text-accent' : 'bg-black/5 border-black/5 text-black/70 hover:bg-black/10'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -73,7 +73,7 @@ export default function MobileNav() {
                 key={item.label}
                 href={item.href}
                 className={`flex flex-col items-center gap-1 min-w-[48px] transition-colors ${
-                  isActive ? "text-accent" : "text-white/40 hover:text-white/80"
+                  isActive ? "text-accent" : "text-black/40 hover:text-black/80"
                 }`}
               >
                 <div className={`p-1 rounded-full ${isActive ? 'bg-accent/10' : ''}`}>
@@ -87,10 +87,10 @@ export default function MobileNav() {
           <button 
             onClick={() => setMenuOpen(!menuOpen)}
             className={`flex flex-col items-center gap-1 min-w-[48px] transition-colors ${
-              menuOpen ? "text-white" : "text-white/40 hover:text-white/80"
+              menuOpen ? "text-black" : "text-black/40 hover:text-black/80"
             }`}
           >
-            <div className={`p-1 rounded-full ${menuOpen ? 'bg-white/10' : ''}`}>
+            <div className={`p-1 rounded-full ${menuOpen ? 'bg-black/10' : ''}`}>
               <Menu className="w-[18px] h-[18px]" />
             </div>
             <span className="text-[9px] font-medium">More</span>

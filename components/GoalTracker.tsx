@@ -40,16 +40,16 @@ export default function GoalTracker() {
       
       <div className="flex flex-col gap-5">
         {goals.map((goal, i) => (
-          <div key={i} className={`flex flex-col gap-2 p-4 rounded-xl border transition-colors ${goal.completed ? 'bg-accent/5 border-accent/20' : 'bg-white/5 border-white/5'}`}>
+          <div key={i} className={`flex flex-col gap-2 p-4 rounded-xl border transition-colors ${goal.completed ? 'bg-accent/5 border-accent/20' : 'bg-black/5 border-black/5'}`}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 {goal.completed ? (
                   <CheckCircle2 className="w-5 h-5 text-accent flex-shrink-0" />
                 ) : (
-                  <Circle className="w-5 h-5 text-white/30 flex-shrink-0" />
+                  <Circle className="w-5 h-5 text-black/30 flex-shrink-0" />
                 )}
                 <div>
-                  <h4 className={`text-[14px] font-semibold ${goal.completed ? 'text-white line-through opacity-70' : 'text-white'}`}>
+                  <h4 className={`text-[14px] font-semibold ${goal.completed ? 'text-black line-through opacity-70' : 'text-black'}`}>
                     {goal.title}
                   </h4>
                   <div className="text-[12px] text-text-dim flex items-center gap-2 mt-0.5">
@@ -58,12 +58,12 @@ export default function GoalTracker() {
                   </div>
                 </div>
               </div>
-              <div className="text-[13px] font-bold text-white/70">
+              <div className="text-[13px] font-bold text-black/70">
                 {goal.progress}%
               </div>
             </div>
             
-            <div className="w-full h-1.5 bg-black/40 rounded-full mt-2 overflow-hidden">
+            <div className="w-full h-1.5 bg-white/40 rounded-full mt-2 overflow-hidden">
               <div 
                 className={`h-full rounded-full transition-all duration-1000 ${goal.completed ? 'bg-accent' : 'bg-gradient-to-r from-accent to-accent-soft'}`}
                 style={{ width: `${goal.progress}%` }}

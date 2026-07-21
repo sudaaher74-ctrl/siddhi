@@ -13,13 +13,13 @@ export default function ScoreTrend() {
     <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
       <div className="flex items-center sm:items-baseline justify-between sm:justify-start gap-2 sm:gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid whitespace-nowrap">Score trend</h2>
-        <div className="text-[11px] text-white/40 hidden sm:block">avg per 36-arrow block</div>
-        <div className="sm:ml-auto flex gap-[2px] bg-white/5 rounded-[7px] p-[2px]">
+        <div className="text-[11px] text-black/40 hidden sm:block">avg per 36-arrow block</div>
+        <div className="sm:ml-auto flex gap-[2px] bg-black/5 rounded-[7px] p-[2px]">
           {PERIODS.map((p) => (
             <button
               key={p}
               className={`font-mono font-medium text-[10px] p-[3px_8px] rounded-[5px] border-0 cursor-pointer transition-colors ${
-                p === period ? "bg-accent/25 text-[#ffb0aa]" : "bg-transparent text-white/50"
+                p === period ? "bg-accent/25 text-[#ffb0aa]" : "bg-transparent text-black/50"
               }`}
               onClick={() => setPeriod(p)}
             >
@@ -37,14 +37,14 @@ export default function ScoreTrend() {
                 <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+            <CartesianGrid stroke="rgba(0,0,0,0.06)" vertical={false} />
             <XAxis dataKey="session" hide />
             <YAxis 
               domain={[8.0, 9.5]} 
               ticks={[8.0, 8.5, 9.0, 9.5]} 
               axisLine={false} 
               tickLine={false} 
-              tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9, fontFamily: "var(--font-mono), monospace" }}
+              tick={{ fill: "rgba(0,0,0,0.35)", fontSize: 9, fontFamily: "var(--font-mono), monospace" }}
             />
             <Area 
               type="linear" 
@@ -55,7 +55,7 @@ export default function ScoreTrend() {
               fill="url(#trendFill)" 
               animationDuration={1800}
               animationEasing="ease-out"
-              activeDot={{ r: 4, fill: "#0a0c10", stroke: "var(--accent)", strokeWidth: 2.5 }}
+              activeDot={{ r: 4, fill: "#ffffff", stroke: "var(--accent)", strokeWidth: 2.5 }}
             />
           </AreaChart>
         </ResponsiveContainer>
