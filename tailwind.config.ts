@@ -36,8 +36,13 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "monospace"],
+        sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
+      },
+      boxShadow: {
+        'card': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+        'card-hover': '0 8px 30px -4px rgba(0, 0, 0, 0.08)',
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
       },
       keyframes: {
         dashin: {

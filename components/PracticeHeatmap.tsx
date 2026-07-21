@@ -1,4 +1,5 @@
 import { heatmap } from "@/lib/data";
+import Card from "@/components/ui/Card";
 
 const LEGEND = [
   "rgba(0,0,0,.05)",
@@ -9,7 +10,7 @@ const LEGEND = [
 
 export default function PracticeHeatmap() {
   return (
-    <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
+    <Card>
       <div className="flex items-baseline gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid">Practice intensity</h2>
         <div className="ml-auto font-mono font-medium text-[10px] text-black/40">LAST 14 WKS</div>
@@ -27,6 +28,6 @@ export default function PracticeHeatmap() {
         More
         <span className="ml-auto">312 arrows / wk avg</span>
       </div>
-    </div>
+    </Card>
   );
 }

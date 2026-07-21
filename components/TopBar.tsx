@@ -2,7 +2,7 @@ import { Search } from "lucide-react";
 
 export default function TopBar({ title = "Dashboard" }: { title?: string }) {
   return (
-    <header className="flex flex-col md:flex-row md:items-center gap-3 md:gap-[12px]">
+    <header className="flex flex-col md:flex-row md:items-center gap-3 md:gap-[12px] sticky top-0 z-50 bg-white/70 backdrop-blur-md pb-4 pt-2 -mx-4 px-4 sm:mx-0 sm:px-0">
       <div className="flex justify-between items-start w-full md:w-auto">
         <div>
           <h1 className="text-[19px] font-bold text-text tracking-[-0.01em]">{title}</h1>

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { scoreTrendData } from "@/lib/data";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
+import Card from "@/components/ui/Card";
 
 const PERIODS = ["D", "W", "M", "Y"] as const;
 
@@ -10,7 +11,7 @@ export default function ScoreTrend() {
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("W");
 
   return (
-    <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
+    <Card>
       <div className="flex items-center sm:items-baseline justify-between sm:justify-start gap-2 sm:gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid whitespace-nowrap">Score trend</h2>
         <div className="text-[11px] text-black/40 hidden sm:block">avg per 36-arrow block</div>
@@ -46,6 +47,10 @@ export default function ScoreTrend() {
               tickLine={false} 
               tick={{ fill: "rgba(0,0,0,0.35)", fontSize: 9, fontFamily: "var(--font-mono), monospace" }}
             />
+            <Tooltip 
+              contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '11px', boxShadow: 'var(--tw-shadow-card)' }}
+              itemStyle={{ color: 'var(--text)' }}
+            />
             <Area 
               type="linear" 
               dataKey="score" 
@@ -69,6 +74,6 @@ export default function ScoreTrend() {
         </span>
         <span className="sm:ml-auto text-green font-semibold">▲ 2.1% wk / wk</span>
       </div>
-    </div>
+    </Card>
   );
 }

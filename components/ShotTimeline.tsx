@@ -1,8 +1,9 @@
 import { arrowTimeline } from "@/lib/data";
+import Card from "@/components/ui/Card";
 
 export default function ShotTimeline() {
   return (
-    <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
+    <Card>
       <div className="flex items-baseline gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid">Shot timeline</h2>
         <div className="text-[11px] text-black/40 ml-[10px]">last 36 arrows · click to replay</div>
@@ -28,6 +29,6 @@ export default function ShotTimeline() {
           Drop after arrow <span className="text-accent-soft font-semibold">90</span> · −4.1%
         </span>
       </div>
-    </div>
+    </Card>
   );
 }

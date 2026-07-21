@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --bg: #F8FAFC;
+    --bg: #F9FAFB; /* Premium Light Gray */
     --surface: #FFFFFF;
     --panel: #FFFFFF;
-    --border: rgba(0, 0, 0, 0.1);
+    --border: rgba(0, 0, 0, 0.06);
     /* Target Face Colors */
     --target-gold: #FFD700;
     --target-red: #E53935;
@@ -21,9 +21,9 @@
     --gold: var(--target-gold);
     --blue: var(--target-blue);
     
-    --text: #1E293B;
-    --text-mid: #475569;
-    --text-dim: #94A3B8;
+    --text: #111827; /* Darker text for better contrast */
+    --text-mid: #4B5563;
+    --text-dim: #9CA3AF;
   }
 
   body {

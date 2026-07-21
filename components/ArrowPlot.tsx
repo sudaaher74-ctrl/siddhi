@@ -1,8 +1,9 @@
 import { arrowPlotPoints } from "@/lib/data";
+import Card from "@/components/ui/Card";
 
 export default function ArrowPlot() {
   return (
-    <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
+    <Card>
       <div className="flex items-baseline gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid">Arrow plot</h2>
         <div className="ml-auto font-mono font-medium text-[10px] text-black/40">END 12–14 · 70m</div>
@@ -39,6 +40,6 @@ export default function ArrowPlot() {
           X-ring <span className="text-gold font-semibold">4/18</span>
         </span>
       </div>
-    </div>
+    </Card>
   );
 }

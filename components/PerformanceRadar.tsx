@@ -1,6 +1,8 @@
+import Card from "@/components/ui/Card";
+
 export default function PerformanceRadar() {
   return (
-    <div className="bg-panel border border-border rounded-[14px] p-4 flex flex-col">
+    <Card>
       <div className="flex items-baseline gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid">Performance radar</h2>
         <div className="ml-auto font-mono font-medium text-[10px] text-black/40">VS LAST MONTH</div>
@@ -50,6 +52,6 @@ export default function PerformanceRadar() {
           June
         </span>
       </div>
-    </div>
+    </Card>
   );
 }
