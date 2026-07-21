@@ -31,7 +31,7 @@ export default function MobileNav() {
         onClick={() => setMenuOpen(false)}
       >
         <div 
-          className={`absolute bottom-16 left-4 right-4 bg-[#0a0c10] border border-border rounded-2xl p-4 transition-transform duration-300 ${menuOpen ? 'translate-y-0' : 'translate-y-8'}`}
+          className={`absolute bottom-16 left-4 right-4 bg-white/95 backdrop-blur-lg border border-border rounded-2xl p-4 transition-transform duration-300 ${menuOpen ? 'translate-y-0' : 'translate-y-8'}`}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex justify-between items-center mb-4 pb-4 border-b border-black/5">
@@ -63,7 +63,7 @@ export default function MobileNav() {
       </div>
 
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-[#08090c]/95 backdrop-blur-md border-t border-border px-4 py-2 pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white/80 backdrop-blur-md border-t border-border px-4 py-2 pb-safe">
         <div className="flex justify-between items-center max-w-md mx-auto">
           {mainNav.map((item) => {
             const isActive = pathname === item.href;
