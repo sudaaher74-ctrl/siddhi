@@ -1,14 +1,41 @@
+"use client";
+
+import { useState, useRef, MouseEvent } from "react";
 import { arrowPlotPoints } from "@/lib/data";
 import Card from "@/components/ui/Card";
 
 export default function ArrowPlot() {
+  const [shots, setShots] = useState<[number, number][]>(arrowPlotPoints);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const handleSVGClick = (e: MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current) return;
+    const svg = svgRef.current;
+    
+    // Create an SVGPoint for future math
+    const pt = svg.createSVGPoint();
+    
+    // Get point in global SVG space
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    
+    // Matrix transform to map to the internal viewBox coordinates (0-230)
+    const cursorPt = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+    
+    setShots([...shots, [cursorPt.x, cursorPt.y]]);
+  };
   return (
     <Card>
       <div className="flex items-baseline gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid">Arrow plot</h2>
         <div className="ml-auto font-mono font-medium text-[10px] text-black/40">END 12–14 · 70m</div>
       </div>
-      <svg viewBox="0 0 230 230" className="w-full max-w-[230px] mx-auto mt-[10px]">
+      <svg 
+        ref={svgRef}
+        viewBox="0 0 230 230" 
+        className="w-full max-w-[230px] mx-auto mt-[10px] cursor-crosshair touch-none"
+        onClick={handleSVGClick}
+      >
         {/* Target face rings */}
         <circle cx="115" cy="115" r="110" fill="var(--target-white)" />
         <circle cx="115" cy="115" r="88" fill="var(--target-black)" />
@@ -22,8 +49,15 @@ export default function ArrowPlot() {
         <circle cx="115" cy="115" r="33" fill="none" stroke="rgba(0,0,0,.15)" />
         {/* Impacts */}
         <g fill="#fff" stroke="#0a0c10" strokeWidth="1.4">
-          {arrowPlotPoints.map(([cx, cy], i) => (
-            <circle key={i} cx={cx} cy={cy} r="4" />
+          {shots.map(([cx, cy], i) => (
+            <circle 
+              key={i} 
+              cx={cx} 
+              cy={cy} 
+              r="4" 
+              className="animate-popIn" 
+              style={{ transformOrigin: `${cx}px ${cy}px` }} 
+            />
           ))}
         </g>
         {/* Group circle */}
