@@ -31,14 +31,14 @@ export const navItems: NavItem[] = navLinks.map((item, i) => ({
 }));
 
 export const kpis: Kpi[] = [
-  { label: "Arrows today", value: "84", delta: "▲ 12 vs avg", deltaColor: "#7ee2a8" },
-  { label: "Today's score", value: "661", delta: "PB pace +6", deltaColor: "#f2c53d" },
-  { label: "Average", value: "9.18", delta: "▲ 0.21", deltaColor: "#7ee2a8" },
-  { label: "Accuracy", value: "87.3%", delta: "▲ 1.4%", deltaColor: "#7ee2a8" },
-  { label: "10 + X rate", value: "38%", delta: "▲ 3%", deltaColor: "#7ee2a8" },
+  { label: "Arrows today", value: "84", delta: "▲ 12 vs avg", deltaColor: "var(--target-blue)" },
+  { label: "Today's score", value: "661", delta: "PB pace +6", deltaColor: "var(--target-gold)" },
+  { label: "Average", value: "9.18", delta: "▲ 0.21", deltaColor: "var(--target-blue)" },
+  { label: "Accuracy", value: "87.3%", delta: "▲ 1.4%", deltaColor: "var(--target-blue)" },
+  { label: "10 + X rate", value: "38%", delta: "▲ 3%", deltaColor: "var(--target-blue)" },
   { label: "Consistency", value: "91", delta: "— steady", deltaColor: "rgba(255,255,255,.4)" },
   { label: "Practice time", value: "2:41", delta: "of 3:30 plan", deltaColor: "rgba(255,255,255,.4)" },
-  { label: "Streak", value: "17d", delta: "🔥 best 23", deltaColor: "#ff8b82" },
+  { label: "Streak", value: "17d", delta: "🔥 best 23", deltaColor: "var(--accent-soft)" },
 ];
 
 // Same seeded LCG as the design prototype so generated values match it exactly.
@@ -53,15 +53,15 @@ export const arrowTimeline: ArrowTile[] = Array.from({ length: 36 }, () => {
   const r = rnd();
   const v = r < 0.16 ? 10 : r < 0.52 ? 9 : r < 0.8 ? 8 : r < 0.94 ? 7 : 6;
   const isX = v === 10 && rnd() < 0.35;
-  return { v: isX ? "X" : String(v), c: v >= 9 ? "#f2c53d" : v >= 7 ? "#ff8b82" : "#6fb4e8" };
+  return { v: isX ? "X" : String(v), c: v >= 9 ? "var(--target-gold)" : v >= 7 ? "var(--target-red)" : v >= 5 ? "var(--target-blue)" : v >= 3 ? "var(--target-black)" : "var(--target-white)" };
 });
 
 const HEAT_COLORS = [
   "rgba(255,255,255,.045)",
-  "rgba(255,90,78,.22)",
-  "rgba(255,90,78,.42)",
-  "rgba(255,90,78,.68)",
-  "#ff5a4e",
+  "rgba(229, 57, 53, 0.22)",
+  "rgba(229, 57, 53, 0.42)",
+  "rgba(229, 57, 53, 0.68)",
+  "var(--accent)",
 ];
 
 export const heatmap: string[] = Array.from({ length: 98 }, () => {

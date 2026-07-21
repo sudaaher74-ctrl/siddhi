@@ -4,7 +4,7 @@ const LEGEND = [
   "rgba(255,255,255,.05)",
   "rgba(255,90,78,.25)",
   "rgba(255,90,78,.5)",
-  "#ff5a4e",
+  "var(--accent)",
 ];
 
 export default function PracticeHeatmap() {

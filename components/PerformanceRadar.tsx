@@ -20,7 +20,7 @@ export default function PerformanceRadar() {
         <polygon
           points="110,32 168,70 158,134 110,168 55,131 52,68"
           fill="rgba(255,90,78,.18)"
-          stroke="#ff5a4e"
+          stroke="var(--accent)"
           strokeWidth="2"
           strokeLinejoin="round"
         />

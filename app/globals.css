@@ -8,11 +8,19 @@
     --surface: #0a0c10;
     --panel: rgba(255, 255, 255, 0.03);
     --border: rgba(255, 255, 255, 0.08);
-    --accent: #ff5a4e;
-    --accent-soft: #ff8b82;
-    --gold: #f2c53d;
-    --green: #7ee2a8;
-    --blue: #6fb4e8;
+    /* Target Face Colors */
+    --target-gold: #FFD700;
+    --target-red: #E53935;
+    --target-blue: #4FC3F7;
+    --target-black: #1C1C1C;
+    --target-white: #F8FAFC;
+    
+    /* Semantic Colors derived from Target Face */
+    --accent: var(--target-red);
+    --accent-soft: rgba(229, 57, 53, 0.7);
+    --gold: var(--target-gold);
+    --blue: var(--target-blue);
+    
     --text: #f2f3f5;
     --text-mid: #eceded;
     --text-dim: rgba(255, 255, 255, 0.45);

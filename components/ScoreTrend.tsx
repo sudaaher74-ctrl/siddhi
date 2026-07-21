@@ -33,8 +33,8 @@ export default function ScoreTrend() {
           <AreaChart data={scoreTrendData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
             <defs>
               <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ff5a4e" stopOpacity={0.28} />
-                <stop offset="100%" stopColor="#ff5a4e" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.28} />
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
@@ -49,13 +49,13 @@ export default function ScoreTrend() {
             <Area 
               type="linear" 
               dataKey="score" 
-              stroke="#ff5a4e" 
+              stroke="var(--accent)" 
               strokeWidth={2.5} 
               fillOpacity={1} 
               fill="url(#trendFill)" 
               animationDuration={1800}
               animationEasing="ease-out"
-              activeDot={{ r: 4, fill: "#0a0c10", stroke: "#ff5a4e", strokeWidth: 2.5 }}
+              activeDot={{ r: 4, fill: "#0a0c10", stroke: "var(--accent)", strokeWidth: 2.5 }}
             />
           </AreaChart>
         </ResponsiveContainer>

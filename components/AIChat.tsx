@@ -11,7 +11,7 @@ export default function AIChat() {
           <div className="bg-white/5 rounded-2xl rounded-tr-sm p-3 sm:p-4 text-[13px] text-white/90 border border-white/5">
             Hey Coach, my arrows have been grouping a bit to the left today, especially when the wind picks up. Any tips?
           </div>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff5a4e] to-[#8d2f28] flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-[#b71c1c] flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
             AM
           </div>
         </div>

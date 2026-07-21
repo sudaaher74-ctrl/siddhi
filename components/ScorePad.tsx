@@ -13,11 +13,11 @@ export default function ScorePad() {
             key={i}
             className={`
               flex items-center justify-center h-12 sm:h-14 rounded-xl text-[16px] sm:text-lg font-bold border border-white/5 transition-colors
-              ${score === 'X' || score === '10' ? 'bg-[#f2c53d]/20 text-[#f2c53d] hover:bg-[#f2c53d]/30' : ''}
-              ${score === '9' || score === '8' || score === '7' ? 'bg-[#ff8b82]/20 text-[#ff8b82] hover:bg-[#ff8b82]/30' : ''}
-              ${score === '6' || score === '5' || score === '4' ? 'bg-[#6fb4e8]/20 text-[#6fb4e8] hover:bg-[#6fb4e8]/30' : ''}
-              ${score === '3' || score === '2' || score === '1' ? 'bg-white/10 text-white hover:bg-white/20' : ''}
-              ${score === 'M' ? 'bg-black/40 text-text-dim hover:bg-black/60' : ''}
+              ${score === 'X' || score === '10' || score === '9' ? 'bg-[#FFD700]/20 text-[#FFD700] hover:bg-[#FFD700]/30' : ''}
+              ${score === '8' || score === '7' ? 'bg-[#E53935]/20 text-[#E53935] hover:bg-[#E53935]/30' : ''}
+              ${score === '6' || score === '5' ? 'bg-[#4FC3F7]/20 text-[#4FC3F7] hover:bg-[#4FC3F7]/30' : ''}
+              ${score === '4' || score === '3' ? 'bg-[#1C1C1C]/60 text-white hover:bg-[#1C1C1C]/80' : ''}
+              ${score === '2' || score === '1' || score === 'M' ? 'bg-white/10 text-white hover:bg-white/20' : ''}
             `}
           >
             {score}

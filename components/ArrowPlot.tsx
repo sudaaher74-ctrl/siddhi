@@ -9,11 +9,11 @@ export default function ArrowPlot() {
       </div>
       <svg viewBox="0 0 230 230" className="w-full max-w-[230px] mx-auto mt-[10px]">
         {/* Target face rings */}
-        <circle cx="115" cy="115" r="110" fill="#dfe1e4" />
-        <circle cx="115" cy="115" r="88" fill="#17181b" />
-        <circle cx="115" cy="115" r="66" fill="#3f9bd8" />
-        <circle cx="115" cy="115" r="44" fill="#e34e42" />
-        <circle cx="115" cy="115" r="22" fill="#f2c53d" />
+        <circle cx="115" cy="115" r="110" fill="var(--target-white)" />
+        <circle cx="115" cy="115" r="88" fill="var(--target-black)" />
+        <circle cx="115" cy="115" r="66" fill="var(--target-blue)" />
+        <circle cx="115" cy="115" r="44" fill="var(--target-red)" />
+        <circle cx="115" cy="115" r="22" fill="var(--target-gold)" />
         <circle cx="115" cy="115" r="11" fill="none" stroke="rgba(0,0,0,.35)" strokeWidth="1" />
         <circle cx="115" cy="115" r="99" fill="none" stroke="rgba(0,0,0,.15)" />
         <circle cx="115" cy="115" r="77" fill="none" stroke="rgba(255,255,255,.15)" />
@@ -26,7 +26,7 @@ export default function ArrowPlot() {
           ))}
         </g>
         {/* Group circle */}
-        <circle cx="112" cy="110" r="26" fill="none" stroke="#ff5a4e" strokeWidth="1.5" strokeDasharray="4 4" />
+        <circle cx="112" cy="110" r="26" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="4 4" />
       </svg>
       <div className="flex gap-[14px] justify-center mt-[10px] text-[10.5px] text-white/50">
         <span>

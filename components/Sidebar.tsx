@@ -22,7 +22,7 @@ export default function Sidebar() {
             key={item.label}
             href={item.href}
             className={`flex items-center gap-[10px] p-[8px_10px] rounded-lg border-0 bg-transparent text-[12.5px] font-medium text-left cursor-pointer hover:bg-white/5 transition-colors ${
-              isActive ? "bg-accent-hover text-[#ffb0aa]" : "text-white/60"
+              isActive ? "bg-accent-hover text-accent-soft" : "text-white/60"
             }`}
           >
             <span
@@ -41,7 +41,7 @@ export default function Sidebar() {
         );
       })}
       <div className="mt-auto flex items-center gap-[9px] p-[9px_8px] rounded-[10px] bg-white/5 border border-white/5 pt-4">
-        <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-[#ff5a4e] to-[#8d2f28] flex items-center justify-center text-white font-sans font-semibold text-[11px] flex-shrink-0">
+        <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] flex items-center justify-center text-white font-sans font-semibold text-[11px] flex-shrink-0">
           AM
         </div>
         <div>

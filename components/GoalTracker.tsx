@@ -65,7 +65,7 @@ export default function GoalTracker() {
             
             <div className="w-full h-1.5 bg-black/40 rounded-full mt-2 overflow-hidden">
               <div 
-                className={`h-full rounded-full transition-all duration-1000 ${goal.completed ? 'bg-accent' : 'bg-gradient-to-r from-[#ff5a4e] to-[#ffb0aa]'}`}
+                className={`h-full rounded-full transition-all duration-1000 ${goal.completed ? 'bg-accent' : 'bg-gradient-to-r from-accent to-accent-soft'}`}
                 style={{ width: `${goal.progress}%` }}
               />
             </div>
