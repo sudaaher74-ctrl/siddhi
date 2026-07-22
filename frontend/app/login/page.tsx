@@ -46,26 +46,32 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-dark">
-      <div className="w-full max-w-md p-8 bg-panel border border-border rounded-2xl shadow-2xl backdrop-blur-md">
+    <div 
+      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative"
+      style={{ backgroundImage: 'url("/img/photos/login.jpeg")' }}
+    >
+      {/* Dark overlay to ensure form readability against the image */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"></div>
+
+      <div className="w-full max-w-md p-8 bg-[#111111]/80 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-xl relative z-10 transform transition-all duration-500 hover:shadow-gold/10">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white tracking-widest">
+          <h1 className="text-3xl font-bold text-white tracking-widest drop-shadow-md">
             SIDDHI <span className="text-gold">JURNAL</span>
           </h1>
-          <p className="text-text-dim text-sm mt-2">
+          <p className="text-gray-400 text-sm mt-3 tracking-wide">
             {isLogin ? "Welcome back, Archer." : "Begin your journey."}
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+          <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center animate-pulse">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-text-dim text-xs uppercase tracking-wider mb-2">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="group">
+            <label className="block text-gray-400 text-xs uppercase tracking-wider mb-2 group-focus-within:text-gold transition-colors duration-300">
               Email Address
             </label>
             <input
@@ -73,13 +79,13 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black/20 border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
+              className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all duration-300 shadow-inner"
               placeholder="archer@example.com"
             />
           </div>
 
-          <div>
-            <label className="block text-text-dim text-xs uppercase tracking-wider mb-2">
+          <div className="group">
+            <label className="block text-gray-400 text-xs uppercase tracking-wider mb-2 group-focus-within:text-gold transition-colors duration-300">
               Password
             </label>
             <input
@@ -87,7 +93,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black/20 border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors"
+              className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all duration-300 shadow-inner"
               placeholder="••••••••"
             />
           </div>
@@ -95,16 +101,24 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gold hover:bg-yellow-500 text-black font-semibold rounded-lg px-4 py-3 transition-colors disabled:opacity-50"
+            className="w-full bg-gold hover:bg-yellow-400 text-black font-bold uppercase tracking-wider text-sm rounded-lg px-4 py-4 transition-all duration-300 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,215,0,0.4)] transform hover:-translate-y-0.5"
           >
-            {loading ? "Processing..." : isLogin ? "Sign In" : "Register"}
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </span>
+            ) : isLogin ? "Sign In" : "Register"}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-text-dim hover:text-white text-sm transition-colors"
+            className="text-gray-400 hover:text-white text-sm transition-colors duration-300 underline-offset-4 hover:underline"
           >
             {isLogin
               ? "Don't have an account? Register"
