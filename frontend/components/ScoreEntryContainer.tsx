@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import ScorePad from "./ScorePad";
 import ArrowPlot from "./ArrowPlot";
 import ArcheryTimer from "./ArcheryTimer";
@@ -14,9 +15,11 @@ export type ArrowShot = {
 };
 
 export default function ScoreEntryContainer() {
+  const router = useRouter();
   const [ends, setEnds] = useState<ArrowShot[][]>(Array(6).fill([]));
   const [currentEndIndex, setCurrentEndIndex] = useState(0);
   const [timerResetCount, setTimerResetCount] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
 
   const currentArrows = ends[currentEndIndex] || [];
   const isSessionComplete = currentEndIndex >= 6;
@@ -56,6 +59,41 @@ export default function ScoreEntryContainer() {
   const currentEndScore = currentArrows.reduce((sum, arrow) => sum + calculateValue(arrow.score), 0);
   const totalScore = ends.flat().reduce((sum, arrow) => sum + calculateValue(arrow.score), 0);
 
+  const handleSaveSession = async () => {
+    setIsSaving(true);
+    try {
+      const allArrows = ends.flat();
+      const tensCount = allArrows.filter(a => a.score === "10" || a.score === "X").length;
+      const average = allArrows.length > 0 ? (totalScore / allArrows.length).toFixed(2) : "0.00";
+      
+      const payload = {
+        name: `Practice Session - ${new Date().toLocaleDateString()}`,
+        type: "Practice",
+        arrows: allArrows.length.toString(),
+        score: totalScore.toString(),
+        avg: average,
+        tens: tensCount.toString(),
+        note: "Logged via Interactive Score Pad",
+      };
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const res = await fetch(`${apiUrl}/api/sessions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Failed to save session");
+      
+      router.push("/practice");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save session. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-[12px] mt-4">
       <div>
@@ -66,6 +104,8 @@ export default function ScoreEntryContainer() {
           handleScoreInput={handleScoreInput}
           handleUndo={handleUndo}
           handleSubmitEnd={handleSubmitEnd}
+          handleSaveSession={handleSaveSession}
+          isSaving={isSaving}
           currentEndScore={currentEndScore}
           totalScore={totalScore}
         />
