@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative"
+      className="min-h-screen flex items-center justify-end px-6 md:pr-24 lg:pr-40 bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: 'url("/img/photos/login.jpeg")' }}
     >
       {/* Very faint overlay so background is clearly visible */}
