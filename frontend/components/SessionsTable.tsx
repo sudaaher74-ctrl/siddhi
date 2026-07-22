@@ -1,6 +1,27 @@
-import { sessions } from "@/lib/data";
+import { sessions as mockSessions, Session } from "@/lib/data";
 
-export default function SessionsTable() {
+async function getSessions(): Promise<Session[]> {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const res = await fetch(`${apiUrl}/api/sessions`, {
+      // Revalidate every 5 seconds to show fresh data without full refresh
+      next: { revalidate: 5 }
+    });
+    
+    if (!res.ok) {
+      throw new Error(`Failed to fetch: ${res.status}`);
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error("Error fetching sessions, falling back to mock data:", error);
+    return mockSessions;
+  }
+}
+
+export default async function SessionsTable() {
+  const sessions = await getSessions();
+
   return (
     <div className="bg-panel border border-border rounded-[14px] p-[6px_16px_10px] overflow-x-auto">
       <table className="w-full text-left border-collapse min-w-[700px]">

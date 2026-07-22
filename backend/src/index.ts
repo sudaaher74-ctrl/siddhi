@@ -11,7 +11,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+import sessionRoutes from "./routes/sessionRoutes";
+
 // Routes
+app.use("/api/sessions", sessionRoutes);
+
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
