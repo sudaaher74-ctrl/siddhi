@@ -86,6 +86,7 @@ export default function ScoreEntryContainer() {
       if (!res.ok) throw new Error("Failed to save session");
       
       router.push("/practice");
+      router.refresh();
     } catch (err) {
       console.error(err);
       alert("Failed to save session. Please try again.");
