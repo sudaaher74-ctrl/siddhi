@@ -12,6 +12,7 @@ export type Session = {
   avg: string;
   tens: string;
   note: string;
+  createdAt?: string;
 };
 
 const navLinks = [
