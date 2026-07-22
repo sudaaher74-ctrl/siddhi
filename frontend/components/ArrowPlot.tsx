@@ -1,33 +1,58 @@
 "use client";
 
-import { useRef, MouseEvent, useEffect, useState } from "react";
+import { useRef, MouseEvent, useEffect, useState, useMemo } from "react";
 import Card from "@/components/ui/Card";
 import { ScoreValue, ArrowShot } from "./ScoreEntryContainer";
+import { Session } from "@/lib/data";
 
 interface ArrowPlotProps {
   currentArrows?: ArrowShot[];
   handleScoreInput?: (score: ScoreValue, cx?: number | null, cy?: number | null) => void;
   handleUndo?: () => void;
   isSessionComplete?: boolean;
+  heatmapMode?: boolean;
+  sessions?: Session[];
 }
 
 export default function ArrowPlot({
   currentArrows = [],
   handleScoreInput,
   handleUndo,
-  isSessionComplete = true
+  isSessionComplete = true,
+  heatmapMode = false,
+  sessions = []
 }: ArrowPlotProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
 
-  // When a new arrow is added, animate it
+  // Parse all arrows from sessions if in heatmap mode
+  const allHistoricalArrows = useMemo(() => {
+    if (!heatmapMode || sessions.length === 0) return [];
+    
+    let allArrows: ArrowShot[] = [];
+    sessions.forEach(session => {
+      if (session.arrowData) {
+        try {
+          const ends: ArrowShot[][] = JSON.parse(session.arrowData);
+          allArrows = allArrows.concat(ends.flat());
+        } catch (e) {
+          console.error("Failed to parse arrow data", e);
+        }
+      }
+    });
+    return allArrows;
+  }, [heatmapMode, sessions]);
+
+  const arrowsToRender = heatmapMode ? allHistoricalArrows : currentArrows;
+
+  // When a new arrow is added in interactive mode, animate it
   useEffect(() => {
-    if (currentArrows.length > 0) {
+    if (!heatmapMode && currentArrows.length > 0) {
       setAnimatingIndex(currentArrows.length - 1);
       const timer = setTimeout(() => setAnimatingIndex(null), 300);
       return () => clearTimeout(timer);
     }
-  }, [currentArrows.length]);
+  }, [currentArrows.length, heatmapMode]);
 
   const calculateScoreFromDistance = (d: number): ScoreValue => {
     if (d <= 5.5) return "X";
@@ -45,6 +70,7 @@ export default function ArrowPlot({
   };
 
   const handleSVGClick = (e: MouseEvent<SVGSVGElement>) => {
+    if (heatmapMode) return;
     if (isSessionComplete || currentArrows.length >= 6) return;
     if (!svgRef.current) return;
     const svg = svgRef.current;
@@ -70,9 +96,11 @@ export default function ArrowPlot({
   return (
     <Card>
       <div className="flex items-baseline gap-[10px]">
-        <h2 className="text-[13px] font-semibold text-text-mid">Arrow plot</h2>
+        <h2 className="text-[13px] font-semibold text-text-mid">
+          {heatmapMode ? "Grouping Heatmap" : "Arrow plot"}
+        </h2>
         <div className="ml-auto flex items-center gap-3">
-          {handleUndo && (
+          {handleUndo && !heatmapMode && (
             <button 
               onClick={handleUndo}
               disabled={currentArrows.length === 0 || isSessionComplete}
@@ -81,12 +109,15 @@ export default function ArrowPlot({
               UNDO
             </button>
           )}
+          {heatmapMode && (
+             <div className="font-mono font-medium text-[10px] text-black/40">ALL TIME</div>
+          )}
         </div>
       </div>
       <svg 
         ref={svgRef}
         viewBox="0 0 230 230" 
-        className="w-full max-w-[230px] mx-auto mt-[10px] cursor-crosshair touch-none"
+        className={`w-full max-w-[230px] mx-auto mt-[10px] touch-none ${heatmapMode ? '' : 'cursor-crosshair'}`}
         onClick={handleSVGClick}
       >
         {/* Target face rings */}
@@ -114,20 +145,17 @@ export default function ArrowPlot({
         <circle cx="115" cy="115" r="33" fill="none" stroke="rgba(0,0,0,.15)" />
         
         <g>
-          {currentArrows.map((arrow, i) => {
-            // If the arrow was entered via keypad, we might not have cx/cy. 
-            // In a real app, we might place it randomly or hide it.
-            // For now, if null, place it in the center or based on score.
+          {arrowsToRender.map((arrow, i) => {
             let cx = arrow.cx;
             let cy = arrow.cy;
             
             if (cx === null || cy === null) {
-              // Very rough approximation: place it near the center if missing
+              if (heatmapMode) return null; // Don't render missing coordinate arrows in heatmap
               cx = 115;
               cy = 115;
             }
 
-            const isNew = i === animatingIndex;
+            const isNew = i === animatingIndex && !heatmapMode;
 
             return (
               <g 
@@ -135,15 +163,24 @@ export default function ArrowPlot({
                 className={isNew ? "animate-shootArrow" : ""} 
                 style={{ transformOrigin: `${cx}px ${cy}px` }} 
               >
-                {/* Arrow Shaft (Angle pointing to bottom-right) */}
-                <line x1={cx} y1={cy} x2={cx + 18} y2={cy + 18} stroke="#1E293B" strokeWidth="1.5" strokeLinecap="round" />
+                {!heatmapMode && (
+                  <>
+                    <line x1={cx} y1={cy} x2={cx + 18} y2={cy + 18} stroke="#1E293B" strokeWidth="1.5" strokeLinecap="round" />
+                    <line x1={cx + 13} y1={cy + 13} x2={cx + 18} y2={cy + 9} stroke="#E53935" strokeWidth="1.5" strokeLinecap="round" />
+                    <line x1={cx + 13} y1={cy + 13} x2={cx + 9} y2={cy + 18} stroke="#4FC3F7" strokeWidth="1.5" strokeLinecap="round" />
+                  </>
+                )}
                 
-                {/* Fletchings (Vanes) */}
-                <line x1={cx + 13} y1={cy + 13} x2={cx + 18} y2={cy + 9} stroke="#E53935" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1={cx + 13} y1={cy + 13} x2={cx + 9} y2={cy + 18} stroke="#4FC3F7" strokeWidth="1.5" strokeLinecap="round" />
-                
-                {/* Impact Dot (Hole in target) */}
-                <circle cx={cx} cy={cy} r="2.5" fill="#FFFFFF" stroke="#000000" strokeWidth="1" />
+                {/* Impact Dot */}
+                <circle 
+                  cx={cx} 
+                  cy={cy} 
+                  r={heatmapMode ? "3.5" : "2.5"} 
+                  fill={heatmapMode ? "var(--accent)" : "#FFFFFF"} 
+                  fillOpacity={heatmapMode ? 0.6 : 1}
+                  stroke={heatmapMode ? "none" : "#000000"} 
+                  strokeWidth={heatmapMode ? "0" : "1"} 
+                />
               </g>
             );
           })}
@@ -151,7 +188,7 @@ export default function ArrowPlot({
       </svg>
       <div className="flex gap-[14px] justify-center mt-[10px] text-[10.5px] text-black/50">
         <span>
-          Arrows <span className="text-text-mid font-semibold">{currentArrows.length}/6</span>
+          {heatmapMode ? "Total Arrows Logged" : "Arrows"} <span className="text-text-mid font-semibold">{heatmapMode ? arrowsToRender.length : `${currentArrows.length}/6`}</span>
         </span>
       </div>
     </Card>

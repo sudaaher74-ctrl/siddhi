@@ -74,6 +74,7 @@ export default function ScoreEntryContainer() {
         avg: average,
         tens: tensCount.toString(),
         note: "Logged via Interactive Score Pad",
+        arrowData: JSON.stringify(ends)
       };
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";

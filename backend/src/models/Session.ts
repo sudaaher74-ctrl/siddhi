@@ -8,6 +8,7 @@ export interface ISession extends Document {
   avg: string;
   tens: string;
   note: string;
+  arrowData?: string;
 }
 
 const SessionSchema: Schema = new Schema({
@@ -17,7 +18,8 @@ const SessionSchema: Schema = new Schema({
   score: { type: String, required: true },
   avg: { type: String, required: true },
   tens: { type: String, required: true },
-  note: { type: String, required: true },
+  note: { type: String, required: false }, // Made note optional
+  arrowData: { type: String, required: false },
 }, {
   timestamps: true,
 });

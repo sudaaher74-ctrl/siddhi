@@ -13,6 +13,7 @@ export type Session = {
   tens: string;
   note: string;
   createdAt?: string;
+  arrowData?: string;
 };
 
 const navLinks = [
