@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
 
   if (!token && !isLoginPage) {
     // Redirect unauthenticated users to login page
-    return NextResponse.redirect(new URL('/login', request.url));
+    // TEMPORARILY DISABLED: return NextResponse.redirect(new URL('/login', request.url));
   }
 
   if (token && isLoginPage) {
