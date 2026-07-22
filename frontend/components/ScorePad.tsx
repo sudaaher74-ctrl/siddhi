@@ -1,56 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Undo2 } from "lucide-react";
+import { ScoreValue, ArrowShot } from "./ScoreEntryContainer";
 
-type ScoreValue = "X" | "10" | "9" | "8" | "7" | "6" | "5" | "4" | "3" | "2" | "1" | "M";
+interface ScorePadProps {
+  currentArrows: ArrowShot[];
+  currentEndIndex: number;
+  isSessionComplete: boolean;
+  handleScoreInput: (score: ScoreValue, cx?: number | null, cy?: number | null) => void;
+  handleUndo: () => void;
+  handleSubmitEnd: () => void;
+  currentEndScore: number;
+  totalScore: number;
+}
 
-export default function ScorePad() {
+export default function ScorePad({
+  currentArrows,
+  currentEndIndex,
+  isSessionComplete,
+  handleScoreInput,
+  handleUndo,
+  handleSubmitEnd,
+  currentEndScore,
+  totalScore,
+}: ScorePadProps) {
   const scores: ScoreValue[] = ["X", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "M"];
   
-  // State for 6 ends (rounds), each can hold up to 6 arrows
-  const [ends, setEnds] = useState<ScoreValue[][]>(Array(6).fill([]));
-  const [currentEndIndex, setCurrentEndIndex] = useState(0);
-
-  const currentArrows = ends[currentEndIndex] || [];
-  const isSessionComplete = currentEndIndex >= 6;
-
-  const handleScoreInput = (score: ScoreValue) => {
-    if (isSessionComplete) return;
-    if (currentArrows.length < 6) {
-      const newEnds = [...ends];
-      newEnds[currentEndIndex] = [...currentArrows, score];
-      setEnds(newEnds);
-    }
-  };
-
-  const handleUndo = () => {
-    if (isSessionComplete) return;
-    if (currentArrows.length > 0) {
-      const newEnds = [...ends];
-      newEnds[currentEndIndex] = currentArrows.slice(0, -1);
-      setEnds(newEnds);
-    }
-  };
-
-  const handleSubmitEnd = () => {
-    if (isSessionComplete) return;
-    if (currentArrows.length === 6) {
-      setCurrentEndIndex((prev) => prev + 1);
-    }
-  };
-
-  const calculateValue = (s: ScoreValue): number => {
-    if (s === "X") return 10;
-    if (s === "M") return 0;
-    return parseInt(s, 10);
-  };
-
-  const currentEndScore = currentArrows.reduce((sum, s) => sum + calculateValue(s), 0);
-  const totalScore = ends.flat().reduce((sum, s) => sum + calculateValue(s), 0);
-
   // Display arrows (pad with dashes)
-  const displayArrows: Array<ScoreValue | "-"> = [...currentArrows];
+  const displayArrows: Array<ScoreValue | "-"> = currentArrows.map(a => a.score);
   while (displayArrows.length < 6) {
     displayArrows.push("-");
   }
@@ -68,7 +46,7 @@ export default function ScorePad() {
         {scores.map((score, i) => (
           <button
             key={i}
-            onClick={() => handleScoreInput(score)}
+            onClick={() => handleScoreInput(score, null, null)}
             disabled={isSessionComplete || currentArrows.length >= 6}
             className={`
               flex items-center justify-center h-12 sm:h-14 rounded-xl text-[16px] sm:text-lg font-bold border border-black/5 transition-colors
