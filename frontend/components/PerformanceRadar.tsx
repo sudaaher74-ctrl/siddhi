@@ -19,20 +19,7 @@ export default function PerformanceRadar() {
           <line x1="110" y1="103" x2="42" y2="142" />
           <line x1="110" y1="103" x2="42" y2="64" />
         </g>
-        <polygon
-          points="110,32 168,70 158,134 110,168 55,131 52,68"
-          fill="rgba(255,90,78,.18)"
-          stroke="var(--accent)"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-        <polygon
-          points="110,48 152,76 148,126 110,150 68,124 62,74"
-          fill="none"
-          stroke="rgba(0,0,0,.3)"
-          strokeWidth="1.2"
-          strokeDasharray="3 3"
-        />
+        {/* Empty state: No data polygons rendered */}
         <g fontFamily="var(--font-sans), sans-serif" fontSize="10" fill="rgba(0,0,0,.6)" textAnchor="middle">
           <text x="110" y="16">Focus</text>
           <text x="192" y="60">Accuracy</text>
