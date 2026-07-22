@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import ScorePad from "./ScorePad";
 import ArrowPlot from "./ArrowPlot";
+import ArcheryTimer from "./ArcheryTimer";
 
 export type ScoreValue = "X" | "10" | "9" | "8" | "7" | "6" | "5" | "4" | "3" | "2" | "1" | "M";
 
@@ -15,6 +16,7 @@ export type ArrowShot = {
 export default function ScoreEntryContainer() {
   const [ends, setEnds] = useState<ArrowShot[][]>(Array(6).fill([]));
   const [currentEndIndex, setCurrentEndIndex] = useState(0);
+  const [timerResetCount, setTimerResetCount] = useState(0);
 
   const currentArrows = ends[currentEndIndex] || [];
   const isSessionComplete = currentEndIndex >= 6;
@@ -41,6 +43,7 @@ export default function ScoreEntryContainer() {
     if (isSessionComplete) return;
     if (currentArrows.length === 6) {
       setCurrentEndIndex((prev) => prev + 1);
+      setTimerResetCount((prev) => prev + 1);
     }
   };
 
@@ -74,6 +77,9 @@ export default function ScoreEntryContainer() {
           handleUndo={handleUndo}
           isSessionComplete={isSessionComplete}
         />
+        <div className="mt-4">
+          <ArcheryTimer resetCount={timerResetCount} />
+        </div>
       </div>
     </div>
   );
