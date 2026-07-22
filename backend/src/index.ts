@@ -12,9 +12,11 @@ app.use(cors());
 app.use(express.json());
 
 import sessionRoutes from "./routes/sessionRoutes";
+import authRoutes from "./routes/authRoutes";
 
 // Routes
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
