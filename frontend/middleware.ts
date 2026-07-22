@@ -8,13 +8,8 @@ export function middleware(request: NextRequest) {
   // Check if the user is on the login page
   const isLoginPage = request.nextUrl.pathname.startsWith('/login');
 
-  if (!token && !isLoginPage) {
-    // Redirect unauthenticated users to login page
-    // TEMPORARILY DISABLED: return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  if (token && isLoginPage) {
-    // Redirect authenticated users away from login page to dashboard
+  if (isLoginPage) {
+    // Redirect EVERYONE away from login page to dashboard since login is disabled
     return NextResponse.redirect(new URL('/', request.url));
   }
 
