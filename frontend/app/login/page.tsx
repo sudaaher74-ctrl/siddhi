@@ -50,15 +50,12 @@ export default function LoginPage() {
       className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: 'url("/img/photos/login.jpeg")' }}
     >
-      {/* Dark overlay to ensure form readability against the image */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"></div>
+      {/* Very faint overlay so background is clearly visible */}
+      <div className="absolute inset-0 bg-black/10"></div>
 
-      <div className="w-full max-w-md p-8 bg-[#111111]/80 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-xl relative z-10 transform transition-all duration-500 hover:shadow-gold/10">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white tracking-widest drop-shadow-md">
-            SIDDHI <span className="text-gold">JURNAL</span>
-          </h1>
-          <p className="text-gray-400 text-sm mt-3 tracking-wide">
+      <div className="w-full max-w-sm p-6 bg-black/20 border border-white/20 rounded-2xl shadow-2xl backdrop-blur-md relative z-10 transform transition-all duration-500 hover:border-white/30">
+        <div className="text-center mb-6">
+          <p className="text-white text-lg font-medium tracking-wide drop-shadow-md">
             {isLogin ? "Welcome back, Archer." : "Begin your journey."}
           </p>
         </div>
