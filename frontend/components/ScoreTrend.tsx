@@ -72,9 +72,9 @@ export default function ScoreTrend({ sessions = [] }: { sessions?: Session[] }) 
               tick={{ fill: "rgba(0,0,0,0.35)", fontSize: 9, fontFamily: "var(--font-mono), monospace" }}
             />
             <Tooltip 
-              labelFormatter={(val, name, props) => {
-                const item = props[0]?.payload;
-                return item ? item.date : `Session ${val}`;
+              labelFormatter={(label, payload) => {
+                const item = payload?.[0]?.payload;
+                return item ? item.date : `Session ${label}`;
               }}
               contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '11px', boxShadow: 'var(--tw-shadow-card)' }}
               itemStyle={{ color: 'var(--text)' }}

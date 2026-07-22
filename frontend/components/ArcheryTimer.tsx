@@ -43,8 +43,8 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
 
   const playBuzzer = () => {
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const audioCtx = new AudioContextClass();
       // Create oscillator for beep
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();

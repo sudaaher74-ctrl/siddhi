@@ -1,5 +1,5 @@
 import React from "react";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot } from "lucide-react";
 
 export default function AIChat() {
   return (
@@ -22,8 +22,8 @@ export default function AIChat() {
             <Bot className="w-4 h-4" />
           </div>
           <div className="bg-accent/5 rounded-2xl rounded-tl-sm p-3 sm:p-4 text-[13px] text-black/90 border border-accent/10">
-            <p className="mb-2">I noticed that in your last end, your release timing was about 40ms slower than your average. When shooting in the wind, it's common to hesitate or "over-aim", which can cause left drift for right-handed archers due to tension building up in the bow arm.</p>
-            <p className="mb-2"><strong>Tip:</strong> Try to keep your expansion continuous. Don't stop pulling to aim. Trust your float.</p>
+            <p className="mb-2">I noticed that in your last end, your release timing was about 40ms slower than your average. When shooting in the wind, it&apos;s common to hesitate or &quot;over-aim&quot;, which can cause left drift for right-handed archers due to tension building up in the bow arm.</p>
+            <p className="mb-2"><strong>Tip:</strong> Try to keep your expansion continuous. Don&apos;t stop pulling to aim. Trust your float.</p>
             <div className="mt-3 p-3 bg-white/20 rounded-lg border border-black/5">
               <div className="text-[11px] text-text-dim mb-1">Recommended Drill</div>
               <div className="text-[13px] font-medium text-accent-soft">Blank Bale Timing (30 arrows)</div>
