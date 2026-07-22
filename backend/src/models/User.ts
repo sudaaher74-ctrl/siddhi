@@ -31,12 +31,14 @@ UserSchema.methods.matchPassword = async function (enteredPassword: string) {
 };
 
 // Pre-save middleware to hash password
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function (this: IUser) {
   if (!this.isModified('password')) {
-    next();
+    return;
   }
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  if (this.password) {
+    this.password = await bcrypt.hash(this.password, salt);
+  }
 });
 
 export default mongoose.model<IUser>('User', UserSchema);
