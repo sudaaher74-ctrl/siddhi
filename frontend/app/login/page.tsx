@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -41,6 +42,36 @@ export default function LoginPage() {
     } catch (err: any) {
       setError(err.message);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError("");
+    setLoading(true);
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: credentialResponse.credential }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Google authentication failed");
+      }
+
+      // Save token to cookie
+      Cookies.set("token", data.token, { expires: 30 });
+      
+      // Redirect to dashboard
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message);
       setLoading(false);
     }
   };
@@ -110,6 +141,23 @@ export default function LoginPage() {
               </span>
             ) : isLogin ? "Sign In" : "Register"}
           </button>
+          
+          <div className="relative flex items-center py-2">
+            <div className="flex-grow border-t border-gray-600"></div>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase tracking-wider">Or</span>
+            <div className="flex-grow border-t border-gray-600"></div>
+          </div>
+          
+          <div className="flex justify-center mt-2">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError("Google Login was unsuccessful")}
+              theme="filled_black"
+              shape="pill"
+              text="continue_with"
+              width="300"
+            />
+          </div>
         </form>
 
         <div className="mt-8 text-center">
