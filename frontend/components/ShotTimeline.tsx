@@ -8,7 +8,7 @@ interface ShotTimelineProps {
 export default function ShotTimeline({ sessions }: ShotTimelineProps) {
   // Find the most recent session with arrowData
   const sessionWithArrows = sessions.find(s => s.arrowData);
-  let arrows: Array<{ v: string; c: string }> = [];
+  const arrows: Array<{ v: string; c: string }> = [];
   let bestEndScore = 0;
   let totalEnds = 0;
   
@@ -16,11 +16,11 @@ export default function ShotTimeline({ sessions }: ShotTimelineProps) {
     try {
       const endsData = JSON.parse(sessionWithArrows.arrowData);
       totalEnds = endsData.length;
-      endsData.forEach((end: any[]) => {
+      endsData.forEach((end: Array<{ score: string }>) => {
         let endScore = 0;
         end.forEach(a => {
-          let val = a.score;
-          let numVal = val === 'X' ? 10 : val === 'M' ? 0 : parseInt(val, 10);
+          const val = a.score;
+          const numVal = val === 'X' ? 10 : val === 'M' ? 0 : parseInt(val, 10);
           endScore += numVal;
           
           let color = "#ef4444"; // red for <= 7

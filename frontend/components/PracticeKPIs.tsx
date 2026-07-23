@@ -21,7 +21,6 @@ export default function PracticeKPIs({ sessions }: PracticeKPIsProps) {
   };
 
   // Calculate metrics
-  const totalArrows = sessions.reduce((acc, s) => acc + safeParseInt(s.arrows), 0);
   const latestSession = sessions[0];
   const latestScore = latestSession ? safeParseInt(latestSession.score) : 0;
   const totalTens = sessions.reduce((acc, s) => acc + safeParseInt(s.tens), 0);
@@ -36,8 +35,8 @@ export default function PracticeKPIs({ sessions }: PracticeKPIsProps) {
   sessions.forEach(s => {
     if (s.arrowData) {
       try {
-        const ends = JSON.parse(s.arrowData);
-        ends.forEach((end: any[]) => {
+        const ends: Array<Array<{ score: string }>> = JSON.parse(s.arrowData);
+        ends.forEach(end => {
           const endScore = end.reduce((sum, a) => {
             if (a.score === 'X') return sum + 10;
             if (a.score === 'M') return sum + 0;
@@ -45,7 +44,9 @@ export default function PracticeKPIs({ sessions }: PracticeKPIsProps) {
           }, 0);
           if (endScore > bestEnd) bestEnd = endScore;
         });
-      } catch (e) {}
+      } catch (e) {
+        console.error("Failed to parse arrow data", e);
+      }
     }
   });
   

@@ -6,7 +6,7 @@ interface PracticeHeatmapProps {
 
 export default function PracticeHeatmap({ sessions }: PracticeHeatmapProps) {
   // Generate last 14 days
-  const days = [];
+  const days: Array<{ date: Date; label: string; arrows: number }> = [];
   const today = new Date();
   today.setHours(0,0,0,0);
   
