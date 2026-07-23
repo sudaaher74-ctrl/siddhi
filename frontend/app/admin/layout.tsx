@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, notFound } from "next/navigation";
 import { LayoutDashboard, Users, ArrowLeft, ShieldCheck, Inbox } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 
@@ -13,21 +13,10 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const { loading } = useUser();
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    if (!loading) {
-      setIsAdmin(true);
-    }
-  }, [loading]);
+  // The admin dashboard should not be visible to anyone
+  notFound();
 
-  if (loading || !isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
 
   const navItems = [
     { label: "Overview", href: "/admin", icon: LayoutDashboard },
