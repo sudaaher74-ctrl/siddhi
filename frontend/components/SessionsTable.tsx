@@ -2,7 +2,7 @@ import { sessions as mockSessions, Session } from "@/lib/data";
 
 async function getSessions(): Promise<Session[]> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
     const res = await fetch(`${apiUrl}/api/sessions`, {
       // Revalidate every 5 seconds to show fresh data without full refresh
       next: { revalidate: 5 }

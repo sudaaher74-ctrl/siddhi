@@ -19,7 +19,7 @@ export default function LoginPage() {
     setLoading(true);
 
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
     try {
       const res = await fetch(`${apiUrl}${endpoint}`, {
@@ -54,7 +54,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
     try {
       const res = await fetch(`${apiUrl}/api/auth/google`, {
