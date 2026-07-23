@@ -32,51 +32,35 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const UserSchema = new mongoose_1.Schema({
-    name: {
+const feedbackSchema = new mongoose_1.Schema({
+    user: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+    },
+    type: {
+        type: String,
+        enum: ['Bug Report', 'Feature Request', 'General Support'],
+        required: true,
+    },
+    subject: {
+        type: String,
+        required: true,
+        trim: true,
+    },
+    message: {
         type: String,
         required: true,
     },
-    phone: {
+    status: {
         type: String,
-        required: true,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-    },
-    password: {
-        type: String,
-        required: true,
-    },
-    role: {
-        type: String,
-        enum: ['user', 'admin'],
-        default: 'user',
+        enum: ['New', 'In Progress', 'Resolved'],
+        default: 'New',
     },
 }, {
     timestamps: true,
 });
-// Method to compare entered password with hashed password
-UserSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcryptjs_1.default.compare(enteredPassword, this.password);
-};
-// Pre-save middleware to hash password
-UserSchema.pre('save', async function () {
-    if (!this.isModified('password')) {
-        return;
-    }
-    const salt = await bcryptjs_1.default.genSalt(10);
-    if (this.password) {
-        this.password = await bcryptjs_1.default.hash(this.password, salt);
-    }
-});
-exports.default = mongoose_1.default.model('User', UserSchema);
+const Feedback = mongoose_1.default.models.Feedback || mongoose_1.default.model('Feedback', feedbackSchema);
+exports.default = Feedback;

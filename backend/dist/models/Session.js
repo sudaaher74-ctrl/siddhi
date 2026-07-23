@@ -35,13 +35,15 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const SessionSchema = new mongoose_1.Schema({
+    user: { type: mongoose_1.default.Schema.Types.ObjectId, required: true, ref: 'User' },
     name: { type: String, required: true },
     type: { type: String, required: true },
     arrows: { type: String, required: true },
     score: { type: String, required: true },
     avg: { type: String, required: true },
     tens: { type: String, required: true },
-    note: { type: String, required: true },
+    note: { type: String, required: false }, // Made note optional
+    arrowData: { type: String, required: false },
 }, {
     timestamps: true,
 });

@@ -32,51 +32,36 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const UserSchema = new mongoose_1.Schema({
+const EquipmentSchema = new mongoose_1.Schema({
+    user: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        required: true,
+        ref: 'User'
+    },
     name: {
         type: String,
         required: true,
+        trim: true
     },
-    phone: {
+    type: {
         type: String,
         required: true,
+        trim: true
     },
-    email: {
+    status: {
         type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
+        enum: ['active', 'backup', 'retired'],
+        default: 'active'
     },
-    password: {
-        type: String,
-        required: true,
-    },
-    role: {
-        type: String,
-        enum: ['user', 'admin'],
-        default: 'user',
-    },
+    stats: [
+        {
+            label: { type: String, required: true },
+            value: { type: String, required: true }
+        }
+    ]
 }, {
-    timestamps: true,
+    timestamps: true
 });
-// Method to compare entered password with hashed password
-UserSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcryptjs_1.default.compare(enteredPassword, this.password);
-};
-// Pre-save middleware to hash password
-UserSchema.pre('save', async function () {
-    if (!this.isModified('password')) {
-        return;
-    }
-    const salt = await bcryptjs_1.default.genSalt(10);
-    if (this.password) {
-        this.password = await bcryptjs_1.default.hash(this.password, salt);
-    }
-});
-exports.default = mongoose_1.default.model('User', UserSchema);
+exports.default = mongoose_1.default.models.Equipment || mongoose_1.default.model('Equipment', EquipmentSchema);

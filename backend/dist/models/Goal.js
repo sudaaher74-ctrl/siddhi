@@ -32,51 +32,17 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const UserSchema = new mongoose_1.Schema({
-    name: {
-        type: String,
-        required: true,
-    },
-    phone: {
-        type: String,
-        required: true,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-    },
-    password: {
-        type: String,
-        required: true,
-    },
-    role: {
-        type: String,
-        enum: ['user', 'admin'],
-        default: 'user',
-    },
+const GoalSchema = new mongoose_1.Schema({
+    user: { type: mongoose_1.default.Schema.Types.ObjectId, required: true, ref: 'User' },
+    title: { type: String, required: true },
+    target: { type: String, required: true },
+    current: { type: String, required: true },
+    deadline: { type: String, required: true },
+    progress: { type: Number, required: true, default: 0 },
+    completed: { type: Boolean, required: true, default: false }
 }, {
     timestamps: true,
 });
-// Method to compare entered password with hashed password
-UserSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcryptjs_1.default.compare(enteredPassword, this.password);
-};
-// Pre-save middleware to hash password
-UserSchema.pre('save', async function () {
-    if (!this.isModified('password')) {
-        return;
-    }
-    const salt = await bcryptjs_1.default.genSalt(10);
-    if (this.password) {
-        this.password = await bcryptjs_1.default.hash(this.password, salt);
-    }
-});
-exports.default = mongoose_1.default.model('User', UserSchema);
+exports.default = mongoose_1.default.model('Goal', GoalSchema);

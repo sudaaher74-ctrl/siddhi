@@ -14,13 +14,21 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 const sessionRoutes_1 = __importDefault(require("./routes/sessionRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const equipmentRoutes_1 = __importDefault(require("./routes/equipmentRoutes"));
+const adminRoutes_1 = __importDefault(require("./routes/adminRoutes"));
+const feedbackRoutes_1 = __importDefault(require("./routes/feedbackRoutes"));
+const goalRoutes_1 = __importDefault(require("./routes/goalRoutes"));
 // Routes
 app.use("/api/sessions", sessionRoutes_1.default);
 app.use("/api/auth", authRoutes_1.default);
+app.use("/api/equipment", equipmentRoutes_1.default);
+app.use("/api/admin", adminRoutes_1.default);
+app.use("/api/feedback", feedbackRoutes_1.default);
+app.use("/api/goals", goalRoutes_1.default);
 app.get("/", (req, res) => {
     res.send("API is running...");
 });
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 // Connect to MongoDB, then start server
 (0, db_1.default)().then(() => {
     app.listen(PORT, () => {

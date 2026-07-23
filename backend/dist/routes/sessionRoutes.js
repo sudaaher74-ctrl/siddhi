@@ -5,56 +5,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const Session_1 = __importDefault(require("../models/Session"));
+const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = express_1.default.Router();
-// Seed data based on frontend/lib/data.ts
-const seedSessions = [
-    {
-        name: "70m ranking round",
-        type: "Outdoor",
-        arrows: "84/108",
-        score: "661",
-        avg: "9.18",
-        tens: "43",
-        note: "Grouping tightened after end 8",
-    },
-    {
-        name: "Morning volume block",
-        type: "Blank bale",
-        arrows: "120",
-        score: "—",
-        avg: "—",
-        tens: "—",
-        note: "Release timing +40ms consistent",
-    },
-    {
-        name: "70m ranking round",
-        type: "Outdoor",
-        arrows: "72",
-        score: "648",
-        avg: "9.00",
-        tens: "36",
-        note: "Left drift in gusts > 4 m/s",
-    },
-    {
-        name: "State trials — Q2",
-        type: "Tournament",
-        arrows: "72",
-        score: "672",
-        avg: "9.33",
-        tens: "48",
-        note: "Season best · qualified 3rd",
-    },
-];
 // GET /api/sessions - Fetch all sessions
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware_1.protect, async (req, res) => {
     try {
-        const count = await Session_1.default.countDocuments();
-        // Seed data if database is empty
-        if (count === 0) {
-            await Session_1.default.insertMany(seedSessions);
-            console.log('Database seeded with initial sessions');
-        }
-        const sessions = await Session_1.default.find().sort({ createdAt: -1 });
+        const userId = req.user._id;
+        const sessions = await Session_1.default.find({ user: userId }).sort({ createdAt: -1 });
         res.json(sessions);
     }
     catch (error) {
@@ -62,9 +19,12 @@ router.get('/', async (req, res) => {
     }
 });
 // POST /api/sessions - Create a new session
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware_1.protect, async (req, res) => {
     try {
-        const session = new Session_1.default(req.body);
+        const session = new Session_1.default({
+            ...req.body,
+            user: req.user._id,
+        });
         const savedSession = await session.save();
         res.status(201).json(savedSession);
     }

@@ -16,7 +16,7 @@ import authRoutes from "./routes/authRoutes";
 import equipmentRoutes from "./routes/equipmentRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import feedbackRoutes from "./routes/feedbackRoutes";
-import { notFound, errorHandler } from "./middleware/errorMiddleware";
+import goalRoutes from "./routes/goalRoutes";
 
 // Routes
 app.use("/api/sessions", sessionRoutes);
@@ -24,6 +24,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/equipment", equipmentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/goals", goalRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
