@@ -7,12 +7,44 @@ import Card from "@/components/ui/Card";
 
 const PERIODS = ["D", "W", "M", "Y"] as const;
 
-export default function ScoreTrend({ sessions = [] }: { sessions?: Session[] }) {
+export default function ScoreTrend({ 
+  sessions = [],
+  mode = "overall"
+}: { 
+  sessions?: Session[],
+  mode?: "overall" | "daily"
+}) {
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("W");
 
   // Transform sessions into chart data
   const chartData = useMemo(() => {
-    // Sort sessions chronologically for the chart (oldest first)
+    if (mode === "daily") {
+      const dailyMap = new Map<string, { totalScore: number; count: number; dateStr: string; timestamp: number }>();
+      
+      sessions.forEach(s => {
+        if (!s.createdAt) return;
+        const dateObj = new Date(s.createdAt);
+        const dateStr = dateObj.toLocaleDateString();
+        const score = parseFloat(s.avg) || 0;
+        
+        if (!dailyMap.has(dateStr)) {
+          dailyMap.set(dateStr, { totalScore: 0, count: 0, dateStr, timestamp: dateObj.getTime() });
+        }
+        const entry = dailyMap.get(dateStr)!;
+        entry.totalScore += score;
+        entry.count += 1;
+      });
+      
+      const sortedDaily = Array.from(dailyMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+      
+      return sortedDaily.map((d, i) => ({
+        session: i + 1,
+        score: d.totalScore / d.count,
+        date: d.dateStr
+      }));
+    }
+
+    // Overall mode: Sort sessions chronologically for the chart (oldest first)
     const sorted = [...sessions].sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -24,7 +56,7 @@ export default function ScoreTrend({ sessions = [] }: { sessions?: Session[] }) 
       score: parseFloat(s.avg) || 0,
       date: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'Unknown'
     }));
-  }, [sessions]);
+  }, [sessions, mode]);
 
   // Calculate averages
   const overallAvg = chartData.length > 0 

@@ -5,7 +5,13 @@ import { Session } from "@/lib/data";
 import Card from "@/components/ui/Card";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from "recharts";
 
-export default function PerformanceRadar({ sessions = [] }: { sessions?: Session[] }) {
+export default function PerformanceRadar({ 
+  sessions = [],
+  mode = "overall"
+}: { 
+  sessions?: Session[],
+  mode?: "overall" | "daily"
+}) {
   
   const radarData = useMemo(() => {
     // We will calculate mock stats based on the user's average score since we don't have
@@ -21,25 +27,37 @@ export default function PerformanceRadar({ sessions = [] }: { sessions?: Session
     let endurance = 60;
 
     if (sessions.length > 0) {
-      // Use the latest session's score to roughly determine "Accuracy"
-      const lastSession = sessions[0];
-      const avg = parseFloat(lastSession.avg) || 0;
-      
-      // Score of 10 -> 100%, Score of 8 -> 50%, etc. (Rough formula)
-      accuracy = Math.min(100, Math.max(30, (avg - 7) * (100 / 3)));
-      
-      // Calculate variance between ends if we had arrow data, but for now we simulate consistency 
-      // based on how many 10s they shot vs the average.
-      const tens = parseInt(lastSession.tens) || 0;
-      const arrows = parseInt(lastSession.arrows) || 1;
-      const tenRate = tens / arrows;
-      consistency = Math.min(100, Math.max(40, tenRate * 200));
+      let relevantSessions = sessions;
+      if (mode === "daily") {
+        const today = new Date().toLocaleDateString();
+        relevantSessions = sessions.filter(s => s.createdAt && new Date(s.createdAt).toLocaleDateString() === today);
+      }
 
-      // Other metrics are randomly varied slightly from accuracy for visual interest
-      focus = Math.min(100, accuracy + (Math.random() * 20 - 10));
-      release = Math.min(100, accuracy + (Math.random() * 10 - 5));
-      timing = 75; // Hardcoded simulation
-      endurance = Math.max(30, 100 - (arrows / 1.5)); // More arrows = less endurance simulation
+      if (relevantSessions.length > 0) {
+        let totalAvg = 0;
+        let totalTens = 0;
+        let totalArrows = 0;
+        
+        relevantSessions.forEach(s => {
+          totalAvg += parseFloat(s.avg) || 0;
+          totalTens += parseInt(s.tens) || 0;
+          totalArrows += parseInt(s.arrows) || 1;
+        });
+        
+        const avg = totalAvg / relevantSessions.length;
+        
+        // Score of 10 -> 100%, Score of 8 -> 50%, etc. (Rough formula)
+        accuracy = Math.min(100, Math.max(30, (avg - 7) * (100 / 3)));
+        
+        const tenRate = totalTens / totalArrows;
+        consistency = Math.min(100, Math.max(40, tenRate * 200));
+
+        // Other metrics are randomly varied slightly from accuracy for visual interest
+        focus = Math.min(100, accuracy + (Math.random() * 20 - 10));
+        release = Math.min(100, accuracy + (Math.random() * 10 - 5));
+        timing = 75; // Hardcoded simulation
+        endurance = Math.max(30, 100 - (totalArrows / 1.5)); // More arrows = less endurance simulation
+      }
     }
 
     return [
@@ -50,13 +68,15 @@ export default function PerformanceRadar({ sessions = [] }: { sessions?: Session
       { subject: 'Timing', value: Math.round(timing), fullMark: 100 },
       { subject: 'Endurance', value: Math.round(endurance), fullMark: 100 },
     ];
-  }, [sessions]);
+  }, [sessions, mode]);
 
   return (
     <Card>
       <div className="flex items-baseline gap-[10px]">
         <h2 className="text-[13px] font-semibold text-text-mid">Performance radar</h2>
-        <div className="ml-auto font-mono font-medium text-[10px] text-black/40">LATEST SESSION</div>
+        <div className="ml-auto font-mono font-medium text-[10px] text-black/40">
+          {mode === "daily" ? "TODAY" : "OVERALL"}
+        </div>
       </div>
       
       <div className="w-full h-[210px] mt-2">
@@ -88,7 +108,7 @@ export default function PerformanceRadar({ sessions = [] }: { sessions?: Session
       <div className="mt-auto flex gap-3 justify-center text-[10.5px] text-black/50 pt-4">
         <span className="flex items-center gap-[5px]">
           <span className="w-[8px] h-[2px] bg-accent" />
-          Latest Session
+          {mode === "daily" ? "Today's Average" : "Overall Average"}
         </span>
       </div>
     </Card>

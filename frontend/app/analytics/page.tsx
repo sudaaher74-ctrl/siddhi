@@ -31,16 +31,16 @@ export default async function AnalyticsPage() {
       <TopBar title="Analytics" />
       
       <div className="mt-4">
-        <KpiGrid sessions={sessions} />
+        <KpiGrid sessions={sessions} mode="daily" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[12px] mt-4">
-        <ScoreTrend sessions={sessions} />
-        <PerformanceRadar sessions={sessions} />
+        <ScoreTrend sessions={sessions} mode="daily" />
+        <PerformanceRadar sessions={sessions} mode="daily" />
       </div>
 
       <div className="mt-4">
-        <ArrowPlot heatmapMode={true} sessions={sessions} />
+        <ArrowPlot heatmapMode={true} sessions={sessions} mode="daily" />
       </div>
     </>
   );

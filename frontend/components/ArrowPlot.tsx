@@ -12,6 +12,7 @@ interface ArrowPlotProps {
   isSessionComplete?: boolean;
   heatmapMode?: boolean;
   sessions?: Session[];
+  mode?: "overall" | "daily";
 }
 
 export default function ArrowPlot({
@@ -20,7 +21,8 @@ export default function ArrowPlot({
   handleUndo,
   isSessionComplete = true,
   heatmapMode = false,
-  sessions = []
+  sessions = [],
+  mode = "overall"
 }: ArrowPlotProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
@@ -30,7 +32,12 @@ export default function ArrowPlot({
     if (!heatmapMode || sessions.length === 0) return [];
     
     let allArrows: ArrowShot[] = [];
+    const today = new Date().toLocaleDateString();
+    
     sessions.forEach(session => {
+      if (mode === "daily" && session.createdAt && new Date(session.createdAt).toLocaleDateString() !== today) {
+        return;
+      }
       if (session.arrowData) {
         try {
           const ends: ArrowShot[][] = JSON.parse(session.arrowData);
@@ -41,7 +48,7 @@ export default function ArrowPlot({
       }
     });
     return allArrows;
-  }, [heatmapMode, sessions]);
+  }, [heatmapMode, sessions, mode]);
 
   const arrowsToRender = heatmapMode ? allHistoricalArrows : currentArrows;
 
@@ -110,7 +117,9 @@ export default function ArrowPlot({
             </button>
           )}
           {heatmapMode && (
-             <div className="font-mono font-medium text-[10px] text-black/40">ALL TIME</div>
+             <div className="font-mono font-medium text-[10px] text-black/40">
+               {mode === "daily" ? "TODAY" : "ALL TIME"}
+             </div>
           )}
         </div>
       </div>

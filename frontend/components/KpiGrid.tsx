@@ -1,34 +1,50 @@
 import { Kpi, Session } from "@/lib/data";
 import Card from "@/components/ui/Card";
 
-export default function KpiGrid({ sessions = [] }: { sessions?: Session[] }) {
-  // Calculate today's stats
+export default function KpiGrid({ 
+  sessions = [], 
+  mode = "overall" 
+}: { 
+  sessions?: Session[],
+  mode?: "overall" | "daily"
+}) {
   const today = new Date().toLocaleDateString();
-  const todaysSessions = sessions.filter(s => {
-    if (!s.createdAt) return false;
-    return new Date(s.createdAt).toLocaleDateString() === today;
+  const filteredSessions = mode === "daily" 
+    ? sessions.filter(s => s.createdAt && new Date(s.createdAt).toLocaleDateString() === today)
+    : sessions;
+
+  const totalArrows = filteredSessions.reduce((sum, s) => sum + (parseInt(s.arrows) || 0), 0);
+  const totalScore = filteredSessions.reduce((sum, s) => sum + (parseInt(s.score) || 0), 0);
+  const totalTens = filteredSessions.reduce((sum, s) => sum + (parseInt(s.tens) || 0), 0);
+  
+  const avg = totalArrows > 0 ? (totalScore / totalArrows).toFixed(2) : "0.00";
+  const tenRate = totalArrows > 0 ? Math.round((totalTens / totalArrows) * 100) : 0;
+  const practiceTime = `${Math.round(totalArrows * 0.5)}m`;
+  
+  let bestScore = 0;
+  filteredSessions.forEach(s => {
+    const sScore = parseInt(s.score) || 0;
+    if (sScore > bestScore) bestScore = sScore;
   });
 
-  const arrowsToday = todaysSessions.reduce((sum, s) => sum + (parseInt(s.arrows) || 0), 0);
-  const scoreToday = todaysSessions.reduce((sum, s) => sum + (parseInt(s.score) || 0), 0);
-
-  // Overall stats
-  const totalArrows = sessions.reduce((sum, s) => sum + (parseInt(s.arrows) || 0), 0);
-  const totalScore = sessions.reduce((sum, s) => sum + (parseInt(s.score) || 0), 0);
-  const overallAvg = totalArrows > 0 ? (totalScore / totalArrows).toFixed(2) : "0.00";
-
-  const totalTens = sessions.reduce((sum, s) => sum + (parseInt(s.tens) || 0), 0);
-  const tenRate = totalArrows > 0 ? Math.round((totalTens / totalArrows) * 100) : 0;
-
-  const kpis: Kpi[] = [
-    { label: "Arrows today", value: arrowsToday.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
-    { label: "Today's score", value: scoreToday.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
-    { label: "Overall Avg", value: overallAvg, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
-    { label: "10 + X rate", value: `${tenRate}%`, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+  const kpis: Kpi[] = mode === "overall" ? [
     { label: "Total Sessions", value: sessions.length.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
     { label: "Total Arrows", value: totalArrows.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
-    { label: "Practice time", value: `${Math.round(totalArrows * 0.5)}m`, delta: "-", deltaColor: "rgba(0,0,0,.4)" }, // Estimate 30s per arrow
-    { label: "Streak", value: "1d", delta: "-", deltaColor: "rgba(0,0,0,.4)" }, // Simplified streak
+    { label: "Overall Avg", value: avg, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Total 10s + Xs", value: totalTens.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "10 + X Rate", value: `${tenRate}%`, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Practice Time", value: practiceTime, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Best Session", value: bestScore.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Streak", value: "1d", delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+  ] : [
+    { label: "Sessions Today", value: filteredSessions.length.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Arrows Today", value: totalArrows.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Today's Avg", value: avg, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Today's 10s + Xs", value: totalTens.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Today's 10+X Rate", value: `${tenRate}%`, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Today's Time", value: practiceTime, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Best Score Today", value: bestScore.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Today's Total", value: totalScore.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
   ];
 
   return (
