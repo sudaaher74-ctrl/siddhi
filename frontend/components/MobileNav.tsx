@@ -3,11 +3,17 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Trophy, Flag } from "lucide-react";
+import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Trophy, Flag, LogOut } from "lucide-react";
+import Cookies from "js-cookie";
 
 export default function MobileNav() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    Cookies.remove("token");
+    window.location.href = "/login";
+  };
 
   const mainNav = [
     { label: "Home", href: "/", icon: Home },
@@ -58,6 +64,15 @@ export default function MobileNav() {
                 </Link>
               );
             })}
+          </div>
+          <div className="mt-4 pt-4 border-t border-black/5">
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center justify-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 hover:bg-rose-100 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-[12px] font-bold">Log Out</span>
+            </button>
           </div>
         </div>
       </div>
