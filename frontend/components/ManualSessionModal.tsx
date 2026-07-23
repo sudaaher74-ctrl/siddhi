@@ -36,7 +36,7 @@ export default function ManualSessionModal() {
         avg
       };
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       const res = await fetch(`${apiUrl}/api/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
