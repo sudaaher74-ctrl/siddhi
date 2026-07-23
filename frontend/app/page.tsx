@@ -1,11 +1,14 @@
 import TopBar from "@/components/TopBar";
-import KpiGrid from "@/components/KpiGrid";
+import HeroPerformanceCard from "@/components/HeroPerformanceCard";
+import HomeKpiGrid from "@/components/HomeKpiGrid";
 import ScoreTrend from "@/components/ScoreTrend";
-import ArrowPlot from "@/components/ArrowPlot";
-import PerformanceRadar from "@/components/PerformanceRadar";
-import ShotTimeline from "@/components/ShotTimeline";
-import PracticeHeatmap from "@/components/PracticeHeatmap";
-import SessionsTable from "@/components/SessionsTable";
+import HomeGoalsProgress from "@/components/HomeGoalsProgress";
+import AICoachSummary from "@/components/AICoachSummary";
+import UpcomingEvents from "@/components/UpcomingEvents";
+import EquipmentStatus from "@/components/EquipmentStatus";
+import RecentAchievements from "@/components/RecentAchievements";
+import QuickActions from "@/components/QuickActions";
+import MotivationCard from "@/components/MotivationCard";
 import { Session, sessions as mockSessions } from "@/lib/data";
 
 async function getSessions(): Promise<Session[]> {
@@ -32,17 +35,29 @@ export default async function DashboardPage() {
   return (
     <>
       <TopBar />
-      <KpiGrid sessions={sessions} mode="overall" />
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.55fr_1fr_1fr] gap-[12px]">
-        <ScoreTrend sessions={sessions} mode="overall" />
-        <ArrowPlot sessions={sessions} mode="overall" />
-        <PerformanceRadar sessions={sessions} mode="overall" />
+      <HeroPerformanceCard sessions={sessions} />
+      <HomeKpiGrid sessions={sessions} />
+      
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-[12px]">
+        {/* Left Column (2/3 width on large screens) */}
+        <div className="xl:col-span-2 flex flex-col gap-[12px]">
+          <ScoreTrend sessions={sessions} minimal={true} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
+            <HomeGoalsProgress sessions={sessions} />
+            <AICoachSummary sessions={sessions} />
+          </div>
+          <QuickActions />
+        </div>
+
+        {/* Right Column (1/3 width on large screens) */}
+        <div className="flex flex-col gap-[12px]">
+          <UpcomingEvents />
+          <EquipmentStatus />
+          <RecentAchievements />
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.55fr_1fr] gap-[12px]">
-        <ShotTimeline sessions={sessions} />
-        <PracticeHeatmap sessions={sessions} />
-      </div>
-      <SessionsTable sessions={sessions} />
+      
+      <MotivationCard />
     </>
   );
 }

@@ -9,19 +9,30 @@ const PERIODS = ["D", "W", "M", "Y"] as const;
 
 export default function ScoreTrend({ 
   sessions = [],
-  mode = "overall"
+  mode = "overall",
+  minimal = false
 }: { 
   sessions?: Session[],
-  mode?: "overall" | "daily"
+  mode?: "overall" | "daily",
+  minimal?: boolean
 }) {
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("W");
 
   // Transform sessions into chart data
   const chartData = useMemo(() => {
-    if (mode === "daily") {
+    let relevantSessions = sessions;
+
+    if (minimal) {
+      // Filter to last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      relevantSessions = sessions.filter(s => s.createdAt && new Date(s.createdAt) >= sevenDaysAgo);
+    }
+
+    if (mode === "daily" || minimal) {
       const dailyMap = new Map<string, { totalScore: number; count: number; dateStr: string; timestamp: number }>();
       
-      sessions.forEach(s => {
+      relevantSessions.forEach(s => {
         if (!s.createdAt) return;
         const dateObj = new Date(s.createdAt);
         const dateStr = dateObj.toLocaleDateString();
@@ -45,7 +56,7 @@ export default function ScoreTrend({
     }
 
     // Overall mode: Sort sessions chronologically for the chart (oldest first)
-    const sorted = [...sessions].sort((a, b) => {
+    const sorted = [...relevantSessions].sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return dateA - dateB;
@@ -56,7 +67,7 @@ export default function ScoreTrend({
       score: parseFloat(s.avg) || 0,
       date: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'Unknown'
     }));
-  }, [sessions, mode]);
+  }, [sessions, mode, minimal]);
 
   // Calculate averages
   const overallAvg = chartData.length > 0 
@@ -70,21 +81,25 @@ export default function ScoreTrend({
   return (
     <Card>
       <div className="flex items-center sm:items-baseline justify-between sm:justify-start gap-2 sm:gap-[10px]">
-        <h2 className="text-[13px] font-semibold text-text-mid whitespace-nowrap">Score trend</h2>
-        <div className="text-[11px] text-black/40 hidden sm:block">avg per arrow</div>
-        <div className="sm:ml-auto flex gap-[2px] bg-black/5 rounded-[7px] p-[2px]">
-          {PERIODS.map((p) => (
-            <button
-              key={p}
-              className={`font-mono font-medium text-[10px] p-[3px_8px] rounded-[5px] border-0 cursor-pointer transition-colors ${
-                p === period ? "bg-accent/25 text-[#ffb0aa]" : "bg-transparent text-black/50"
-              }`}
-              onClick={() => setPeriod(p)}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
+        <h2 className="text-[13px] font-semibold text-text-mid whitespace-nowrap">
+          {minimal ? "7-Day Performance Trend" : "Score trend"}
+        </h2>
+        {!minimal && <div className="text-[11px] text-black/40 hidden sm:block">avg per arrow</div>}
+        {!minimal && (
+          <div className="sm:ml-auto flex gap-[2px] bg-black/5 rounded-[7px] p-[2px]">
+            {PERIODS.map((p) => (
+              <button
+                key={p}
+                className={`font-mono font-medium text-[10px] p-[3px_8px] rounded-[5px] border-0 cursor-pointer transition-colors ${
+                  p === period ? "bg-accent/25 text-[#ffb0aa]" : "bg-transparent text-black/50"
+                }`}
+                onClick={() => setPeriod(p)}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="w-full h-[150px] mt-2">
         <ResponsiveContainer width="100%" height="100%">
@@ -125,14 +140,16 @@ export default function ScoreTrend({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex flex-wrap gap-2 sm:gap-4 mt-2 text-[11px] text-text-dim justify-between sm:justify-start">
-        <span>
-          <span className="text-accent-soft font-semibold">{lastSessionAvg}</span> latest avg
-        </span>
-        <span className="hidden sm:inline">
-          <span className="text-text-mid font-semibold">{overallAvg}</span> overall avg
-        </span>
-      </div>
+      {!minimal && (
+        <div className="flex flex-wrap gap-2 sm:gap-4 mt-2 text-[11px] text-text-dim justify-between sm:justify-start">
+          <span>
+            <span className="text-accent-soft font-semibold">{lastSessionAvg}</span> latest avg
+          </span>
+          <span className="hidden sm:inline">
+            <span className="text-text-mid font-semibold">{overallAvg}</span> overall avg
+          </span>
+        </div>
+      )}
     </Card>
   );
 }
