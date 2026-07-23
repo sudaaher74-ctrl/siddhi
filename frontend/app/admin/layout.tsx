@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, ArrowLeft, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, ArrowLeft, ShieldCheck, Inbox } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 
 export default function AdminLayout({
@@ -32,6 +32,7 @@ export default function AdminLayout({
   const navItems = [
     { label: "Overview", href: "/admin", icon: LayoutDashboard },
     { label: "Users", href: "/admin/users", icon: Users },
+    { label: "Inbox", href: "/admin/inbox", icon: Inbox },
   ];
 
   return (

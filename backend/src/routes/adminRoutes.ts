@@ -1,6 +1,7 @@
 import express, { Response } from 'express';
 import User from '../models/User';
 import Session from '../models/Session';
+import Feedback from '../models/Feedback';
 import { protect, admin, AuthRequest } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -86,9 +87,62 @@ router.delete('/users/:id', async (req: AuthRequest, res: Response): Promise<voi
 
     await user.deleteOne();
     
-    res.json({ message: 'User and all associated data removed' });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    res.json({ message: 'User removed' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/admin/feedback - Get all feedback
+router.get('/feedback', async (req: AuthRequest, res: Response) => {
+  try {
+    const feedbackList = await Feedback.find({})
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 });
+    res.json(feedbackList);
+  } catch (error) {
+    console.error('Error fetching feedback:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/admin/feedback/:id/status - Update feedback status
+router.put('/feedback/:id/status', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { status } = req.body;
+    if (!['New', 'In Progress', 'Resolved'].includes(status)) {
+      res.status(400).json({ message: 'Invalid status' });
+      return;
+    }
+
+    const feedback = await Feedback.findById(req.params.id);
+    if (!feedback) {
+      res.status(404).json({ message: 'Feedback not found' });
+      return;
+    }
+
+    feedback.status = status;
+    const updatedFeedback = await feedback.save();
+    res.json(updatedFeedback);
+  } catch (error) {
+    console.error('Error updating feedback status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// DELETE /api/admin/feedback/:id - Delete feedback
+router.delete('/feedback/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const feedback = await Feedback.findByIdAndDelete(req.params.id);
+    if (!feedback) {
+      res.status(404).json({ message: 'Feedback not found' });
+      return;
+    }
+    res.json({ message: 'Feedback removed' });
+  } catch (error) {
+    console.error('Error deleting feedback:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/data";
 import Link from "next/link";
 import Cookies from "js-cookie";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LogOut, ShieldCheck, MessageSquare } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 
 export default function Sidebar() {
@@ -62,6 +62,14 @@ export default function Sidebar() {
           </div>
         </div>
         
+        <Link 
+          href="/feedback"
+          className="p-2 text-text-dim hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+          title="Send Feedback"
+        >
+          <MessageSquare className="w-4 h-4" />
+        </Link>
+
         <Link 
           href="/admin" 
           className="p-2 text-text-dim hover:text-accent hover:bg-accent/10 rounded-lg transition-colors mr-1"

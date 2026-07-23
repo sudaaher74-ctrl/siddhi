@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Trophy, Flag, LogOut, ShieldCheck } from "lucide-react";
+import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Trophy, Flag, LogOut, ShieldCheck, MessageSquare } from "lucide-react";
 import Cookies from "js-cookie";
 
 export default function MobileNav() {
@@ -73,6 +73,14 @@ export default function MobileNav() {
             >
               <ShieldCheck className="w-4 h-4" />
               <span className="text-[12px] font-bold">Admin Dashboard</span>
+            </Link>
+            <Link
+              href="/feedback"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center justify-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors mb-2"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span className="text-[12px] font-bold">Help & Feedback</span>
             </Link>
             <button
               onClick={handleLogout}
