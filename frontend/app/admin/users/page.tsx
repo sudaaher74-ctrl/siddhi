@@ -170,10 +170,10 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0 ${u.role === 'admin' ? 'bg-accent' : 'bg-slate-800'}`}>
-                            {u.name.substring(0, 2).toUpperCase()}
+                            {(u.name || "U").substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-900">{u.name} {isSelf && <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded ml-1">You</span>}</div>
+                            <div className="font-semibold text-slate-900">{(u.name || "Unknown User")} {isSelf && <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded ml-1">You</span>}</div>
                             <div className="text-[11px] text-slate-500 font-mono mt-0.5">ID: {u._id.substring(u._id.length - 6)}</div>
                           </div>
                         </div>
