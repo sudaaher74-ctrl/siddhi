@@ -3,7 +3,6 @@ import HeroPerformanceCard from "@/components/HeroPerformanceCard";
 import HomeKpiGrid from "@/components/HomeKpiGrid";
 import ScoreTrend from "@/components/ScoreTrend";
 import HomeGoalsProgress from "@/components/HomeGoalsProgress";
-import AICoachSummary from "@/components/AICoachSummary";
 import UpcomingEvents from "@/components/UpcomingEvents";
 import EquipmentStatus from "@/components/EquipmentStatus";
 import RecentAchievements from "@/components/RecentAchievements";
@@ -42,10 +41,7 @@ export default async function DashboardPage() {
         {/* Left Column (2/3 width on large screens) */}
         <div className="xl:col-span-2 flex flex-col gap-[12px]">
           <ScoreTrend sessions={sessions} minimal={true} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">
-            <HomeGoalsProgress sessions={sessions} />
-            <AICoachSummary sessions={sessions} />
-          </div>
+          <HomeGoalsProgress sessions={sessions} />
           <QuickActions />
         </div>
 
