@@ -106,7 +106,6 @@ export default function ManualSessionModal() {
                     className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
                   >
                     <option value="Practice">Practice</option>
-                    <option value="Tournament">Tournament</option>
                     <option value="Blank Bale">Blank Bale</option>
                     <option value="Scoring">Scoring</option>
                   </select>

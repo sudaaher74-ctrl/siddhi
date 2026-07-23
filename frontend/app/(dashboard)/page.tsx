@@ -3,7 +3,6 @@ import HeroPerformanceCard from "@/components/HeroPerformanceCard";
 import HomeKpiGrid from "@/components/HomeKpiGrid";
 import ScoreTrend from "@/components/ScoreTrend";
 import HomeGoalsProgress from "@/components/HomeGoalsProgress";
-import UpcomingEvents from "@/components/UpcomingEvents";
 import EquipmentStatus from "@/components/EquipmentStatus";
 import RecentAchievements from "@/components/RecentAchievements";
 import QuickActions from "@/components/QuickActions";
@@ -54,7 +53,6 @@ export default async function DashboardPage() {
 
         {/* Right Column (1/3 width on large screens) */}
         <div className="flex flex-col gap-[12px]">
-          <UpcomingEvents />
           <EquipmentStatus />
           <RecentAchievements />
         </div>
