@@ -4,8 +4,6 @@ import bcrypt from 'bcryptjs';
 export interface IUser extends Document {
   email: string;
   password?: string;
-  authProvider?: string;
-  googleId?: string;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -19,16 +17,7 @@ const UserSchema: Schema = new Schema(
     },
     password: {
       type: String,
-      required: false, // Optional for Google OAuth users
-    },
-    authProvider: {
-      type: String,
-      enum: ['local', 'google'],
-      default: 'local',
-    },
-    googleId: {
-      type: String,
-      required: false,
+      required: true,
     },
   },
   {

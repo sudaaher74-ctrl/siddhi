@@ -20,15 +20,12 @@ export const metadata: Metadata = {
   description: "Elite archery self-tracking: scores, grouping, AI coaching.",
 };
 
-import GoogleAuthProviderWrapper from "@/components/GoogleAuthProviderWrapper";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${instrumentSans.variable} ${plexMono.variable} bg-[radial-gradient(1200px_600px_at_20%_-10%,rgba(255,90,78,0.07),transparent_60%),var(--surface)] text-text`}>
-        <GoogleAuthProviderWrapper>
-          {children}
-        </GoogleAuthProviderWrapper>
+        {children}
       </body>
     </html>
   );

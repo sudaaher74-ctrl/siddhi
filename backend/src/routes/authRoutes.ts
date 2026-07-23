@@ -59,59 +59,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-import { OAuth2Client } from 'google-auth-library';
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-// POST /api/auth/google - Authenticate with Google
-router.post('/google', async (req, res) => {
-  try {
-    const { token } = req.body;
-    
-    // Verify Google token
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    
-    const payload = ticket.getPayload();
-    
-    if (!payload || !payload.email) {
-      return res.status(400).json({ message: 'Invalid Google token' });
-    }
-    
-    const email = payload.email.toLowerCase();
-    
-    // Check if user exists
-    let user = await User.findOne({ email });
-    
-    if (!user) {
-      // Create new user if they don't exist
-      user = await User.create({
-        email,
-        authProvider: 'google',
-        googleId: payload.sub
-      });
-    } else {
-      // If user exists but used email/password before, we could link the account or just let them in.
-      // For simplicity, we just let them log in. We might want to update their googleId.
-      if (!user.googleId) {
-        user.googleId = payload.sub;
-        user.authProvider = 'google'; // or keep as local and add google
-        await user.save();
-      }
-    }
-    
-    res.json({
-      _id: user._id,
-      email: user.email,
-      token: generateToken(user._id.toString()),
-    });
-    
-  } catch (error: any) {
-    console.error("Google auth error:", error);
-    res.status(500).json({ message: 'Google authentication failed' });
-  }
-});
 
 export default router;

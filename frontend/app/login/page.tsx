@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
-import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -47,36 +46,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
-    setError("");
-    setLoading(true);
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-
-    try {
-      const res = await fetch(`${apiUrl}/api/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: credentialResponse.credential }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Google authentication failed");
-      }
-
-      Cookies.set("token", data.token, { expires: 30 });
-      router.push("/");
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred");
-      }
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center bg-transparent">
@@ -136,22 +106,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="relative flex items-center py-2">
-          <div className="flex-grow border-t border-border"></div>
-          <span className="flex-shrink-0 mx-4 text-text-dim text-[11px] font-bold uppercase tracking-wider">Or continue with</span>
-          <div className="flex-grow border-t border-border"></div>
-        </div>
 
-        <div className="flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => setError("Google Login failed")}
-            theme="outline"
-            shape="rectangular"
-            text="continue_with"
-            width="340"
-          />
-        </div>
 
         <div className="mt-2 text-center">
           <button
