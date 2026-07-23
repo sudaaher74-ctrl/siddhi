@@ -42,10 +42,10 @@ export default function Sidebar() {
       })}
       <div className="mt-auto flex items-center gap-[9px] p-[9px_8px] rounded-[10px] bg-black/5 border border-black/5 pt-4">
         <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] flex items-center justify-center text-black font-sans font-semibold text-[11px] flex-shrink-0">
-          AM
+          SD
         </div>
         <div>
-          <div className="text-[12px] font-semibold text-text-mid">Arjun Mehta</div>
+          <div className="text-[12px] font-semibold text-text-mid">Siddhi Deshmukh</div>
           <div className="text-[10px] text-text-dim">Recurve · Nat. Rank #4</div>
         </div>
       </div>

@@ -32,11 +32,11 @@ export default async function DashboardPage() {
   return (
     <>
       <TopBar />
-      <KpiGrid />
+      <KpiGrid sessions={sessions} />
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.55fr_1fr_1fr] gap-[12px]">
-        <ScoreTrend />
-        <ArrowPlot />
-        <PerformanceRadar />
+        <ScoreTrend sessions={sessions} />
+        <ArrowPlot sessions={sessions} />
+        <PerformanceRadar sessions={sessions} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.55fr_1fr] gap-[12px]">
         <ShotTimeline sessions={sessions} />
