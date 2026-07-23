@@ -117,7 +117,7 @@ export default function ArrowPlot({
       <svg 
         ref={svgRef}
         viewBox="0 0 230 230" 
-        className={`w-full max-w-[230px] mx-auto mt-[10px] touch-none ${heatmapMode ? '' : 'cursor-crosshair'}`}
+        className={`w-full max-w-[340px] mx-auto mt-[10px] touch-none ${heatmapMode ? '' : 'cursor-crosshair'}`}
         onClick={handleSVGClick}
       >
         {/* Target face rings */}
