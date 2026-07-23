@@ -1,17 +1,33 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import { Wrench, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { Equipment } from "@/lib/data";
 
 export default function EquipmentStatus() {
-  const status = {
-    bow: "Optimal",
-    arrows: "Check Fletching",
-    string: "Replace Soon",
-    lastMaintenance: "Jul 10, 2026",
-    nextMaintenance: "Aug 10, 2026"
-  };
+  const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
+
+  useEffect(() => {
+    const fetchEquipment = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const res = await fetch(`${apiUrl}/api/equipment`);
+        if (res.ok) {
+          const data = await res.json();
+          setEquipmentList(data);
+        }
+      } catch (error) {
+        console.error("Error fetching equipment:", error);
+      }
+    };
+    fetchEquipment();
+  }, []);
+
+  const activeCount = equipmentList.filter(e => e.status === "active").length;
+  const backupCount = equipmentList.filter(e => e.status === "backup").length;
+  const retiredCount = equipmentList.filter(e => e.status === "retired").length;
 
   return (
     <Card className="flex flex-col h-full bg-surface border-border">
@@ -22,36 +38,36 @@ export default function EquipmentStatus() {
         <h2 className="text-[13px] font-semibold text-text-mid uppercase tracking-wider">Equipment</h2>
       </div>
 
-      <div className="flex flex-col gap-3 flex-1">
+      <div className="flex flex-col gap-3 flex-1 justify-center">
         <div className="flex items-center justify-between p-2.5 bg-background rounded-lg border border-border">
-          <span className="text-xs font-semibold text-text">Bow</span>
+          <span className="text-xs font-semibold text-text">Active Setups</span>
           <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-500">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            {status.bow}
+            {activeCount} active
           </div>
         </div>
         
         <div className="flex items-center justify-between p-2.5 bg-background rounded-lg border border-border">
-          <span className="text-xs font-semibold text-text">Arrows</span>
+          <span className="text-xs font-semibold text-text">Backup Equipment</span>
           <div className="flex items-center gap-1 text-[11px] font-medium text-amber-500">
             <AlertCircle className="w-3.5 h-3.5" />
-            {status.arrows}
+            {backupCount} items
           </div>
         </div>
         
         <div className="flex items-center justify-between p-2.5 bg-background rounded-lg border border-border">
-          <span className="text-xs font-semibold text-text">String</span>
+          <span className="text-xs font-semibold text-text">Retired</span>
           <div className="flex items-center gap-1 text-[11px] font-medium text-rose-500">
             <AlertCircle className="w-3.5 h-3.5" />
-            {status.string}
+            {retiredCount} items
           </div>
         </div>
       </div>
 
       <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold text-text-dim uppercase">Last Checked</span>
-          <span className="text-xs font-medium text-text-mid">{status.lastMaintenance}</span>
+          <span className="text-[10px] font-bold text-text-dim uppercase">Total Items</span>
+          <span className="text-xs font-medium text-text-mid">{equipmentList.length}</span>
         </div>
         <Link 
           href="/equipment" 

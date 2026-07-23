@@ -5,12 +5,16 @@ export default function EquipmentCard({
   title,
   type,
   stats,
-  status
+  status,
+  onEdit,
+  onDelete
 }: {
   title: string;
   type: string;
   stats: { label: string; value: string }[];
   status: "active" | "backup" | "retired";
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   return (
     <div className="bg-panel border border-border rounded-[14px] p-5 flex flex-col gap-4">
@@ -23,7 +27,11 @@ export default function EquipmentCard({
             {status === "backup" && <span className="text-black/50">Backup Setup</span>}
           </div>
         </div>
-        <button className="p-1.5 text-black/40 hover:text-black/80 transition-colors bg-black/5 rounded-md border border-black/5">
+        <button 
+          onClick={onDelete}
+          className="p-1.5 text-black/40 hover:text-rose-500 hover:bg-rose-500/10 transition-colors bg-black/5 rounded-md border border-black/5"
+          title="Delete Equipment"
+        >
           <Settings className="w-4 h-4" />
         </button>
       </div>
@@ -38,11 +46,17 @@ export default function EquipmentCard({
       </div>
 
       <div className="mt-auto pt-4 border-t border-black/5 flex gap-2">
-        <button className="flex-1 py-2 bg-black/5 hover:bg-black/10 rounded-lg text-[12px] font-medium text-black transition-colors flex items-center justify-center gap-2">
+        <button 
+          onClick={onEdit}
+          className="flex-1 py-2 bg-black/5 hover:bg-black/10 rounded-lg text-[12px] font-medium text-black transition-colors flex items-center justify-center gap-2"
+        >
           <PenTool className="w-3.5 h-3.5" />
           Edit Tune
         </button>
-        <button className="flex-1 py-2 bg-black/5 hover:bg-black/10 rounded-lg text-[12px] font-medium text-black transition-colors flex items-center justify-center gap-2">
+        <button 
+          onClick={() => alert("History feature coming soon!")}
+          className="flex-1 py-2 bg-black/5 hover:bg-black/10 rounded-lg text-[12px] font-medium text-black transition-colors flex items-center justify-center gap-2"
+        >
           <Activity className="w-3.5 h-3.5" />
           View History
         </button>

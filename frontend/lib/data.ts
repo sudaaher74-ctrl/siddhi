@@ -16,6 +16,16 @@ export type Session = {
   arrowData?: string;
 };
 
+export type Equipment = {
+  _id?: string;
+  name: string;
+  type: string;
+  status: "active" | "backup" | "retired";
+  stats: { label: string; value: string }[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 const navLinks = [
   { label: "Dashboard", href: "/" },
   { label: "Practice", href: "/practice" },
