@@ -4,15 +4,12 @@ import React from "react";
 import Link from "next/link";
 import { usePathname, notFound } from "next/navigation";
 import { LayoutDashboard, Users, ArrowLeft, ShieldCheck, Inbox } from "lucide-react";
-import { useUser } from "@/hooks/useUser";
-
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const { loading } = useUser();
 
   // The admin dashboard should not be visible to anyone
   notFound();
