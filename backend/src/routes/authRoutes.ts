@@ -2,6 +2,8 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 
+import { protect, AuthRequest } from '../middleware/authMiddleware';
+
 const router = express.Router();
 
 // Helper to generate JWT token
@@ -60,5 +62,24 @@ router.post('/login', async (req, res) => {
 });
 
 
+
+// GET /api/auth/me - Get current user profile
+router.get('/me', protect, async (req: AuthRequest, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (user) {
+      res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 export default router;

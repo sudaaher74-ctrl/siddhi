@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IEquipment extends Document {
+  user: mongoose.Types.ObjectId;
   name: string;
   type: string;
   status: 'active' | 'backup' | 'retired';
@@ -14,6 +15,11 @@ export interface IEquipment extends Document {
 
 const EquipmentSchema = new Schema<IEquipment>(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User'
+    },
     name: {
       type: String,
       required: true,

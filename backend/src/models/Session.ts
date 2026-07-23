@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ISession extends Document {
+  user: mongoose.Types.ObjectId;
   name: string;
   type: string;
   arrows: string;
@@ -12,6 +13,7 @@ export interface ISession extends Document {
 }
 
 const SessionSchema: Schema = new Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
   name: { type: String, required: true },
   type: { type: String, required: true },
   arrows: { type: String, required: true },

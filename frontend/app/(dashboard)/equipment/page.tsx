@@ -6,6 +6,7 @@ import EquipmentCard from "@/components/EquipmentCard";
 import EquipmentModal from "@/components/EquipmentModal";
 import { Equipment } from "@/lib/data";
 import { Plus } from "lucide-react";
+import Cookies from "js-cookie";
 
 export default function EquipmentPage() {
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
@@ -16,8 +17,13 @@ export default function EquipmentPage() {
 
   const fetchEquipment = async () => {
     try {
+      const token = Cookies.get("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await fetch(`${apiUrl}/api/equipment`);
+      const res = await fetch(`${apiUrl}/api/equipment`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setEquipmentList(data);
@@ -41,10 +47,14 @@ export default function EquipmentPage() {
         : `${apiUrl}/api/equipment`;
         
       const method = data._id ? "PUT" : "POST";
+      const token = Cookies.get("token");
       
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(data),
       });
 
@@ -62,9 +72,13 @@ export default function EquipmentPage() {
     if (!confirm("Are you sure you want to delete this equipment?")) return;
     
     try {
+      const token = Cookies.get("token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       const res = await fetch(`${apiUrl}/api/equipment/${id}`, {
         method: "DELETE",
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
       });
 
       if (res.ok) {

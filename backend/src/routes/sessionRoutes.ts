@@ -1,5 +1,6 @@
 import express from 'express';
 import Session from '../models/Session';
+import { protect, AuthRequest } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -44,17 +45,19 @@ const seedSessions = [
 ];
 
 // GET /api/sessions - Fetch all sessions
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req: AuthRequest, res) => {
   try {
-    const count = await Session.countDocuments();
+    const userId = req.user._id;
+    const count = await Session.countDocuments({ user: userId });
     
-    // Seed data if database is empty
+    // Seed data if database is empty for this user
     if (count === 0) {
-      await Session.insertMany(seedSessions);
-      console.log('Database seeded with initial sessions');
+      const userSeeds = seedSessions.map(session => ({ ...session, user: userId }));
+      await Session.insertMany(userSeeds);
+      console.log(`Database seeded with initial sessions for user ${userId}`);
     }
 
-    const sessions = await Session.find().sort({ createdAt: -1 });
+    const sessions = await Session.find({ user: userId }).sort({ createdAt: -1 });
     res.json(sessions);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -62,9 +65,12 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/sessions - Create a new session
-router.post('/', async (req, res) => {
+router.post('/', protect, async (req: AuthRequest, res) => {
   try {
-    const session = new Session(req.body);
+    const session = new Session({
+      ...req.body,
+      user: req.user._id,
+    });
     const savedSession = await session.save();
     res.status(201).json(savedSession);
   } catch (error: any) {

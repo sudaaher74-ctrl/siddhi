@@ -6,12 +6,19 @@ import SessionsTable from "@/components/SessionsTable";
 import ManualSessionModal from "@/components/ManualSessionModal";
 import PracticeKPIs from "@/components/PracticeKPIs";
 import { sessions as mockSessions } from "@/lib/data";
+import { cookies } from "next/headers";
 
 async function getSessions(): Promise<Session[]> {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
     const res = await fetch(`${apiUrl}/api/sessions`, {
-      next: { revalidate: 5 }
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      cache: 'no-store'
     });
     
     if (!res.ok) {

@@ -5,6 +5,7 @@ import Card from "@/components/ui/Card";
 import { Wrench, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Equipment } from "@/lib/data";
+import Cookies from "js-cookie";
 
 export default function EquipmentStatus() {
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
@@ -13,7 +14,12 @@ export default function EquipmentStatus() {
     const fetchEquipment = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-        const res = await fetch(`${apiUrl}/api/equipment`);
+        const token = Cookies.get("token");
+        const res = await fetch(`${apiUrl}/api/equipment`, {
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
         if (res.ok) {
           const data = await res.json();
           setEquipmentList(data);

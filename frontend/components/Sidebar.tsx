@@ -5,9 +5,11 @@ import { navItems } from "@/lib/data";
 import Link from "next/link";
 import Cookies from "js-cookie";
 import { LogOut } from "lucide-react";
+import { useUser } from "@/hooks/useUser";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useUser();
 
   const handleLogout = () => {
     Cookies.remove("token");
@@ -49,12 +51,14 @@ export default function Sidebar() {
       })}
       <div className="mt-auto flex items-center justify-between p-[9px_8px] rounded-[10px] bg-black/5 border border-black/5 pt-4">
         <div className="flex items-center gap-[9px]">
-          <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] flex items-center justify-center text-black font-sans font-semibold text-[11px] flex-shrink-0">
-            SD
+          <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] flex items-center justify-center text-white font-sans font-semibold text-[11px] flex-shrink-0">
+            {user ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '..'}
           </div>
           <div>
-            <div className="text-[12px] font-semibold text-text-mid">Siddhi Deshmukh</div>
-            <div className="text-[10px] text-text-dim">Recurve · Nat. Rank #4</div>
+            <div className="text-[12px] font-semibold text-text-mid truncate max-w-[100px]">
+              {user ? user.name : 'Loading...'}
+            </div>
+            <div className="text-[10px] text-text-dim">Athlete</div>
           </div>
         </div>
         <button 

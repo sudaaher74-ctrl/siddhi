@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 export default function ManualSessionModal() {
   const router = useRouter();
@@ -37,9 +38,13 @@ export default function ManualSessionModal() {
       };
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const token = Cookies.get("token");
       const res = await fetch(`${apiUrl}/api/sessions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(payload)
       });
 

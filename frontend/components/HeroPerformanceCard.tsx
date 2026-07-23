@@ -4,8 +4,10 @@ import { Session } from "@/lib/data";
 import { ArrowRight, Plus } from "lucide-react";
 import Link from "next/link";
 import Card from "./ui/Card";
+import { useUser } from "@/hooks/useUser";
 
 export default function HeroPerformanceCard({ sessions = [] }: { sessions?: Session[] }) {
+  const { user } = useUser();
   const today = new Date().toLocaleDateString();
   const todaysSessions = sessions.filter(s => s.createdAt && new Date(s.createdAt).toLocaleDateString() === today);
   
@@ -29,7 +31,9 @@ export default function HeroPerformanceCard({ sessions = [] }: { sessions?: Sess
         {/* Left Side: Identity & Status */}
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl md:text-[32px] font-bold tracking-tight text-text">Siddhi Deshmukh</h1>
+            <h1 className="text-2xl md:text-[32px] font-bold tracking-tight text-text truncate max-w-[200px] sm:max-w-[300px]">
+              {user ? user.name : 'Loading...'}
+            </h1>
             <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[11px] font-bold tracking-wide uppercase">
               Elite Rank
             </span>

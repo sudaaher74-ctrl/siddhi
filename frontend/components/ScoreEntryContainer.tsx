@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 import ScorePad from "./ScorePad";
 import ArrowPlot from "./ArrowPlot";
 import ArcheryTimer from "./ArcheryTimer";
@@ -78,9 +79,13 @@ export default function ScoreEntryContainer() {
       };
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const token = Cookies.get("token");
       const res = await fetch(`${apiUrl}/api/sessions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(payload)
       });
 

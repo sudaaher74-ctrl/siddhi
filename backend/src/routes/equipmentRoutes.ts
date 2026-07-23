@@ -1,12 +1,13 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import Equipment from '../models/Equipment';
+import { protect, AuthRequest } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
 // GET all equipment
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+router.get('/', protect, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const equipment = await Equipment.find().sort({ createdAt: -1 });
+    const equipment = await Equipment.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.status(200).json(equipment);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -14,10 +15,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // POST new equipment
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', protect, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { name, type, status, stats } = req.body;
     const newEquipment = new Equipment({
+      user: req.user._id,
       name,
       type,
       status: status || 'active',
@@ -32,12 +34,12 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PUT update equipment
-router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', protect, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { name, type, status, stats } = req.body;
     
-    const updatedEquipment = await Equipment.findByIdAndUpdate(
-      req.params.id,
+    const updatedEquipment = await Equipment.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id },
       { name, type, status, stats },
       { new: true, runValidators: true }
     );
@@ -54,9 +56,9 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // DELETE equipment
-router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', protect, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const deletedEquipment = await Equipment.findByIdAndDelete(req.params.id);
+    const deletedEquipment = await Equipment.findOneAndDelete({ _id: req.params.id, user: req.user._id });
     
     if (!deletedEquipment) {
       res.status(404).json({ message: 'Equipment not found' });
