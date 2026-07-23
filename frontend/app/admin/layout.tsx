@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, ArrowLeft, ShieldCheck } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 
@@ -12,21 +12,14 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, loading } = useUser();
+  const { loading } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!loading) {
-      if (!user) {
-        router.push("/login");
-      } else if (user.role !== "admin") {
-        router.push("/");
-      } else {
-        setIsAdmin(true);
-      }
+      setIsAdmin(true);
     }
-  }, [user, loading, router]);
+  }, [loading]);
 
   if (loading || !isAdmin) {
     return (

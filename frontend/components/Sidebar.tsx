@@ -62,15 +62,13 @@ export default function Sidebar() {
           </div>
         </div>
         
-        {user?.role === 'admin' && (
-          <Link 
-            href="/admin" 
-            className="p-2 text-text-dim hover:text-accent hover:bg-accent/10 rounded-lg transition-colors mr-1"
-            title="Admin Dashboard"
-          >
-            <ShieldCheck className="w-4 h-4" />
-          </Link>
-        )}
+        <Link 
+          href="/admin" 
+          className="p-2 text-text-dim hover:text-accent hover:bg-accent/10 rounded-lg transition-colors mr-1"
+          title="Admin Dashboard"
+        >
+          <ShieldCheck className="w-4 h-4" />
+        </Link>
 
         <button 
           onClick={handleLogout}

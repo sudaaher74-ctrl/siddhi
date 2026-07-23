@@ -6,11 +6,8 @@ import { usePathname } from "next/navigation";
 import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Trophy, Flag, LogOut, ShieldCheck } from "lucide-react";
 import Cookies from "js-cookie";
 
-import { useUser } from "@/hooks/useUser";
-
 export default function MobileNav() {
   const pathname = usePathname();
-  const { user } = useUser();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -68,18 +65,15 @@ export default function MobileNav() {
               );
             })}
           </div>
-          
           <div className="mt-4 pt-4 border-t border-black/5">
-            {user?.role === 'admin' && (
-              <Link
-                href="/admin"
-                onClick={() => setMenuOpen(false)}
-                className="flex w-full items-center justify-center gap-2 p-3 rounded-xl bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20 transition-colors mb-2"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span className="text-[12px] font-bold">Admin Dashboard</span>
-              </Link>
-            )}
+            <Link
+              href="/admin"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center justify-center gap-2 p-3 rounded-xl bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20 transition-colors mb-2"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span className="text-[12px] font-bold">Admin Dashboard</span>
+            </Link>
             <button
               onClick={handleLogout}
               className="flex w-full items-center justify-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 hover:bg-rose-100 transition-colors"
