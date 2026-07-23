@@ -34,10 +34,7 @@ export default function LoginPage() {
         throw new Error(data.message || "Something went wrong");
       }
 
-      // Save token to cookie
       Cookies.set("token", data.token, { expires: 30 });
-      
-      // Redirect to dashboard
       router.push("/");
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -69,10 +66,7 @@ export default function LoginPage() {
         throw new Error(data.message || "Google authentication failed");
       }
 
-      // Save token to cookie
       Cookies.set("token", data.token, { expires: 30 });
-      
-      // Redirect to dashboard
       router.push("/");
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -85,51 +79,50 @@ export default function LoginPage() {
   };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-end px-6 md:pr-24 lg:pr-40 bg-cover bg-center bg-no-repeat relative"
-      style={{ backgroundImage: 'url("/img/photos/login.jpeg")' }}
-    >
-      {/* Very faint overlay so background is clearly visible */}
-      <div className="absolute inset-0 bg-black/10"></div>
-
-      <div className="w-full max-w-sm p-6 bg-black/20 border border-white/20 rounded-2xl shadow-2xl backdrop-blur-md relative z-10 transform transition-all duration-500 hover:border-white/30">
-        <div className="text-center mb-6">
-          <p className="text-white text-lg font-medium tracking-wide drop-shadow-md">
-            {isLogin ? "Welcome back, Archer." : "Begin your journey."}
+    <div className="min-h-[80vh] flex items-center justify-center bg-transparent">
+      <div className="w-full max-w-md p-8 bg-surface border border-border rounded-[24px] shadow-sm relative z-10 flex flex-col gap-6">
+        
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-12 h-12 rounded-full border-2 border-accent flex items-center justify-center bg-accent/5">
+              <div className="w-3 h-3 rounded-full bg-accent" />
+            </div>
+          </div>
+          <h1 className="text-[22px] font-bold text-text mb-1 tracking-tight">
+            {isLogin ? "Welcome Back" : "Create Account"}
+          </h1>
+          <p className="text-[14px] text-text-dim font-medium">
+            {isLogin ? "Sign in to view your athlete dashboard" : "Register to start tracking your performance"}
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center animate-pulse">
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-[13px] font-medium text-center animate-fadein">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="group">
-            <label className="block text-gray-400 text-xs uppercase tracking-wider mb-2 group-focus-within:text-gold transition-colors duration-300">
-              Email Address
-            </label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-bold text-text uppercase tracking-wider">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all duration-300 shadow-inner"
+              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-[14px] text-text focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all shadow-sm"
               placeholder="archer@example.com"
             />
           </div>
 
-          <div className="group">
-            <label className="block text-gray-400 text-xs uppercase tracking-wider mb-2 group-focus-within:text-gold transition-colors duration-300">
-              Password
-            </label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-bold text-text uppercase tracking-wider">Password</label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all duration-300 shadow-inner"
+              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-[14px] text-text focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all shadow-sm"
               placeholder="••••••••"
             />
           </div>
@@ -137,47 +130,43 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gold hover:bg-yellow-400 text-black font-bold uppercase tracking-wider text-sm rounded-lg px-4 py-4 transition-all duration-300 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(255,215,0,0.4)] transform hover:-translate-y-0.5"
+            className="w-full mt-2 bg-accent hover:bg-accent-hover text-white font-bold text-[14px] rounded-xl px-4 py-3.5 transition-colors disabled:opacity-50 shadow-sm flex items-center justify-center"
           >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </span>
-            ) : isLogin ? "Sign In" : "Register"}
+            {loading ? "Processing..." : isLogin ? "Sign In" : "Register"}
           </button>
-          
-          <div className="relative flex items-center py-2">
-            <div className="flex-grow border-t border-gray-600"></div>
-            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase tracking-wider">Or</span>
-            <div className="flex-grow border-t border-gray-600"></div>
-          </div>
-          
-          <div className="flex justify-center mt-2">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError("Google Login was unsuccessful")}
-              theme="filled_black"
-              shape="pill"
-              text="continue_with"
-              width="300"
-            />
-          </div>
         </form>
 
-        <div className="mt-8 text-center">
+        <div className="relative flex items-center py-2">
+          <div className="flex-grow border-t border-border"></div>
+          <span className="flex-shrink-0 mx-4 text-text-dim text-[11px] font-bold uppercase tracking-wider">Or continue with</span>
+          <div className="flex-grow border-t border-border"></div>
+        </div>
+
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError("Google Login failed")}
+            theme="outline"
+            shape="rectangular"
+            text="continue_with"
+            width="340"
+          />
+        </div>
+
+        <div className="mt-2 text-center">
           <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-gray-400 hover:text-white text-sm transition-colors duration-300 underline-offset-4 hover:underline"
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError("");
+            }}
+            className="text-text-dim hover:text-accent font-semibold text-[13px] transition-colors"
           >
             {isLogin
               ? "Don't have an account? Register"
               : "Already have an account? Sign In"}
           </button>
         </div>
+
       </div>
     </div>
   );

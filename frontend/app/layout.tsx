@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
-import Sidebar from "@/components/Sidebar";
-import MobileNav from "@/components/MobileNav";
+
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -28,15 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${instrumentSans.variable} ${plexMono.variable} bg-[radial-gradient(1200px_600px_at_20%_-10%,rgba(255,90,78,0.07),transparent_60%),var(--surface)] text-text`}>
         <GoogleAuthProviderWrapper>
-          <div className="flex flex-col lg:flex-row gap-[14px] p-[14px] pb-[80px] lg:pb-[14px] min-h-screen">
-            <div className="hidden lg:block">
-              <Sidebar />
-            </div>
-            <main className="flex-1 min-w-0 flex flex-col gap-[12px]">
-              {children}
-            </main>
-          </div>
-          <MobileNav />
+          {children}
         </GoogleAuthProviderWrapper>
       </body>
     </html>
