@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
 export default function LoginPage() {
@@ -12,7 +11,6 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,110 +50,127 @@ export default function LoginPage() {
     }
   };
 
-
-
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-transparent">
-      <div className="w-full max-w-md p-8 bg-surface border border-border rounded-[24px] shadow-sm relative z-10 flex flex-col gap-6">
+    <div className="min-h-screen flex w-full bg-white">
+      {/* LEFT SIDE: Splash Image (Hidden on Mobile) */}
+      <div 
+        className="hidden lg:flex w-1/2 bg-slate-900 relative overflow-hidden flex-col justify-end p-12"
+      >
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 hover:scale-105"
+          style={{ backgroundImage: 'url("/img/photos/sporty-bg.png")' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 rounded-full border-2 border-accent flex items-center justify-center bg-accent/5">
-              <div className="w-3 h-3 rounded-full bg-accent" />
-            </div>
-          </div>
-          <h1 className="text-[22px] font-bold text-text mb-1 tracking-tight">
-            {isLogin ? "Welcome Back" : "Create Account"}
+        <div className="relative z-10 max-w-md">
+          <div className="w-[32px] h-[32px] rounded-full border-[3px] border-accent flex items-center justify-center mb-6 after:content-[''] after:w-[10px] after:h-[10px] after:rounded-full after:bg-accent" />
+          <h1 className="text-4xl font-black text-white uppercase tracking-tight mb-4 leading-tight">
+            Elevate Your <br />
+            <span className="text-accent">Performance.</span>
           </h1>
-          <p className="text-[14px] text-text-dim font-medium">
-            {isLogin ? "Sign in to view your athlete dashboard" : "Register to start tracking your performance"}
+          <p className="text-white/80 font-medium text-[15px] leading-relaxed">
+            The elite platform for professional archers. Track every session, analyze your groupings, and get AI-powered insights to dominate the target.
           </p>
         </div>
+      </div>
 
-        {error && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-[13px] font-medium text-center animate-fadein">
-            {error}
+      {/* RIGHT SIDE: Auth Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
+        <div className="w-full max-w-[420px] flex flex-col gap-8">
+          
+          <div className="flex flex-col">
+            <div className="lg:hidden w-[28px] h-[28px] rounded-full border-[3px] border-accent flex items-center justify-center mb-6 after:content-[''] after:w-[8px] after:h-[8px] after:rounded-full after:bg-accent" />
+            <h2 className="text-[28px] font-black text-slate-900 tracking-tight uppercase">
+              {isLogin ? "Welcome Back" : "Join ArcherX"}
+            </h2>
+            <p className="text-[15px] text-slate-500 font-medium mt-1">
+              {isLogin ? "Enter your details to access your dashboard." : "Create your athlete profile to get started."}
+            </p>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {!isLogin && (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[13px] font-bold text-text uppercase tracking-wider">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-[14px] text-text focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all shadow-sm"
-                  placeholder="Siddhi Deshmukh"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[13px] font-bold text-text uppercase tracking-wider">Phone Number</label>
-                <input
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-[14px] text-text focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all shadow-sm"
-                  placeholder="+91 98765 43210"
-                />
-              </div>
-            </>
+          {error && (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-[13px] font-bold tracking-wide uppercase text-center animate-fadein">
+              {error}
+            </div>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-bold text-text uppercase tracking-wider">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-[14px] text-text focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all shadow-sm"
-              placeholder="archer@example.com"
-            />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {!isLogin && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[12px] font-bold text-slate-900 uppercase tracking-widest ml-1">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-transparent hover:border-slate-200 rounded-xl px-4 py-3.5 text-[15px] font-medium text-slate-900 focus:outline-none focus:border-accent focus:bg-white transition-all shadow-sm"
+                    placeholder="Siddhi Deshmukh"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[12px] font-bold text-slate-900 uppercase tracking-widest ml-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-transparent hover:border-slate-200 rounded-xl px-4 py-3.5 text-[15px] font-medium text-slate-900 focus:outline-none focus:border-accent focus:bg-white transition-all shadow-sm"
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[12px] font-bold text-slate-900 uppercase tracking-widest ml-1">Email Address</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-slate-50 border-2 border-transparent hover:border-slate-200 rounded-xl px-4 py-3.5 text-[15px] font-medium text-slate-900 focus:outline-none focus:border-accent focus:bg-white transition-all shadow-sm"
+                placeholder="archer@example.com"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[12px] font-bold text-slate-900 uppercase tracking-widest ml-1">Password</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-slate-50 border-2 border-transparent hover:border-slate-200 rounded-xl px-4 py-3.5 text-[15px] font-medium text-slate-900 focus:outline-none focus:border-accent focus:bg-white transition-all shadow-sm"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-4 bg-accent hover:bg-[#E0291D] text-white font-black text-[15px] uppercase tracking-widest rounded-xl px-4 py-4 transition-all disabled:opacity-50 shadow-[0_4px_14px_rgba(255,59,48,0.25)] hover:shadow-[0_6px_20px_rgba(255,59,48,0.3)] transform hover:-translate-y-0.5 flex items-center justify-center active:scale-[0.98]"
+            >
+              {loading ? "Processing..." : isLogin ? "Sign In" : "Register Profile"}
+            </button>
+          </form>
+
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError("");
+              }}
+              className="text-slate-500 hover:text-accent font-bold text-[13px] uppercase tracking-wider transition-colors border-b-2 border-transparent hover:border-accent pb-0.5"
+            >
+              {isLogin
+                ? "Create an athlete account"
+                : "Already registered? Sign in"}
+            </button>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-bold text-text uppercase tracking-wider">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-[14px] text-text focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all shadow-sm"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-2 bg-accent hover:bg-accent-hover text-white font-bold text-[14px] rounded-xl px-4 py-3.5 transition-colors disabled:opacity-50 shadow-sm flex items-center justify-center"
-          >
-            {loading ? "Processing..." : isLogin ? "Sign In" : "Register"}
-          </button>
-        </form>
-
-
-
-        <div className="mt-2 text-center">
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError("");
-            }}
-            className="text-text-dim hover:text-accent font-semibold text-[13px] transition-colors"
-          >
-            {isLogin
-              ? "Don't have an account? Register"
-              : "Already have an account? Sign In"}
-          </button>
         </div>
-
       </div>
     </div>
   );
