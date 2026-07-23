@@ -59,9 +59,9 @@ export default function ManualSessionModal() {
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-accent text-panel font-semibold text-sm rounded-lg hover:bg-accent-hover transition-colors"
+        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent to-orange-500 text-white font-semibold text-[14px] rounded-[12px] shadow-sm hover:shadow-[0_8px_20px_rgba(255,90,78,0.3)] transition-all duration-300 transform hover:-translate-y-0.5"
       >
-        <Plus className="w-4 h-4" />
+        <Plus className="w-4 h-4 stroke-[3]" />
         Log Manual Session
       </button>
 
