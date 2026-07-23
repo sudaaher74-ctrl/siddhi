@@ -8,6 +8,8 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -21,10 +23,14 @@ export default function LoginPage() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
     try {
+      const body = isLogin 
+        ? { email, password }
+        : { name, phone, email, password };
+
       const res = await fetch(`${apiUrl}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -34,7 +40,7 @@ export default function LoginPage() {
       }
 
       Cookies.set("token", data.token, { expires: 30 });
-      router.push("/");
+      window.location.href = "/";
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -73,6 +79,34 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {!isLogin && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-bold text-text uppercase tracking-wider">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-[14px] text-text focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all shadow-sm"
+                  placeholder="Siddhi Deshmukh"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-bold text-text uppercase tracking-wider">Phone Number</label>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-[14px] text-text focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all shadow-sm"
+                  placeholder="+91 98765 43210"
+                />
+              </div>
+            </>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-bold text-text uppercase tracking-wider">Email</label>
             <input

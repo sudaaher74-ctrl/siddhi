@@ -14,7 +14,7 @@ const generateToken = (id: string) => {
 // POST /api/auth/register - Register a new user
 router.post('/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { name, phone, email, password } = req.body;
 
     const userExists = await User.findOne({ email });
 
@@ -22,7 +22,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const user = await User.create({ email, password });
+    const user = await User.create({ name, phone, email, password });
 
     if (user) {
       res.status(201).json({
