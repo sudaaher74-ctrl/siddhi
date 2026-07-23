@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import { MessageSquare, Inbox, Search, Trash2, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
+import { Inbox, Search, Trash2, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
 
 interface Feedback {
   _id: string;
@@ -35,8 +35,12 @@ export default function AdminInboxPage() {
       if (!res.ok) throw new Error("Failed to load feedback tickets");
       const data = await res.json();
       setTickets(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred");
+      }
     } finally {
       setLoading(false);
     }
@@ -61,8 +65,12 @@ export default function AdminInboxPage() {
       
       // Update local state
       setTickets(tickets.map(t => t._id === id ? { ...t, status: newStatus } : t));
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("An unknown error occurred");
+      }
     }
   };
 
@@ -80,8 +88,12 @@ export default function AdminInboxPage() {
       if (!res.ok) throw new Error("Failed to delete ticket");
       
       setTickets(tickets.filter(t => t._id !== id));
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("An unknown error occurred");
+      }
     }
   };
 

@@ -35,8 +35,12 @@ export default function FeedbackPage() {
       setSuccess(true);
       setSubject("");
       setMessage("");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred");
+      }
     } finally {
       setLoading(false);
     }
@@ -52,7 +56,7 @@ export default function FeedbackPage() {
             </div>
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Feedback Sent!</h2>
             <p className="text-slate-600 mb-6">
-              Thank you for helping us improve Siddhi Jurnal. We've received your message.
+              Thank you for helping us improve Siddhi Jurnal. We&apos;ve received your message.
             </p>
             <button
               onClick={() => setSuccess(false)}
