@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/data";
 import Link from "next/link";
 import Cookies from "js-cookie";
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 
 export default function Sidebar() {
@@ -58,9 +58,20 @@ export default function Sidebar() {
             <div className="text-[12px] font-semibold text-text-mid truncate max-w-[100px]">
               {user ? user.name : 'Loading...'}
             </div>
-            <div className="text-[10px] text-text-dim">Athlete</div>
+            <div className="text-[10px] text-text-dim capitalize">{user?.role || 'Athlete'}</div>
           </div>
         </div>
+        
+        {user?.role === 'admin' && (
+          <Link 
+            href="/admin" 
+            className="p-2 text-text-dim hover:text-accent hover:bg-accent/10 rounded-lg transition-colors mr-1"
+            title="Admin Dashboard"
+          >
+            <ShieldCheck className="w-4 h-4" />
+          </Link>
+        )}
+
         <button 
           onClick={handleLogout}
           className="p-2 text-text-dim hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"

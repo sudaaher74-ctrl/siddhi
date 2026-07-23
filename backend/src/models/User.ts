@@ -6,6 +6,7 @@ export interface IUser extends Document {
   phone: string;
   email: string;
   password?: string;
+  role: 'user' | 'admin';
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -28,6 +29,11 @@ const UserSchema: Schema = new Schema(
     password: {
       type: String,
       required: true,
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
     },
   },
   {
