@@ -9,8 +9,14 @@ export function middleware(request: NextRequest) {
   const isLoginPage = request.nextUrl.pathname.startsWith('/login');
 
   if (isLoginPage) {
-    // Redirect EVERYONE away from login page to dashboard since login is disabled
-    return NextResponse.redirect(new URL('/', request.url));
+    if (token) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return NextResponse.next();

@@ -3,9 +3,16 @@
 import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/data";
 import Link from "next/link";
+import Cookies from "js-cookie";
+import { LogOut } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname();
+
+  const handleLogout = () => {
+    Cookies.remove("token");
+    window.location.href = "/login";
+  };
 
   return (
     <aside className="w-full lg:w-[196px] flex-none flex flex-col gap-1 bg-panel border border-border rounded-[14px] p-[14px_10px] backdrop-blur-[20px]">
@@ -40,14 +47,23 @@ export default function Sidebar() {
           </Link>
         );
       })}
-      <div className="mt-auto flex items-center gap-[9px] p-[9px_8px] rounded-[10px] bg-black/5 border border-black/5 pt-4">
-        <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] flex items-center justify-center text-black font-sans font-semibold text-[11px] flex-shrink-0">
-          SD
+      <div className="mt-auto flex items-center justify-between p-[9px_8px] rounded-[10px] bg-black/5 border border-black/5 pt-4">
+        <div className="flex items-center gap-[9px]">
+          <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] flex items-center justify-center text-black font-sans font-semibold text-[11px] flex-shrink-0">
+            SD
+          </div>
+          <div>
+            <div className="text-[12px] font-semibold text-text-mid">Siddhi Deshmukh</div>
+            <div className="text-[10px] text-text-dim">Recurve · Nat. Rank #4</div>
+          </div>
         </div>
-        <div>
-          <div className="text-[12px] font-semibold text-text-mid">Siddhi Deshmukh</div>
-          <div className="text-[10px] text-text-dim">Recurve · Nat. Rank #4</div>
-        </div>
+        <button 
+          onClick={handleLogout}
+          className="p-2 text-text-dim hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+          title="Logout"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </aside>
   );
