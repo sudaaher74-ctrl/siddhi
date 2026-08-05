@@ -2,12 +2,18 @@ import express, { Response } from 'express';
 import User from '../models/User';
 import Session from '../models/Session';
 import Feedback from '../models/Feedback';
-import { protect, admin, AuthRequest } from '../middleware/authMiddleware';
+import { protect, admin, AuthedRequest, requireUser } from '../middleware/authMiddleware';
+import { validateBody, validateParams } from '../middleware/validate';
+import { feedbackStatusSchema, objectIdParam, roleSchema } from '../schemas';
 
 const router = express.Router();
 
+// Every admin endpoint requires a valid token AND the admin role. Without this
+// the whole user table was readable and deletable by anyone.
+router.use(protect, admin);
+
 // GET /api/admin/stats - Get overview stats
-router.get('/stats', async (req: AuthRequest, res: Response) => {
+router.get('/stats', async (req: AuthedRequest, res: Response) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalSessions = await Session.countDocuments();
@@ -30,7 +36,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/admin/users - Get all users
-router.get('/users', async (req: AuthRequest, res: Response) => {
+router.get('/users', async (req: AuthedRequest, res: Response) => {
   try {
     const users = await User.find({}).select('-password').sort({ createdAt: -1 });
     res.json(users);
@@ -40,11 +46,17 @@ router.get('/users', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/admin/users/:id/role - Update a user's role
-router.put('/users/:id/role', async (req: AuthRequest, res: Response): Promise<void> => {
+router.put(
+  '/users/:id/role',
+  validateParams(objectIdParam),
+  validateBody(roleSchema),
+  async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
     const { role } = req.body;
-    if (!['user', 'admin'].includes(role)) {
-      res.status(400).json({ message: 'Invalid role' });
+
+    // Don't let an admin lock themselves out of the admin area.
+    if (String(requireUser(req)._id) === req.params.id) {
+      res.status(400).json({ message: 'You cannot change your own role' });
       return;
     }
 
@@ -69,10 +81,18 @@ router.put('/users/:id/role', async (req: AuthRequest, res: Response): Promise<v
 });
 
 // DELETE /api/admin/users/:id - Delete a user and their data
-router.delete('/users/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+router.delete(
+  '/users/:id',
+  validateParams(objectIdParam),
+  async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
+    if (String(requireUser(req)._id) === req.params.id) {
+      res.status(400).json({ message: 'You cannot delete your own account here' });
+      return;
+    }
+
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       res.status(404).json({ message: 'User not found' });
       return;
@@ -95,7 +115,7 @@ router.delete('/users/:id', async (req: AuthRequest, res: Response): Promise<voi
 });
 
 // GET /api/admin/feedback - Get all feedback
-router.get('/feedback', async (req: AuthRequest, res: Response) => {
+router.get('/feedback', async (req: AuthedRequest, res: Response) => {
   try {
     const feedbackList = await Feedback.find({})
       .populate('user', 'name email')
@@ -108,7 +128,11 @@ router.get('/feedback', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/admin/feedback/:id/status - Update feedback status
-router.put('/feedback/:id/status', async (req: AuthRequest, res: Response): Promise<void> => {
+router.put(
+  '/feedback/:id/status',
+  validateParams(objectIdParam),
+  validateBody(feedbackStatusSchema),
+  async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
     const { status } = req.body;
     if (!['New', 'In Progress', 'Resolved'].includes(status)) {
@@ -132,7 +156,10 @@ router.put('/feedback/:id/status', async (req: AuthRequest, res: Response): Prom
 });
 
 // DELETE /api/admin/feedback/:id - Delete feedback
-router.delete('/feedback/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+router.delete(
+  '/feedback/:id',
+  validateParams(objectIdParam),
+  async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
     const feedback = await Feedback.findByIdAndDelete(req.params.id);
     if (!feedback) {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { CheckCircle2, Circle, Target, Plus, X } from "lucide-react";
-import Cookies from "js-cookie";
+import { apiFetch, apiPost } from "@/lib/api";
 
 interface Goal {
   _id?: string;
@@ -31,17 +31,7 @@ export default function GoalTracker() {
 
   const fetchGoals = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const token = Cookies.get("token");
-      const res = await fetch(`${apiUrl}/api/goals`, {
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setGoals(data);
-      }
+      setGoals(await apiFetch<Goal[]>("/api/goals"));
     } catch (err) {
       console.error("Failed to fetch goals", err);
     } finally {
@@ -68,25 +58,14 @@ export default function GoalTracker() {
         completed: parseInt(formData.progress) >= 100
       };
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const token = Cookies.get("token");
-      const res = await fetch(`${apiUrl}/api/goals`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(payload)
-      });
+      await apiPost("/api/goals", payload);
 
-      if (!res.ok) throw new Error("Failed to save goal");
-      
       setIsOpen(false);
       setFormData({ title: "", target: "", current: "0", deadline: "", progress: "0" });
       fetchGoals();
     } catch (err) {
       console.error(err);
-      alert("Failed to save goal.");
+      alert(err instanceof Error ? err.message : "Failed to save goal.");
     } finally {
       setIsSaving(false);
     }

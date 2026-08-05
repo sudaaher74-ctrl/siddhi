@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+import { apiPost } from "@/lib/api";
 import { DISTANCE_OPTIONS } from "./SessionSetup";
 
 export default function ManualSessionModal() {
@@ -32,31 +32,22 @@ export default function ManualSessionModal() {
     try {
       const arrowsNum = parseInt(formData.arrows) || 1;
       const scoreNum = parseInt(formData.score) || 0;
-      const avg = (scoreNum / arrowsNum).toFixed(2);
-      
+
       const payload = {
         ...formData,
-        avg
+        arrows: arrowsNum,
+        score: scoreNum,
+        tens: parseInt(formData.tens) || 0,
+        avg: Number((scoreNum / arrowsNum).toFixed(2)),
       };
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const token = Cookies.get("token");
-      const res = await fetch(`${apiUrl}/api/sessions`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(payload)
-      });
+      await apiPost("/api/sessions", payload);
 
-      if (!res.ok) throw new Error("Failed to save session");
-      
       setIsOpen(false);
       router.refresh();
     } catch (err) {
       console.error(err);
-      alert("Failed to save session.");
+      alert(err instanceof Error ? err.message : "Failed to save session.");
     } finally {
       setIsSaving(false);
     }
@@ -139,9 +130,6 @@ export default function ManualSessionModal() {
                     required
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Total Score</label>
                   <input 

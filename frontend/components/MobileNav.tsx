@@ -4,14 +4,14 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Flag, LogOut, ShieldCheck, MessageSquare } from "lucide-react";
-import Cookies from "js-cookie";
 
 export default function MobileNav() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    Cookies.remove("token");
+  const handleLogout = async () => {
+    // Clears the httpOnly cookie server-side.
+    await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
   };
 

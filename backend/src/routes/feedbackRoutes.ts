@@ -1,21 +1,18 @@
 import express, { Response } from 'express';
-import { protect, AuthRequest } from '../middleware/authMiddleware';
+import { protect, AuthedRequest, requireUser } from '../middleware/authMiddleware';
+import { validateBody } from '../middleware/validate';
+import { feedbackSchema } from '../schemas';
 import Feedback from '../models/Feedback';
 
 const router = express.Router();
 
 // POST /api/feedback - Submit new feedback
-router.post('/', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', protect, validateBody(feedbackSchema), async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
     const { type, subject, message } = req.body;
 
-    if (!type || !subject || !message) {
-      res.status(400).json({ message: 'Please provide type, subject, and message' });
-      return;
-    }
-
     const feedback = new Feedback({
-      user: req.user._id,
+      user: requireUser(req)._id,
       type,
       subject,
       message,

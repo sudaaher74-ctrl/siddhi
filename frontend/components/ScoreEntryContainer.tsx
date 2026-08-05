@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Cookies from "js-cookie";
+import { apiPost } from "@/lib/api";
 import ScorePad from "./ScorePad";
 import ArrowPlot from "./ArrowPlot";
 import ArcheryTimer from "./ArcheryTimer";
@@ -73,29 +73,15 @@ export default function ScoreEntryContainer() {
         name: `${distance ? `${distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
         type: setup?.type || "Practice",
         distance,
-        arrows: allArrows.length.toString(),
-        score: totalScore.toString(),
-        avg: average,
-        tens: tensCount.toString(),
+        arrows: allArrows.length,
+        score: totalScore,
+        avg: Number(average),
+        tens: tensCount,
         note: `Logged via Interactive Score Pad${distance ? ` at ${distance}` : ""}`,
         arrowData: JSON.stringify(ends)
       };
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const token = Cookies.get("token");
-      const res = await fetch(`${apiUrl}/api/sessions`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || `Save failed (${res.status})`);
-      }
+      await apiPost("/api/sessions", payload);
 
       // Hard navigation so /practice re-renders with the session we just saved
       // instead of a cached router payload.

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Cookies from "js-cookie";
+import { apiDelete, apiFetch, apiPut } from "@/lib/api";
 import { Inbox, Search, Trash2, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
 
 interface Feedback {
@@ -26,15 +26,7 @@ export default function AdminInboxPage() {
 
   const fetchTickets = async () => {
     try {
-      const token = Cookies.get("token");
-      const res = await fetch("http://localhost:5001/api/admin/feedback", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) throw new Error("Failed to load feedback tickets");
-      const data = await res.json();
-      setTickets(data);
+      setTickets(await apiFetch<Feedback[]>("/api/admin/feedback"));
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -52,16 +44,7 @@ export default function AdminInboxPage() {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      const token = Cookies.get("token");
-      const res = await fetch(`http://localhost:5001/api/admin/feedback/${id}/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error("Failed to update status");
+      await apiPut(`/api/admin/feedback/${id}/status`, { status: newStatus });
       
       // Update local state
       setTickets(tickets.map(t => t._id === id ? { ...t, status: newStatus } : t));
@@ -78,14 +61,7 @@ export default function AdminInboxPage() {
     if (!window.confirm("Are you sure you want to delete this ticket?")) return;
     
     try {
-      const token = Cookies.get("token");
-      const res = await fetch(`http://localhost:5001/api/admin/feedback/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) throw new Error("Failed to delete ticket");
+      await apiDelete(`/api/admin/feedback/${id}`);
       
       setTickets(tickets.filter(t => t._id !== id));
     } catch (err) {

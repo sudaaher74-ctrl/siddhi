@@ -8,6 +8,16 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # sync: false = set the value in the Render dashboard, never in git.
+      # The server refuses to start if these are missing.
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      # Comma-separated list of allowed browser origins, e.g.
+      # https://siddhi-frontend.onrender.com
+      - key: CORS_ORIGIN
+        sync: false
 
   - type: web
     name: siddhi-frontend
@@ -18,3 +28,5 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

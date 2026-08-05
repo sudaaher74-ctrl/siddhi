@@ -22,4 +22,6 @@ const GoalSchema: Schema = new Schema({
   timestamps: true,
 });
 
+GoalSchema.index({ user: 1, createdAt: -1 });
+
 export default mongoose.model<IGoal>('Goal', GoalSchema);

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Cookies from "js-cookie";
+import { apiDelete, apiFetch, apiPut } from "@/lib/api";
 import { UserCog, Trash2, Search, Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 
@@ -21,22 +21,15 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
+
   const fetchUsers = async () => {
     try {
-      const token = Cookies.get("token");
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await fetch(`${apiUrl}/api/admin/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data);
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error);
+      setUsers(await apiFetch<UserData[]>("/api/admin/users"));
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setError(err instanceof Error ? err.message : "Could not load users");
     } finally {
       setLoading(false);
     }
@@ -56,26 +49,11 @@ export default function AdminUsersPage() {
     
     setProcessingId(userId);
     try {
-      const token = Cookies.get("token");
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await fetch(`${apiUrl}/api/admin/users/${userId}/role`, {
-        method: "PUT",
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ role: newRole })
-      });
-
-      if (res.ok) {
-        await fetchUsers(); // Refresh data
-      } else {
-        const err = await res.json();
-        alert(err.message || "Failed to update role");
-      }
-    } catch (error) {
-      console.error("Error updating role:", error);
-      alert("An error occurred");
+      await apiPut(`/api/admin/users/${userId}/role`, { role: newRole });
+      await fetchUsers(); // Refresh data
+    } catch (err) {
+      console.error("Error updating role:", err);
+      alert(err instanceof Error ? err.message : "Failed to update role");
     } finally {
       setProcessingId(null);
     }
@@ -86,24 +64,11 @@ export default function AdminUsersPage() {
     
     setProcessingId(userId);
     try {
-      const token = Cookies.get("token");
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await fetch(`${apiUrl}/api/admin/users/${userId}`, {
-        method: "DELETE",
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (res.ok) {
-        setUsers(users.filter(u => u._id !== userId));
-      } else {
-        const err = await res.json();
-        alert(err.message || "Failed to delete user");
-      }
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      alert("An error occurred");
+      await apiDelete(`/api/admin/users/${userId}`);
+      setUsers(users.filter(u => u._id !== userId));
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      alert(err instanceof Error ? err.message : "Failed to delete user");
     } finally {
       setProcessingId(null);
     }

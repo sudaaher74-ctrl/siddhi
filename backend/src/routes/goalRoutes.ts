@@ -1,14 +1,15 @@
 import express from 'express';
 import Goal from '../models/Goal';
-import { protect, AuthRequest } from '../middleware/authMiddleware';
+import { protect, AuthedRequest, requireUser } from '../middleware/authMiddleware';
+import { validateBody, validateParams } from '../middleware/validate';
+import { goalSchema, goalUpdateSchema, objectIdParam } from '../schemas';
 
 const router = express.Router();
 
 // GET /api/goals - Fetch all goals
-router.get('/', protect, async (req: AuthRequest, res) => {
+router.get('/', protect, async (req: AuthedRequest, res) => {
   try {
-    const userId = req.user._id;
-    const goals = await Goal.find({ user: userId }).sort({ createdAt: -1 });
+    const goals = await Goal.find({ user: requireUser(req)._id }).sort({ createdAt: -1 });
     res.json(goals);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -16,11 +17,11 @@ router.get('/', protect, async (req: AuthRequest, res) => {
 });
 
 // POST /api/goals - Create a new goal
-router.post('/', protect, async (req: AuthRequest, res) => {
+router.post('/', protect, validateBody(goalSchema), async (req: AuthedRequest, res) => {
   try {
     const goal = new Goal({
       ...req.body,
-      user: req.user._id,
+      user: requireUser(req)._id,
     });
     const savedGoal = await goal.save();
     res.status(201).json(savedGoal);
@@ -30,10 +31,10 @@ router.post('/', protect, async (req: AuthRequest, res) => {
 });
 
 // PUT /api/goals/:id/complete - Mark goal as completed or update progress
-router.put('/:id', protect, async (req: AuthRequest, res) => {
+router.put('/:id', protect, validateParams(objectIdParam), validateBody(goalUpdateSchema), async (req: AuthedRequest, res) => {
   try {
     const updatedGoal = await Goal.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id },
+      { _id: req.params.id, user: requireUser(req)._id },
       req.body,
       { new: true }
     );
@@ -47,9 +48,9 @@ router.put('/:id', protect, async (req: AuthRequest, res) => {
 });
 
 // DELETE /api/goals/:id - Delete a goal
-router.delete('/:id', protect, async (req: AuthRequest, res) => {
+router.delete('/:id', protect, validateParams(objectIdParam), async (req: AuthedRequest, res) => {
   try {
-    const deletedGoal = await Goal.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+    const deletedGoal = await Goal.findOneAndDelete({ _id: req.params.id, user: requireUser(req)._id });
     if (!deletedGoal) {
       return res.status(404).json({ message: 'Goal not found' });
     }

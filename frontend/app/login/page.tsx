@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Cookies from "js-cookie";
+import { apiPost } from "@/lib/api";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -18,26 +18,15 @@ export default function LoginPage() {
     setLoading(true);
 
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
     try {
-      const body = isLogin 
+      const body = isLogin
         ? { email, password }
         : { name, phone, email, password };
 
-      const res = await fetch(`${apiUrl}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Something went wrong");
-      }
-
-      Cookies.set("token", data.token, { expires: 30 });
+      // The route handler stores the token in an httpOnly cookie; the token
+      // itself never reaches page scripts.
+      await apiPost(endpoint, body);
       window.location.href = "/";
     } catch (err: unknown) {
       if (err instanceof Error) {

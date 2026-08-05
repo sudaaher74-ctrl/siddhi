@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Cookies from "js-cookie";
+import { apiFetch } from "@/lib/api";
 import { Users, Crosshair, TrendingUp } from "lucide-react";
 
 interface AdminStats {
@@ -17,20 +17,7 @@ export default function AdminOverviewPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = Cookies.get("token");
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-        const res = await fetch(`${apiUrl}/api/admin/stats`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setStats(data);
-        } else {
-          console.error("Failed to fetch admin stats");
-        }
+        setStats(await apiFetch<AdminStats>("/api/admin/stats"));
       } catch (error) {
         console.error("Error fetching admin stats:", error);
       } finally {

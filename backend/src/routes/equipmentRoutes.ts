@@ -1,13 +1,15 @@
 import express, { Response } from 'express';
 import Equipment from '../models/Equipment';
-import { protect, AuthRequest } from '../middleware/authMiddleware';
+import { protect, AuthedRequest, requireUser } from '../middleware/authMiddleware';
+import { validateBody, validateParams } from '../middleware/validate';
+import { equipmentSchema, objectIdParam } from '../schemas';
 
 const router = express.Router();
 
 // GET all equipment
-router.get('/', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/', protect, async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
-    const equipment = await Equipment.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const equipment = await Equipment.find({ user: requireUser(req)._id }).sort({ createdAt: -1 });
     res.status(200).json(equipment);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -15,15 +17,15 @@ router.get('/', protect, async (req: AuthRequest, res: Response): Promise<void> 
 });
 
 // POST new equipment
-router.post('/', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', protect, validateBody(equipmentSchema), async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
     const { name, type, status, stats } = req.body;
     const newEquipment = new Equipment({
-      user: req.user._id,
+      user: requireUser(req)._id,
       name,
       type,
-      status: status || 'active',
-      stats: stats || []
+      status,
+      stats
     });
 
     const savedEquipment = await newEquipment.save();
@@ -34,12 +36,12 @@ router.post('/', protect, async (req: AuthRequest, res: Response): Promise<void>
 });
 
 // PUT update equipment
-router.put('/:id', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+router.put('/:id', protect, validateParams(objectIdParam), validateBody(equipmentSchema), async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
     const { name, type, status, stats } = req.body;
     
     const updatedEquipment = await Equipment.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id },
+      { _id: req.params.id, user: requireUser(req)._id },
       { name, type, status, stats },
       { new: true, runValidators: true }
     );
@@ -56,9 +58,9 @@ router.put('/:id', protect, async (req: AuthRequest, res: Response): Promise<voi
 });
 
 // DELETE equipment
-router.delete('/:id', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+router.delete('/:id', protect, validateParams(objectIdParam), async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
-    const deletedEquipment = await Equipment.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+    const deletedEquipment = await Equipment.findOneAndDelete({ _id: req.params.id, user: requireUser(req)._id });
     
     if (!deletedEquipment) {
       res.status(404).json({ message: 'Equipment not found' });

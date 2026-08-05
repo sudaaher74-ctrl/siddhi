@@ -47,4 +47,6 @@ const EquipmentSchema = new Schema<IEquipment>(
   }
 );
 
+EquipmentSchema.index({ user: 1, createdAt: -1 });
+
 export default mongoose.models.Equipment || mongoose.model<IEquipment>('Equipment', EquipmentSchema);

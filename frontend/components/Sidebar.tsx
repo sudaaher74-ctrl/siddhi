@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/data";
 import Link from "next/link";
-import Cookies from "js-cookie";
 import { LogOut, ShieldCheck, MessageSquare } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 
@@ -11,8 +10,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useUser();
 
-  const handleLogout = () => {
-    Cookies.remove("token");
+  const handleLogout = async () => {
+    // Clears the httpOnly cookie server-side.
+    await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
   };
 

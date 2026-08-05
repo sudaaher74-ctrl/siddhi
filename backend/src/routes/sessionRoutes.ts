@@ -1,31 +1,34 @@
 import express from 'express';
 import Session from '../models/Session';
-import { protect, AuthRequest } from '../middleware/authMiddleware';
+import { protect, AuthedRequest, requireUser } from '../middleware/authMiddleware';
+import { validateBody } from '../middleware/validate';
+import { sessionSchema } from '../schemas';
 
 const router = express.Router();
 
-// GET /api/sessions - Fetch all sessions
-router.get('/', protect, async (req: AuthRequest, res) => {
+// GET /api/sessions - Fetch the signed-in user's sessions
+router.get('/', protect, async (req: AuthedRequest, res) => {
   try {
-    const userId = req.user._id;
-    const sessions = await Session.find({ user: userId }).sort({ createdAt: -1 });
+    const sessions = await Session.find({ user: requireUser(req)._id }).sort({ createdAt: -1 });
     res.json(sessions);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    res.status(500).json({ message: 'Could not load sessions' });
   }
 });
 
 // POST /api/sessions - Create a new session
-router.post('/', protect, async (req: AuthRequest, res) => {
+router.post('/', protect, validateBody(sessionSchema), async (req: AuthedRequest, res) => {
   try {
     const session = new Session({
       ...req.body,
-      user: req.user._id,
+      user: requireUser(req)._id,
     });
     const savedSession = await session.save();
     res.status(201).json(savedSession);
-  } catch (error: any) {
-    res.status(400).json({ message: error.message });
+  } catch (error) {
+    console.error('Error creating session:', error);
+    res.status(500).json({ message: 'Could not save session' });
   }
 });
 
