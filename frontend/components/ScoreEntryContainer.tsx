@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import ScorePad from "./ScorePad";
 import ArrowPlot from "./ArrowPlot";
 import ArcheryTimer from "./ArcheryTimer";
+import SessionSetup, { SessionSetupValues } from "./SessionSetup";
 
 export type ScoreValue = "X" | "10" | "9" | "8" | "7" | "6" | "5" | "4" | "3" | "2" | "1" | "M";
 
@@ -16,11 +16,12 @@ export type ArrowShot = {
 };
 
 export default function ScoreEntryContainer() {
-  const router = useRouter();
   const [ends, setEnds] = useState<ArrowShot[][]>(Array(6).fill([]));
   const [currentEndIndex, setCurrentEndIndex] = useState(0);
   const [timerResetCount, setTimerResetCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  // Null until the archer has picked a distance — scoring is blocked before that
+  const [setup, setSetup] = useState<SessionSetupValues | null>(null);
 
   const currentArrows = ends[currentEndIndex] || [];
   const isSessionComplete = currentEndIndex >= 6;
@@ -67,14 +68,16 @@ export default function ScoreEntryContainer() {
       const tensCount = allArrows.filter(a => a.score === "10" || a.score === "X").length;
       const average = allArrows.length > 0 ? (totalScore / allArrows.length).toFixed(2) : "0.00";
       
+      const distance = setup?.distance || "";
       const payload = {
-        name: `Practice Session - ${new Date().toLocaleDateString()}`,
-        type: "Practice",
+        name: `${distance ? `${distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
+        type: setup?.type || "Practice",
+        distance,
         arrows: allArrows.length.toString(),
         score: totalScore.toString(),
         avg: average,
         tens: tensCount.toString(),
-        note: "Logged via Interactive Score Pad",
+        note: `Logged via Interactive Score Pad${distance ? ` at ${distance}` : ""}`,
         arrowData: JSON.stringify(ends)
       };
 
@@ -89,19 +92,41 @@ export default function ScoreEntryContainer() {
         body: JSON.stringify(payload)
       });
 
-      if (!res.ok) throw new Error("Failed to save session");
-      
-      router.push("/practice");
-      router.refresh();
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || `Save failed (${res.status})`);
+      }
+
+      // Hard navigation so /practice re-renders with the session we just saved
+      // instead of a cached router payload.
+      window.location.href = "/practice";
     } catch (err) {
       console.error(err);
-      alert("Failed to save session. Please try again.");
+      alert(`Failed to save session: ${err instanceof Error ? err.message : "unknown error"}`);
     } finally {
       setIsSaving(false);
     }
   };
 
+  if (!setup) {
+    return <SessionSetup onStart={setSetup} />;
+  }
+
   return (
+    <>
+    <div className="flex items-center gap-3 mt-4">
+      <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-accent/10 text-accent text-[13px] font-bold">
+        {setup.distance}
+      </span>
+      <span className="text-[13px] text-text-dim">{setup.type}</span>
+      <button
+        type="button"
+        onClick={() => setSetup(null)}
+        className="ml-auto text-[12px] text-text-dim underline hover:text-text"
+      >
+        Change target
+      </button>
+    </div>
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-[12px] mt-4">
       <div>
         <ScorePad 
@@ -129,5 +154,6 @@ export default function ScoreEntryContainer() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { DISTANCE_OPTIONS } from "./SessionSetup";
 
 export default function ManualSessionModal() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function ManualSessionModal() {
   const [formData, setFormData] = useState({
     name: `Practice Session - ${new Date().toLocaleDateString()}`,
     type: "Practice",
+    distance: "70m",
     arrows: "36",
     score: "0",
     tens: "0",
@@ -110,6 +112,22 @@ export default function ManualSessionModal() {
                     <option value="Scoring">Scoring</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Distance</label>
+                  <select
+                    name="distance"
+                    value={formData.distance}
+                    onChange={handleChange}
+                    className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
+                  >
+                    {DISTANCE_OPTIONS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Arrows</label>
                   <input 

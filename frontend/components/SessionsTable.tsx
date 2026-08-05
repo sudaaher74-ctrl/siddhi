@@ -39,6 +39,7 @@ export default function SessionsTable({ sessions }: SessionsTableProps) {
                 <tr className="border-b border-slate-200 text-[11px] tracking-wider uppercase text-slate-400 font-semibold">
                   <th className="p-4 pl-5 font-semibold w-[20%]">Session Name</th>
                   <th className="p-4 font-semibold w-[15%]">Type</th>
+                  <th className="p-4 font-semibold">Distance</th>
                   <th className="p-4 font-semibold text-right">Arrows</th>
                   <th className="p-4 font-semibold text-right w-[20%]">Score</th>
                   <th className="p-4 font-semibold text-right">Avg</th>
@@ -56,6 +57,15 @@ export default function SessionsTable({ sessions }: SessionsTableProps) {
                       <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[12px] font-medium">
                         {s.type}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      {s.distance ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-accent/10 text-accent text-[12px] font-semibold">
+                          {s.distance}
+                        </span>
+                      ) : (
+                        <span className="text-[13px] text-slate-400">—</span>
+                      )}
                     </td>
                     <td className="p-4 text-right">
                       <div className="text-[16px] font-medium text-slate-600">{s.arrows}</div>

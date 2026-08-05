@@ -5,8 +5,9 @@ import ShotTimeline from "@/components/ShotTimeline";
 import SessionsTable from "@/components/SessionsTable";
 import ManualSessionModal from "@/components/ManualSessionModal";
 import PracticeKPIs from "@/components/PracticeKPIs";
-import { sessions as mockSessions } from "@/lib/data";
 import { cookies } from "next/headers";
+
+export const dynamic = "force-dynamic";
 
 async function getSessions(): Promise<Session[]> {
   try {
@@ -27,8 +28,10 @@ async function getSessions(): Promise<Session[]> {
     
     return await res.json();
   } catch (error) {
-    console.error("Error fetching sessions, falling back to mock data:", error);
-    return mockSessions;
+    // Never fall back to mock data here — it hides real sessions and makes it
+    // look like saving failed. Show an empty list instead.
+    console.error("Error fetching sessions:", error);
+    return [];
   }
 }
 
