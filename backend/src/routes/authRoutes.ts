@@ -7,8 +7,10 @@ import { validateBody } from '../middleware/validate';
 import { loginSchema, registerSchema } from '../schemas';
 import { authLimiter } from '../middleware/rateLimit';
 import { env } from '../config/env';
+import { OAuth2Client } from 'google-auth-library';
 
 const router = express.Router();
+const googleClient = new OAuth2Client();
 
 const generateToken = (id: string) =>
   jwt.sign({ id }, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as SignOptions);
@@ -72,6 +74,71 @@ router.post('/login', authLimiter, validateBody(loginSchema), async (req, res) =
   }
 });
 
+// POST /api/auth/google - Google OAuth sign-in / registration
+router.post('/google', authLimiter, async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential || typeof credential !== 'string') {
+      res.status(400).json({ message: 'Google credential is required' });
+      return;
+    }
+
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: env.googleClientId || undefined,
+      });
+      payload = ticket.getPayload();
+    } catch (verifyError) {
+      console.error('Google token verification failed:', verifyError);
+      res.status(401).json({ message: 'Invalid or expired Google credential' });
+      return;
+    }
+
+    if (!payload || !payload.email) {
+      res.status(401).json({ message: 'Google token does not contain a valid email' });
+      return;
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email.toLowerCase();
+    const name = payload.name || payload.email.split('@')[0];
+    const avatar = payload.picture;
+
+    // Check if user already exists by googleId
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+      // Check if user exists by email, and link accounts
+      user = await User.findOne({ email });
+
+      if (user) {
+        user.googleId = googleId;
+        if (!user.avatar && avatar) {
+          user.avatar = avatar;
+        }
+        await user.save();
+      } else {
+        // Create new athlete user
+        user = await User.create({
+          name,
+          email,
+          googleId,
+          avatar,
+          role: 'user',
+        });
+      }
+    }
+
+    sendAuth(res, user);
+  } catch (error) {
+    console.error('Google auth failed:', error);
+    res.status(500).json({ message: 'Google authentication failed' });
+  }
+});
+
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
   res.clearCookie('token', {
@@ -85,8 +152,8 @@ router.post('/logout', (req, res) => {
 
 // GET /api/auth/me - Current user profile
 router.get('/me', protect, async (req: AuthedRequest, res) => {
-  const { _id, name, email, phone, role } = requireUser(req);
-  res.json({ _id, name, email, phone, role });
+  const { _id, name, email, phone, role, avatar, googleId } = requireUser(req);
+  res.json({ _id, name, email, phone, role, avatar, hasGoogleAuth: Boolean(googleId) });
 });
 
 export default router;

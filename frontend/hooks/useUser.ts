@@ -7,6 +7,8 @@ interface UserProfile {
   email: string;
   phone?: string;
   role?: string;
+  avatar?: string;
+  hasGoogleAuth?: boolean;
 }
 
 export function useUser() {

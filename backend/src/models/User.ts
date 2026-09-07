@@ -3,9 +3,11 @@ import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
   name: string;
-  phone: string;
+  phone?: string;
   email: string;
   password?: string;
+  googleId?: string;
+  avatar?: string;
   role: 'user' | 'admin';
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
@@ -18,7 +20,7 @@ const UserSchema: Schema = new Schema(
     },
     phone: {
       type: String,
-      required: true,
+      required: false,
     },
     email: {
       type: String,
@@ -28,7 +30,16 @@ const UserSchema: Schema = new Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+    avatar: {
+      type: String,
+      required: false,
     },
     role: {
       type: String,
@@ -43,18 +54,19 @@ const UserSchema: Schema = new Schema(
 
 // Method to compare entered password with hashed password
 UserSchema.methods.matchPassword = async function (enteredPassword: string) {
+  if (!this.password) {
+    return false;
+  }
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
 // Pre-save middleware to hash password
 UserSchema.pre('save', async function (this: IUser) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return;
   }
   const salt = await bcrypt.genSalt(10);
-  if (this.password) {
-    this.password = await bcrypt.hash(this.password, salt);
-  }
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 export default mongoose.model<IUser>('User', UserSchema);

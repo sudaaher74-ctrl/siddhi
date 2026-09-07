@@ -1,6 +1,7 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { OAuth2Client } from 'google-auth-library';
 import { app, authed, createUserAndLogin, ORIGIN } from './helpers';
 import User from '../src/models/User';
 
@@ -88,6 +89,72 @@ describe('authentication', () => {
 
     const res = await authed(request(app).get('/api/sessions'), forged);
     expect(res.status).toBe(401);
+  });
+
+  it('rejects Google auth when credential is missing', async () => {
+    const res = await request(app).post('/api/auth/google').set('Origin', ORIGIN).send({});
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/credential is required/i);
+  });
+
+  it('rejects Google auth when verification fails', async () => {
+    vi.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockRejectedValueOnce(
+      new Error('Invalid token')
+    );
+    const res = await request(app)
+      .post('/api/auth/google')
+      .set('Origin', ORIGIN)
+      .send({ credential: 'bad_token' });
+    expect(res.status).toBe(401);
+  });
+
+  it('signs in a new user with valid Google credential', async () => {
+    vi.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockResolvedValueOnce({
+      getPayload: () => ({
+        sub: 'google_12345',
+        email: 'googleuser@example.com',
+        name: 'Google Archer',
+        picture: 'https://example.com/avatar.jpg',
+      }),
+    } as any);
+
+    const res = await request(app)
+      .post('/api/auth/google')
+      .set('Origin', ORIGIN)
+      .send({ credential: 'valid_mock_token' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe('googleuser@example.com');
+    const cookie = res.headers['set-cookie'][0];
+    expect(cookie).toContain('token=');
+    expect(cookie).toContain('HttpOnly');
+
+    const created = await User.findOne({ email: 'googleuser@example.com' });
+    expect(created).not.toBeNull();
+    expect(created?.googleId).toBe('google_12345');
+    expect(created?.avatar).toBe('https://example.com/avatar.jpg');
+    expect(created?.name).toBe('Google Archer');
+  });
+
+  it('links Google account to existing email user', async () => {
+    await createUserAndLogin({ email: 'existing@example.com' });
+
+    vi.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockResolvedValueOnce({
+      getPayload: () => ({
+        sub: 'google_existing_67890',
+        email: 'existing@example.com',
+        name: 'Existing User',
+      }),
+    } as any);
+
+    const res = await request(app)
+      .post('/api/auth/google')
+      .set('Origin', ORIGIN)
+      .send({ credential: 'valid_mock_token_existing' });
+
+    expect(res.status).toBe(200);
+    const user = await User.findOne({ email: 'existing@example.com' });
+    expect(user?.googleId).toBe('google_existing_67890');
   });
 
   it('rate limits repeated failed logins', async () => {

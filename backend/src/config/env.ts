@@ -38,6 +38,7 @@ export const env = {
   jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d',
   allowedOrigins,
+  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   // Cross-site cookies (frontend and API on different domains) require
   // SameSite=None + Secure, which only works over HTTPS.
   cookieSameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
