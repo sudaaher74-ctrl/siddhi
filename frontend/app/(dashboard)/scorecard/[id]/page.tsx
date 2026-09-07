@@ -38,11 +38,9 @@ export default async function ScorecardByIdPage({ params }: ScorecardPageProps) 
   const session = await getSession(id);
 
   return (
-    <div className="min-h-screen py-2">
-      <div className="hidden sm:block mb-4">
-        <TopBar title="Official Scorecard" />
-      </div>
+    <>
+      <TopBar title="Scorecard" />
       <ScorecardView session={session || undefined} />
-    </div>
+    </>
   );
 }
