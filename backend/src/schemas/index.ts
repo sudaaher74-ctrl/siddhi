@@ -49,8 +49,8 @@ export const loginSchema = z.object({
 export const sessionSchema = z
   .object({
     name: shortText('Session name', 120),
-    type: z.enum(['Practice', 'Blank Bale', 'Scoring'], {
-      message: 'Type must be Practice, Blank Bale or Scoring',
+    type: z.enum(['Practice', 'Match', 'Blank Bale', 'Scoring'], {
+      message: 'Type must be Practice or Match',
     }),
     distance: z.string().trim().max(20).optional().default(''),
     arrows: numeric('Arrows', 1000),
@@ -73,7 +73,7 @@ export const sessionSchema = z
 
 export const sessionUpdateSchema = z.object({
   name: shortText('Session name', 120).optional(),
-  type: z.enum(['Practice', 'Blank Bale', 'Scoring']).optional(),
+  type: z.enum(['Practice', 'Match', 'Blank Bale', 'Scoring']).optional(),
   distance: z.string().trim().max(20).optional(),
   arrows: numeric('Arrows', 1000).optional(),
   score: numeric('Score', 10000).optional(),

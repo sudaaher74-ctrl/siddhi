@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/lib/api";
-import { DISTANCE_OPTIONS } from "./SessionSetup";
+import { DISTANCE_OPTIONS, SESSION_TYPES } from "./SessionSetup";
 
 export default function ManualSessionModal() {
   const router = useRouter();
@@ -116,9 +116,9 @@ export default function ManualSessionModal() {
                     onChange={handleChange}
                     className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
                   >
-                    <option value="Practice">Practice</option>
-                    <option value="Blank Bale">Blank Bale</option>
-                    <option value="Scoring">Scoring</option>
+                    {SESSION_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
                   </select>
                 </div>
                 <div>

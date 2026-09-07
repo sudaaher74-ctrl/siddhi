@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import Card from "@/components/ui/Card";
 import { Target } from "lucide-react";
 
-export const DISTANCE_OPTIONS = ["18m", "30m", "40m", "50m", "60m", "70m", "90m"];
-export const SESSION_TYPES = ["Practice", "Blank Bale", "Scoring"];
+export const DISTANCE_OPTIONS = ["18m", "30m", "40m", "50m", "60m", "70m"];
+export const SESSION_TYPES = ["Practice", "Match"];
 
 export type SessionSetupValues = {
   distance: string;
@@ -18,11 +18,9 @@ interface SessionSetupProps {
 
 export default function SessionSetup({ onStart }: SessionSetupProps) {
   const [distance, setDistance] = useState("70m");
-  const [customDistance, setCustomDistance] = useState("");
   const [type, setType] = useState("Practice");
 
-  const resolvedDistance = distance === "custom" ? customDistance.trim() : distance;
-  const canStart = resolvedDistance.length > 0;
+  const canStart = distance.length > 0;
 
   return (
     <div className="max-w-lg mx-auto mt-6">
@@ -39,7 +37,7 @@ export default function SessionSetup({ onStart }: SessionSetupProps) {
           <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-2">
             Distance
           </label>
-          <div className="grid grid-cols-4 gap-2 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             {DISTANCE_OPTIONS.map((d) => (
               <button
                 key={d}
@@ -54,33 +52,12 @@ export default function SessionSetup({ onStart }: SessionSetupProps) {
                 {d}
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => setDistance("custom")}
-              className={`py-3 rounded-lg text-[14px] font-semibold transition-colors ${
-                distance === "custom"
-                  ? "bg-accent text-white"
-                  : "bg-black/5 text-text hover:bg-black/10"
-              }`}
-            >
-              Other
-            </button>
           </div>
-
-          {distance === "custom" && (
-            <input
-              type="text"
-              value={customDistance}
-              onChange={(e) => setCustomDistance(e.target.value)}
-              placeholder="e.g. 25m"
-              className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent mb-3"
-            />
-          )}
 
           <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-2 mt-4">
             Session Type
           </label>
-          <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="grid grid-cols-2 gap-2 mb-6">
             {SESSION_TYPES.map((t) => (
               <button
                 key={t}
@@ -98,7 +75,7 @@ export default function SessionSetup({ onStart }: SessionSetupProps) {
           <button
             type="button"
             disabled={!canStart}
-            onClick={() => onStart({ distance: resolvedDistance, type })}
+            onClick={() => onStart({ distance, type })}
             className="w-full py-3 bg-accent text-white font-semibold text-[14px] rounded-lg transition-opacity disabled:opacity-40"
           >
             Start Shooting
