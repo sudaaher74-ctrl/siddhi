@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import User from "../src/models/User";
 import connectDB from "../src/config/db";
@@ -19,15 +18,14 @@ const seedAdmin = async () => {
     }
 
     // Create a new admin user
-    const adminUser = new User({
+    await User.create({
       name: "Siddhi Admin",
       phone: "1234567890",
       email: adminEmail,
-      password: "password123", // Password will be hashed by the pre-save hook in User model
+      password: "password123",
       role: "admin",
     });
 
-    await adminUser.save();
     console.log("✅ Admin user created successfully!");
     console.log("Email: admin@siddhi.com");
     console.log("Password: password123");

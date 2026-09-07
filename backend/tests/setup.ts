@@ -1,34 +1,40 @@
 /**
  * Test bootstrap: provides the environment variables the app requires and
- * swaps MongoDB for an in-memory instance, so tests never touch real data.
+ * uses an in-memory LibSQL SQLite instance, so tests never touch real data.
  */
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET =
   process.env.JWT_SECRET || 'test-secret-that-is-long-enough-for-the-check';
 process.env.CORS_ORIGIN = 'http://localhost:3000';
-// Placeholder so `config/env` passes its required-variable check at import
-// time; the real in-memory URI is assigned in beforeAll below.
-process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/test-placeholder';
+process.env.TURSO_DATABASE_URL = ':memory:';
 
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose from 'mongoose';
+import { createClient, Client } from '@libsql/client';
+import { setDbClient, initTables } from '../src/config/db';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
-let mongo: MongoMemoryServer;
+let testDb: Client;
 
 beforeAll(async () => {
-  mongo = await MongoMemoryServer.create();
-  process.env.MONGODB_URI = mongo.getUri();
-  await mongoose.connect(process.env.MONGODB_URI);
+  testDb = createClient({ url: ':memory:' });
+  setDbClient(testDb);
+  await initTables(testDb);
 });
 
 afterEach(async () => {
-  // Clean slate between tests without paying to restart the server.
-  const collections = await mongoose.connection.db!.collections();
-  await Promise.all(collections.map((c) => c.deleteMany({})));
+  if (testDb) {
+    // Clean slate between tests
+    await testDb.batch([
+      'DELETE FROM users',
+      'DELETE FROM sessions',
+      'DELETE FROM goals',
+      'DELETE FROM equipment',
+      'DELETE FROM feedback',
+    ]);
+  }
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongo.stop();
+  if (testDb) {
+    testDb.close();
+  }
 });

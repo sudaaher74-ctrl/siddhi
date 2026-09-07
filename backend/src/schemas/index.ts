@@ -1,8 +1,14 @@
 import { z } from 'zod';
-import mongoose from 'mongoose';
+
+const isValidId = (v: string) => {
+  return (
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v) ||
+    /^[0-9a-fA-F]{24}$/.test(v)
+  );
+};
 
 export const objectIdParam = z.object({
-  id: z.string().refine((v) => mongoose.Types.ObjectId.isValid(v), {
+  id: z.string().refine(isValidId, {
     message: 'Invalid id',
   }),
 });

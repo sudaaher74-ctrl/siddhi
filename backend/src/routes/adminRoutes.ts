@@ -60,7 +60,7 @@ router.put(
       return;
     }
 
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(String(req.params.id));
     if (!user) {
       res.status(404).json({ message: 'User not found' });
       return;
@@ -86,12 +86,12 @@ router.delete(
   validateParams(objectIdParam),
   async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
-    if (String(requireUser(req)._id) === req.params.id) {
+    if (String(requireUser(req)._id) === String(req.params.id)) {
       res.status(400).json({ message: 'You cannot delete your own account here' });
       return;
     }
 
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(String(req.params.id));
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });
@@ -140,7 +140,7 @@ router.put(
       return;
     }
 
-    const feedback = await Feedback.findById(req.params.id);
+    const feedback = await Feedback.findById(String(req.params.id));
     if (!feedback) {
       res.status(404).json({ message: 'Feedback not found' });
       return;
@@ -161,7 +161,7 @@ router.delete(
   validateParams(objectIdParam),
   async (req: AuthedRequest, res: Response): Promise<void> => {
   try {
-    const feedback = await Feedback.findByIdAndDelete(req.params.id);
+    const feedback = await Feedback.findByIdAndDelete(String(req.params.id));
     if (!feedback) {
       res.status(404).json({ message: 'Feedback not found' });
       return;

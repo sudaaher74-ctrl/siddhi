@@ -1,27 +1,102 @@
-import mongoose from "mongoose";
-import dns from "node:dns";
+import { createClient, Client } from "@libsql/client";
 import { env } from "./env";
 
-// Force public DNS resolvers to prevent cloud container SRV lookup failures
-try {
-  dns.setServers(["8.8.8.8", "1.1.1.1"]);
-} catch (dnsErr) {
-  console.warn("Could not set custom DNS servers:", dnsErr);
-}
+export let db: Client = createClient({
+  url: env.tursoDatabaseUrl,
+  authToken: env.tursoAuthToken || undefined,
+});
+
+export const setDbClient = (newClient: Client) => {
+  db = newClient;
+};
+
+export const initTables = async (client: Client = db) => {
+  // SQLite table schemas
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      phone TEXT,
+      password TEXT,
+      google_id TEXT UNIQUE,
+      avatar TEXT,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      arrows INTEGER NOT NULL,
+      score INTEGER NOT NULL,
+      avg REAL NOT NULL,
+      tens INTEGER NOT NULL,
+      note TEXT DEFAULT '',
+      distance TEXT DEFAULT '',
+      arrow_data TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS goals (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      target TEXT NOT NULL,
+      current TEXT NOT NULL,
+      deadline TEXT NOT NULL,
+      progress REAL NOT NULL DEFAULT 0,
+      completed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS equipment (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      stats TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS feedback (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'New',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+};
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(env.mongoUri, {
-      serverSelectionTimeoutMS: 15000,
-      family: 4, // Force IPv4 to avoid IPv6 timeout bugs on cloud containers
-    });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    await initTables(db);
+    console.log(`Turso / LibSQL Database connected (${env.tursoDatabaseUrl})`);
   } catch (error) {
-    if (error instanceof Error) {
-      console.error(`MongoDB Connection Error: ${error.message}`);
-    } else {
-      console.error("An unknown error occurred while connecting to MongoDB");
-    }
+    console.error("Failed to initialize Turso database:", error);
     process.exit(1);
   }
 };
