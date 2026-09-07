@@ -27,7 +27,7 @@ export default function PracticeHeatmap({ sessions }: PracticeHeatmapProps) {
     sDate.setHours(0,0,0,0);
     const dayMatch = days.find(d => d.date.getTime() === sDate.getTime());
     if (dayMatch) {
-      dayMatch.arrows += (parseInt(s.arrows) || 0);
+      dayMatch.arrows += (Number(s.arrows) || 0);
     }
   });
 

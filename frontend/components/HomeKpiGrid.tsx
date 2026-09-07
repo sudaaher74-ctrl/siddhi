@@ -5,16 +5,16 @@ import Card from "@/components/ui/Card";
 import { Activity, Target, Crosshair, Award, Zap, Flame } from "lucide-react";
 
 export default function HomeKpiGrid({ sessions = [] }: { sessions?: Session[] }) {
-  const totalArrows = sessions.reduce((sum, s) => sum + (parseInt(s.arrows) || 0), 0);
-  const totalScore = sessions.reduce((sum, s) => sum + (parseInt(s.score) || 0), 0);
-  const totalTens = sessions.reduce((sum, s) => sum + (parseInt(s.tens) || 0), 0);
+  const totalArrows = sessions.reduce((sum, s) => sum + (Number(s.arrows) || 0), 0);
+  const totalScore = sessions.reduce((sum, s) => sum + (Number(s.score) || 0), 0);
+  const totalTens = sessions.reduce((sum, s) => sum + (Number(s.tens) || 0), 0);
   
   const avg = totalArrows > 0 ? (totalScore / totalArrows).toFixed(2) : "0.00";
   const tenRate = totalArrows > 0 ? Math.round((totalTens / totalArrows) * 100) : 0;
   
   let bestScore = 0;
   sessions.forEach(s => {
-    const sScore = parseInt(s.score) || 0;
+    const sScore = Number(s.score) || 0;
     if (sScore > bestScore) bestScore = sScore;
   });
 

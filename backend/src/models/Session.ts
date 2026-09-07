@@ -134,6 +134,81 @@ SessionConstructor.find = function (query: { user?: any } = {}) {
   });
 };
 
+SessionConstructor.findOne = async function (query: { _id?: string; id?: string; user?: any } = {}) {
+  const id = query._id || query.id;
+  const userId = query.user ? String(query.user) : undefined;
+  let sql = 'SELECT * FROM sessions WHERE 1=1';
+  const args: any[] = [];
+  if (id) {
+    sql += ' AND id = ?';
+    args.push(id);
+  }
+  if (userId) {
+    sql += ' AND user_id = ?';
+    args.push(userId);
+  }
+  sql += ' LIMIT 1';
+  const res = await db.execute({ sql, args });
+  if (res.rows.length === 0) return null;
+  return mapSessionRow(res.rows[0]);
+};
+
+SessionConstructor.findById = async function (id: string, userId?: any) {
+  return await SessionConstructor.findOne({ id, user: userId });
+};
+
+SessionConstructor.findOneAndUpdate = async function (
+  query: { _id?: string; id?: string; user?: any },
+  updateData: any,
+  _options?: any
+) {
+  const id = query._id || query.id;
+  const userId = query.user ? String(query.user) : undefined;
+
+  let findSql = 'SELECT * FROM sessions WHERE id = ?';
+  const findArgs: any[] = [id];
+  if (userId) {
+    findSql += ' AND user_id = ?';
+    findArgs.push(userId);
+  }
+
+  const check = await db.execute({ sql: findSql, args: findArgs });
+  if (check.rows.length === 0) return null;
+
+  const current = mapSessionRow(check.rows[0]);
+  if (updateData.name !== undefined) current.name = updateData.name;
+  if (updateData.type !== undefined) current.type = updateData.type;
+  if (updateData.distance !== undefined) current.distance = updateData.distance;
+  if (updateData.arrows !== undefined) current.arrows = Number(updateData.arrows);
+  if (updateData.score !== undefined) current.score = Number(updateData.score);
+  if (updateData.avg !== undefined) current.avg = Number(updateData.avg);
+  if (updateData.tens !== undefined) current.tens = Number(updateData.tens);
+  if (updateData.note !== undefined) current.note = updateData.note;
+  if (updateData.arrowData !== undefined) current.arrowData = updateData.arrowData;
+
+  await current.save();
+  return current;
+};
+
+SessionConstructor.findOneAndDelete = async function (query: { _id?: string; id?: string; user?: any }) {
+  const id = query._id || query.id;
+  if (!id) return null;
+  const userId = query.user ? String(query.user) : undefined;
+
+  let findSql = 'SELECT * FROM sessions WHERE id = ?';
+  const findArgs: any[] = [id];
+  if (userId) {
+    findSql += ' AND user_id = ?';
+    findArgs.push(userId);
+  }
+
+  const check = await db.execute({ sql: findSql, args: findArgs });
+  if (check.rows.length === 0) return null;
+
+  await db.execute({ sql: 'DELETE FROM sessions WHERE id = ?', args: [id] });
+  return mapSessionRow(check.rows[0]);
+};
+
 SessionConstructor.create = async function (data: any) {
   const instance = new SessionModelInstance(data);
   return await instance.save();

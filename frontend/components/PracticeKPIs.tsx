@@ -8,14 +8,16 @@ interface PracticeKPIsProps {
 
 export default function PracticeKPIs({ sessions }: PracticeKPIsProps) {
   // Safe parsing
-  const safeParseInt = (val: string | undefined, fallback = 0) => {
-    if (!val) return fallback;
+  const safeParseInt = (val: string | number | undefined, fallback = 0) => {
+    if (val === undefined || val === null) return fallback;
+    if (typeof val === "number") return val;
     const parsed = parseInt(val.split('/')[0], 10);
     return isNaN(parsed) ? fallback : parsed;
   };
 
-  const safeParseFloat = (val: string | undefined, fallback = 0) => {
-    if (!val) return fallback;
+  const safeParseFloat = (val: string | number | undefined, fallback = 0) => {
+    if (val === undefined || val === null) return fallback;
+    if (typeof val === "number") return val;
     const parsed = parseFloat(val);
     return isNaN(parsed) ? fallback : parsed;
   };

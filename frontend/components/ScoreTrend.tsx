@@ -36,7 +36,7 @@ export default function ScoreTrend({
         if (!s.createdAt) return;
         const dateObj = new Date(s.createdAt);
         const dateStr = dateObj.toLocaleDateString();
-        const score = parseFloat(s.avg) || 0;
+        const score = Number(s.avg) || 0;
         
         if (!dailyMap.has(dateStr)) {
           dailyMap.set(dateStr, { totalScore: 0, count: 0, dateStr, timestamp: dateObj.getTime() });
@@ -64,7 +64,7 @@ export default function ScoreTrend({
     
     return sorted.map((s, i) => ({
       session: i + 1,
-      score: parseFloat(s.avg) || 0,
+      score: Number(s.avg) || 0,
       date: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'Unknown'
     }));
   }, [sessions, mode, minimal]);

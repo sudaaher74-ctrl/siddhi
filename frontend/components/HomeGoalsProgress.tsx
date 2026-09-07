@@ -9,8 +9,8 @@ export default function HomeGoalsProgress({ sessions = [] }: { sessions?: Sessio
   const weeklyArrowGoal = 500;
   const monthlyPracticeGoal = 20; // 20 sessions
 
-  const totalArrows = sessions.reduce((sum, s) => sum + (parseInt(s.arrows) || 0), 0);
-  const totalScore = sessions.reduce((sum, s) => sum + (parseInt(s.score) || 0), 0);
+  const totalArrows = sessions.reduce((sum, s) => sum + (Number(s.arrows) || 0), 0);
+  const totalScore = sessions.reduce((sum, s) => sum + (Number(s.score) || 0), 0);
   const avg = totalArrows > 0 ? totalScore / totalArrows : 0;
   
   // Progress calculations

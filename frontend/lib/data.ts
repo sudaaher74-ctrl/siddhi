@@ -5,12 +5,14 @@ export type NavItem = { label: string; href: string; dotShape: "circle" | "squar
 export type Kpi = { label: string; value: string; delta: string; deltaColor: string };
 export type ArrowTile = { v: string; c: string };
 export type Session = {
+  _id?: string;
+  id?: string;
   name: string;
   type: string;
-  arrows: string;
-  score: string;
-  avg: string;
-  tens: string;
+  arrows: string | number;
+  score: string | number;
+  avg: string | number;
+  tens: string | number;
   note: string;
   distance?: string;
   createdAt?: string;
@@ -31,6 +33,7 @@ const navLinks = [
   { label: "Dashboard", href: "/" },
   { label: "Practice", href: "/practice" },
   { label: "Score Entry", href: "/score-entry" },
+  { label: "Scorecard", href: "/scorecard" },
   { label: "Monthly Log", href: "/monthly-log" },
   { label: "Analytics", href: "/analytics" },
   { label: "AI Coach", href: "/ai-coach" },

@@ -13,9 +13,9 @@ export default function KpiGrid({
     ? sessions.filter(s => s.createdAt && new Date(s.createdAt).toLocaleDateString() === today)
     : sessions;
 
-  const totalArrows = filteredSessions.reduce((sum, s) => sum + (parseInt(s.arrows) || 0), 0);
-  const totalScore = filteredSessions.reduce((sum, s) => sum + (parseInt(s.score) || 0), 0);
-  const totalTens = filteredSessions.reduce((sum, s) => sum + (parseInt(s.tens) || 0), 0);
+  const totalArrows = filteredSessions.reduce((sum, s) => sum + (Number(s.arrows) || 0), 0);
+  const totalScore = filteredSessions.reduce((sum, s) => sum + (Number(s.score) || 0), 0);
+  const totalTens = filteredSessions.reduce((sum, s) => sum + (Number(s.tens) || 0), 0);
   
   const avg = totalArrows > 0 ? (totalScore / totalArrows).toFixed(2) : "0.00";
   const tenRate = totalArrows > 0 ? Math.round((totalTens / totalArrows) * 100) : 0;
@@ -23,7 +23,7 @@ export default function KpiGrid({
   
   let bestScore = 0;
   filteredSessions.forEach(s => {
-    const sScore = parseInt(s.score) || 0;
+    const sScore = Number(s.score) || 0;
     if (sScore > bestScore) bestScore = sScore;
   });
 

@@ -39,9 +39,9 @@ export default function PerformanceRadar({
         let totalArrows = 0;
         
         relevantSessions.forEach(s => {
-          totalAvg += parseFloat(s.avg) || 0;
-          totalTens += parseInt(s.tens) || 0;
-          totalArrows += parseInt(s.arrows) || 1;
+          totalAvg += Number(s.avg) || 0;
+          totalTens += Number(s.tens) || 0;
+          totalArrows += Number(s.arrows) || 1;
         });
         
         const avg = totalAvg / relevantSessions.length;

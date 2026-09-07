@@ -100,4 +100,44 @@ describe('sessions', () => {
     const victimList = await authed(request(app).get('/api/sessions'), b.token);
     expect(victimList.body).toHaveLength(0);
   });
+
+  it('fetches a single session by id', async () => {
+    const { token } = await createUserAndLogin();
+    const created = await authed(request(app).post('/api/sessions'), token).send(validSession);
+    const sessionId = created.body._id;
+
+    const res = await authed(request(app).get(`/api/sessions/${sessionId}`), token);
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('70m Practice');
+    expect(res.body._id).toBe(sessionId);
+  });
+
+  it('updates a session by id', async () => {
+    const { token } = await createUserAndLogin();
+    const created = await authed(request(app).post('/api/sessions'), token).send(validSession);
+    const sessionId = created.body._id;
+
+    const res = await authed(request(app).put(`/api/sessions/${sessionId}`), token).send({
+      score: 330,
+      tens: 15,
+      note: 'Updated notes after review',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.score).toBe(330);
+    expect(res.body.tens).toBe(15);
+    expect(res.body.note).toBe('Updated notes after review');
+  });
+
+  it('deletes a session by id', async () => {
+    const { token } = await createUserAndLogin();
+    const created = await authed(request(app).post('/api/sessions'), token).send(validSession);
+    const sessionId = created.body._id;
+
+    const del = await authed(request(app).delete(`/api/sessions/${sessionId}`), token);
+    expect(del.status).toBe(200);
+
+    const getAgain = await authed(request(app).get(`/api/sessions/${sessionId}`), token);
+    expect(getAgain.status).toBe(404);
+  });
 });
+

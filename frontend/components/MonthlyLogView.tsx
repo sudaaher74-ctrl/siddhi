@@ -25,6 +25,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import ManualSessionModal from "./ManualSessionModal";
+import ScorecardModal from "./ScorecardModal";
 
 interface MonthlyLogViewProps {
   initialSessions: Session[];
@@ -44,6 +45,7 @@ export default function MonthlyLogView({ initialSessions }: MonthlyLogViewProps)
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
   const [showWeekExportModal, setShowWeekExportModal] = useState<boolean>(false);
+  const [scorecardSession, setScorecardSession] = useState<Session | null>(null);
 
   // Navigation handlers
   const handlePrevMonth = () => {
@@ -457,6 +459,14 @@ export default function MonthlyLogView({ initialSessions }: MonthlyLogViewProps)
                                 <span className="text-slate-400 block text-[10px]">10s</span>
                                 <span className="font-bold text-amber-600">{session.tens}</span>
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => setScorecardSession(session)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0c1e38] text-white text-[11.5px] font-bold shadow-sm hover:bg-[#152e50] transition-all ml-1"
+                              >
+                                <Award className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Scorecard</span>
+                              </button>
                             </div>
                           </div>
                         );
@@ -564,10 +574,18 @@ export default function MonthlyLogView({ initialSessions }: MonthlyLogViewProps)
                         <span className="text-slate-500">({s.type} - {s.distance || "Standard"})</span>
                         {s.note && <span className="text-slate-600 block text-[11px] mt-0.5">Note: {s.note}</span>}
                       </div>
-                      <div className="flex gap-3 font-semibold text-slate-800">
+                      <div className="flex items-center gap-3 font-semibold text-slate-800">
                         <span>{s.arrows} Arrows</span>
                         <span>{s.score} Score</span>
                         <span className="text-emerald-600">Avg: {Number(s.avg).toFixed(2)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setScorecardSession(s)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0c1e38] text-white text-[10.5px] font-bold shadow-sm hover:bg-[#152e50] transition-all ml-1"
+                        >
+                          <Award className="w-3 h-3 text-amber-400" />
+                          <span>Scorecard</span>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -627,6 +645,13 @@ export default function MonthlyLogView({ initialSessions }: MonthlyLogViewProps)
           </div>
         </div>
       )}
+
+      {/* Scorecard Modal */}
+      <ScorecardModal
+        session={scorecardSession}
+        isOpen={!!scorecardSession}
+        onClose={() => setScorecardSession(null)}
+      />
     </div>
   );
 }

@@ -71,6 +71,19 @@ export const sessionSchema = z
     path: ['score'],
   });
 
+export const sessionUpdateSchema = z.object({
+  name: shortText('Session name', 120).optional(),
+  type: z.enum(['Practice', 'Blank Bale', 'Scoring']).optional(),
+  distance: z.string().trim().max(20).optional(),
+  arrows: numeric('Arrows', 1000).optional(),
+  score: numeric('Score', 10000).optional(),
+  avg: numeric('Average', 10).optional(),
+  tens: numeric('10s + Xs', 1000).optional(),
+  note: z.string().trim().max(1000, 'Note is too long').optional(),
+  arrowData: z.string().max(100_000, 'Arrow data is too large').optional(),
+  createdAt: z.string().optional(),
+});
+
 // ---------- equipment ----------
 
 export const equipmentSchema = z.object({

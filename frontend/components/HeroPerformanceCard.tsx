@@ -12,13 +12,13 @@ export default function HeroPerformanceCard({ sessions = [] }: { sessions?: Sess
   const todaysSessions = sessions.filter(s => s.createdAt && new Date(s.createdAt).toLocaleDateString() === today);
   
   const practicedToday = todaysSessions.length > 0;
-  const arrowsToday = todaysSessions.reduce((sum, s) => sum + (parseInt(s.arrows) || 0), 0);
+  const arrowsToday = todaysSessions.reduce((sum, s) => sum + (Number(s.arrows) || 0), 0);
   
   const latestSession = sessions[0];
   const latestScore = latestSession ? latestSession.score : "0";
   
-  const totalArrows = sessions.reduce((sum, s) => sum + (parseInt(s.arrows) || 0), 0);
-  const totalScore = sessions.reduce((sum, s) => sum + (parseInt(s.score) || 0), 0);
+  const totalArrows = sessions.reduce((sum, s) => sum + (Number(s.arrows) || 0), 0);
+  const totalScore = sessions.reduce((sum, s) => sum + (Number(s.score) || 0), 0);
   const overallAvg = totalArrows > 0 ? (totalScore / totalArrows).toFixed(2) : "0.00";
 
   return (
