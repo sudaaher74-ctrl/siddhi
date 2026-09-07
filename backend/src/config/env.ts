@@ -27,7 +27,10 @@ if (isProduction && jwtSecret.length < 32) {
   throw new Error('JWT_SECRET must be at least 32 characters in production.');
 }
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001')
+const allowedOrigins = (
+  process.env.CORS_ORIGIN ||
+  'http://localhost:3000,http://localhost:3001,https://siddhi-sigma.vercel.app'
+)
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);

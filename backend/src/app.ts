@@ -25,7 +25,11 @@ export const createApp = () => {
     cors({
       origin: (origin, callback) => {
         // Same-origin/server-to-server requests send no Origin header.
-        if (!origin || env.allowedOrigins.includes(origin)) {
+        if (
+          !origin ||
+          env.allowedOrigins.includes(origin) ||
+          origin.endsWith('.vercel.app')
+        ) {
           callback(null, true);
         } else {
           callback(new Error(`Origin ${origin} is not allowed by CORS`));
