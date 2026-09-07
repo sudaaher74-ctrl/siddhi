@@ -40,7 +40,10 @@ export const env = {
   jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d',
   allowedOrigins,
-  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+  googleClientId: (process.env.GOOGLE_CLIENT_ID || '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .replace(/\.+$/, ''),
   cookieSameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
   cookieSecure: isProduction,
 };

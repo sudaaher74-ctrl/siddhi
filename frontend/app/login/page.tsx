@@ -44,7 +44,10 @@ export default function LoginPage() {
   const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
-  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+  const googleClientId = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "")
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/\.+$/, "");
 
   const handleGoogleCredentialResponse = useCallback(async (response: { credential: string }) => {
     if (!response?.credential) {
