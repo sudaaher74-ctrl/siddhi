@@ -9,6 +9,7 @@ interface ScorePadProps {
   currentEndIndex: number;
   isSessionComplete: boolean;
   handleScoreInput: (score: ScoreValue, cx?: number | null, cy?: number | null) => void;
+  handleUpdateArrowScore?: (index: number, newScore: ScoreValue) => void;
   handleUndo: () => void;
   handleSubmitEnd: () => void;
   handleSaveSession?: () => void;
@@ -22,6 +23,7 @@ export default function ScorePad({
   currentEndIndex,
   isSessionComplete,
   handleScoreInput,
+  handleUpdateArrowScore,
   handleUndo,
   handleSubmitEnd,
   handleSaveSession,
@@ -69,11 +71,41 @@ export default function ScorePad({
       
       <div className="flex justify-between items-center bg-black/5 rounded-lg p-3 sm:p-4 border border-black/5">
         <div>
-          <div className="text-[10px] sm:text-[11px] text-text-dim uppercase tracking-wider mb-1">Current End</div>
-          <div className="text-[20px] sm:text-[24px] font-mono font-bold text-black tracking-widest flex gap-2">
-            {displayArrows.map((a, i) => (
-              <span key={i} className={a === '-' ? 'text-black/20' : ''}>{a}</span>
-            ))}
+          <div className="text-[10px] sm:text-[11px] text-text-dim uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <span>Current End</span>
+            {currentArrows.some(a => a.score === "10" || a.score === "X") && (
+              <span className="text-[9px] text-accent/80 font-normal lowercase">(tap 10/X to switch)</span>
+            )}
+          </div>
+          <div className="text-[20px] sm:text-[24px] font-mono font-bold text-black tracking-widest flex items-center gap-1 sm:gap-2">
+            {displayArrows.map((a, i) => {
+              if (i < currentArrows.length && handleUpdateArrowScore) {
+                const isTenOrX = a === "10" || a === "X";
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    title={isTenOrX ? `Click to switch to ${a === "X" ? "10" : "X"}` : `Arrow ${i + 1}: ${a}`}
+                    onClick={() => {
+                      if (a === "10") handleUpdateArrowScore(i, "X");
+                      else if (a === "X") handleUpdateArrowScore(i, "10");
+                    }}
+                    className={`inline-flex items-center justify-center min-w-[26px] h-8 rounded text-center transition-all ${
+                      isTenOrX
+                        ? "cursor-pointer hover:bg-gold/30 hover:scale-110 active:scale-95 text-[#B45309]"
+                        : "cursor-default text-black"
+                    }`}
+                  >
+                    {a}
+                  </button>
+                );
+              }
+              return (
+                <span key={i} className="inline-flex items-center justify-center min-w-[26px] h-8 text-black/20">
+                  {a}
+                </span>
+              );
+            })}
           </div>
         </div>
         <div className="text-right">

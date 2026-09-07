@@ -44,6 +44,17 @@ export default function ScoreEntryContainer() {
     }
   };
 
+  const handleUpdateArrowScore = (index: number, newScore: ScoreValue) => {
+    if (isSessionComplete) return;
+    if (index >= 0 && index < currentArrows.length) {
+      const newEnds = [...ends];
+      const updatedEnd = [...currentArrows];
+      updatedEnd[index] = { ...currentArrows[index], score: newScore };
+      newEnds[currentEndIndex] = updatedEnd;
+      setEnds(newEnds);
+    }
+  };
+
   const handleSubmitEnd = () => {
     if (isSessionComplete) return;
     if (currentArrows.length === 6) {
@@ -120,6 +131,7 @@ export default function ScoreEntryContainer() {
           currentEndIndex={currentEndIndex}
           isSessionComplete={isSessionComplete}
           handleScoreInput={handleScoreInput}
+          handleUpdateArrowScore={handleUpdateArrowScore}
           handleUndo={handleUndo}
           handleSubmitEnd={handleSubmitEnd}
           handleSaveSession={handleSaveSession}

@@ -107,6 +107,12 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg">
+          {error}
+        </div>
+      )}
+
       <div className="bg-white border border-slate-200 rounded-[14px] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
