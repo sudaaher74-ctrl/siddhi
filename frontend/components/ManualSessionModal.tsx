@@ -18,7 +18,8 @@ export default function ManualSessionModal() {
     arrows: "36",
     score: "0",
     tens: "0",
-    note: ""
+    note: "",
+    date: new Date().toISOString().split("T")[0],
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -34,11 +35,15 @@ export default function ManualSessionModal() {
       const scoreNum = parseInt(formData.score) || 0;
 
       const payload = {
-        ...formData,
+        name: formData.name,
+        type: formData.type,
+        distance: formData.distance,
         arrows: arrowsNum,
         score: scoreNum,
         tens: parseInt(formData.tens) || 0,
         avg: Number((scoreNum / arrowsNum).toFixed(2)),
+        note: formData.note,
+        createdAt: formData.date ? new Date(`${formData.date}T12:00:00`).toISOString() : undefined,
       };
 
       await apiPost("/api/sessions", payload);
@@ -77,16 +82,29 @@ export default function ManualSessionModal() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Session Name</label>
-                <input 
-                  type="text" 
-                  name="name" 
-                  value={formData.name} 
-                  onChange={handleChange}
-                  className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Session Name</label>
+                  <input 
+                    type="text" 
+                    name="name" 
+                    value={formData.name} 
+                    onChange={handleChange}
+                    className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Date</label>
+                  <input 
+                    type="date" 
+                    name="date" 
+                    value={formData.date} 
+                    onChange={handleChange}
+                    className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
+                    required
+                  />
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">

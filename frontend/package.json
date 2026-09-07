@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "js-cookie": "^3.0.8",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.25.0",
     "next": "^15.3.3",
     "react": "^19.1.0",

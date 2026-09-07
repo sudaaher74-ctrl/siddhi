@@ -70,6 +70,9 @@ export class SessionModelInstance {
   async save(): Promise<ISession> {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
+    const createdAt = this.data.createdAt
+      ? new Date(this.data.createdAt).toISOString()
+      : now;
     const userId = String(this.data.user || this.data.userId);
 
     await db.execute({
@@ -89,7 +92,7 @@ export class SessionModelInstance {
         this.data.note || '',
         this.data.distance || '',
         this.data.arrowData || null,
-        now,
+        createdAt,
         now,
       ],
     });
@@ -106,7 +109,7 @@ export class SessionModelInstance {
       note: this.data.note,
       distance: this.data.distance,
       arrow_data: this.data.arrowData,
-      created_at: now,
+      created_at: createdAt,
       updated_at: now,
     });
   }

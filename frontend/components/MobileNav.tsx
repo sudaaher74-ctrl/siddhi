@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Flag, LogOut, ShieldCheck, MessageSquare } from "lucide-react";
+import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Flag, LogOut, ShieldCheck, MessageSquare, Calendar } from "lucide-react";
 
 export default function MobileNav() {
   const pathname = usePathname();
@@ -23,6 +23,7 @@ export default function MobileNav() {
   ];
 
   const moreNav = [
+    { label: "Monthly Log", href: "/monthly-log", icon: Calendar },
     { label: "Practice", href: "/practice", icon: Crosshair },
     { label: "Equipment", href: "/equipment", icon: Wrench },
     { label: "Goals", href: "/goals", icon: Flag },

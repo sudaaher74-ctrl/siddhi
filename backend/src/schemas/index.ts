@@ -60,6 +60,7 @@ export const sessionSchema = z
     note: z.string().trim().max(1000, 'Note is too long').optional().default(''),
     // Serialised arrow plot data; capped so a client cannot store megabytes.
     arrowData: z.string().max(100_000, 'Arrow data is too large').optional(),
+    createdAt: z.string().optional(),
   })
   .refine((s) => s.tens <= s.arrows, {
     message: 'You cannot have more 10s than arrows shot',

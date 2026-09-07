@@ -31,6 +31,7 @@ const navLinks = [
   { label: "Dashboard", href: "/" },
   { label: "Practice", href: "/practice" },
   { label: "Score Entry", href: "/score-entry" },
+  { label: "Monthly Log", href: "/monthly-log" },
   { label: "Analytics", href: "/analytics" },
   { label: "AI Coach", href: "/ai-coach" },
   { label: "Equipment", href: "/equipment" },
