@@ -16,11 +16,12 @@ import {
   TrendingUp,
   Flame,
   Plus,
+  AlertCircle,
 } from "lucide-react";
 import { Session } from "@/lib/data";
 import { useUser } from "@/hooks/useUser";
 import EditScoresModal from "./EditScoresModal";
-import { apiDelete, apiGet } from "@/lib/api";
+import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import Card from "./ui/Card";
 import { BOW_OPTIONS, BOW_DISTANCES, BowOption } from "./SessionSetup";
 
@@ -29,6 +30,7 @@ interface ScorecardViewProps {
   allSessions?: Session[];
   initialUser?: { name?: string; email?: string; avatar?: string } | null;
   onBack?: () => void;
+  onSaveLiveRound?: () => void;
 }
 
 
@@ -146,11 +148,40 @@ export default function ScorecardView({
   allSessions,
   initialUser,
   onBack,
+  onSaveLiveRound,
 }: ScorecardViewProps) {
   const router = useRouter();
   const { user } = useUser();
 
   const [sessionsList, setSessionsList] = useState<Session[]>(allSessions || []);
+  const [unsavedDraft, setUnsavedDraft] = useState<{
+    score: number;
+    arrows: number;
+    bow: string;
+    distance: string;
+    date: string;
+  } | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isSavingLive, setIsSavingLive] = useState(false);
+
+  // Check localStorage for any unsaved draft from score-entry
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("archerx_live_draft");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.totalScore > 0 || (parsed.ends && parsed.ends.flat().length > 0))) {
+          setUnsavedDraft({
+            score: parsed.totalScore || 0,
+            arrows: parsed.arrows || (parsed.ends ? parsed.ends.flat().length : 0),
+            bow: parsed.bow || parsed.setup?.bow || "Recurve Bow",
+            distance: parsed.distance || parsed.setup?.distance || "70m",
+            date: parsed.date || new Date().toLocaleDateString(),
+          });
+        }
+      }
+    } catch {}
+  }, []);
 
   const [session, setSession] = useState<Session | null>(() => {
     if (initialSession) return initialSession;
@@ -409,10 +440,135 @@ export default function ScorecardView({
     }
   };
 
+  const handleSaveDraftFromLocalStorage = async () => {
+    setIsSavingDraft(true);
+    try {
+      const raw = localStorage.getItem("archerx_live_draft");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const endsData = parsed.ends || [];
+      const allArrowsData = endsData.flat();
+      if (allArrowsData.length === 0) {
+        alert("No arrows found in draft.");
+        setIsSavingDraft(false);
+        return;
+      }
+      const tensCount = allArrowsData.filter((a: { score: string }) => a.score === "10" || a.score === "X").length;
+      const calcTotal = Number(parsed.totalScore) || allArrowsData.reduce((sum: number, a: { score: string }) => {
+        const val = a.score === "X" ? 10 : a.score === "M" ? 0 : parseInt(a.score, 10);
+        return sum + (isNaN(val) ? 0 : val);
+      }, 0);
+      const avg = allArrowsData.length > 0 ? (calcTotal / allArrowsData.length).toFixed(2) : "0.00";
+      const distance = parsed.distance || parsed.setup?.distance || "70m";
+      const bow = parsed.bow || parsed.setup?.bow || "Recurve Bow";
+
+      const payload = {
+        name: `${bow} ${distance} Practice - ${new Date().toLocaleDateString()}`,
+        type: parsed.setup?.type || "Practice",
+        distance,
+        bow,
+        arrows: allArrowsData.length,
+        score: calcTotal,
+        avg: Number(avg),
+        tens: tensCount,
+        note: `Logged via Interactive Score Pad (${bow} at ${distance})`,
+        arrowData: JSON.stringify(endsData),
+      };
+
+      const saved = await apiPost<Session>("/api/sessions", payload);
+      try {
+        localStorage.removeItem("archerx_live_draft");
+      } catch {}
+      setUnsavedDraft(null);
+
+      if (saved && (saved._id || saved.id)) {
+        window.location.href = `/scorecard/${saved._id || saved.id}`;
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save draft session: " + (err instanceof Error ? err.message : "unknown error"));
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  const handleSaveLiveRound = async () => {
+    if (onSaveLiveRound) {
+      onSaveLiveRound();
+      return;
+    }
+    if (!session) return;
+    setIsSavingLive(true);
+    try {
+      const payload = {
+        name: session.name || `${selectedBow} ${eventDistance} Practice - ${new Date().toLocaleDateString()}`,
+        type: session.type || "Practice",
+        distance: eventDistance,
+        bow: selectedBow,
+        arrows: session.arrows || allArrows.length,
+        score: session.score || round1Total,
+        avg: Number(session.avg || averagePerArrow),
+        tens: Number(session.tens || tensDisplay),
+        note: session.note || `Logged via Interactive Score Pad (${selectedBow})`,
+        arrowData: session.arrowData || JSON.stringify(ends),
+      };
+      const saved = await apiPost<Session>("/api/sessions", payload);
+      try {
+        localStorage.removeItem("archerx_live_draft");
+      } catch {}
+      if (saved && (saved._id || saved.id)) {
+        window.location.href = `/scorecard/${saved._id || saved.id}`;
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Failed to save session: " + (err instanceof Error ? err.message : "unknown error"));
+    } finally {
+      setIsSavingLive(false);
+    }
+  };
+
   // 1. Overall Empty State when the athlete has zero sessions saved
   if (sessionsList.length === 0 && !session) {
     return (
-      <div className="w-full flex flex-col items-center justify-center my-8 p-4">
+      <div className="w-full flex flex-col items-center justify-center my-6 p-4">
+        {unsavedDraft && (
+          <div className="w-full max-w-xl bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-5 mb-6 text-left shadow-sm animate-in fade-in">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[11px] font-bold uppercase tracking-wider">
+                Unsaved Round Detected
+              </span>
+              <span className="text-xs font-semibold text-amber-800">from Score Entry</span>
+            </div>
+            <h4 className="text-base sm:text-lg font-bold text-slate-900">
+              You scored {unsavedDraft.score} pts ({unsavedDraft.arrows} arrows) in {unsavedDraft.bow} at {unsavedDraft.distance}!
+            </h4>
+            <p className="text-xs text-slate-600 mt-1 mb-4 leading-relaxed">
+              This session has not been saved to your permanent scorecard database yet. Save it now to generate your official scorecard and career stats.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleSaveDraftFromLocalStorage}
+                disabled={isSavingDraft}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                <span>{isSavingDraft ? "Saving to Official Records..." : "Save This Round to Scorecard"}</span>
+              </button>
+              <Link
+                href="/score-entry"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                <span>Resume in Score Entry</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-12 text-center shadow-xs flex flex-col items-center justify-center max-w-lg w-full">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mb-4 shadow-2xs">
             <Award className="w-8 h-8" />
@@ -528,6 +684,25 @@ export default function ScorecardView({
         </div>
       ) : (
         <>
+          {/* Live Draft Alert Banner */}
+          {!isRealSavedSession && (
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs print:hidden mb-1">
+              <div className="flex items-center gap-2.5 text-xs font-bold text-amber-900">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <span>This round is currently an unsaved live draft. Click &quot;Save to Scorecards&quot; to store it permanently in your official records.</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveLiveRound}
+                disabled={isSavingLive}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                <span>{isSavingLive ? "Saving..." : "Save to Scorecards"}</span>
+              </button>
+            </div>
+          )}
+
           {/* 1. ATHLETE & SESSION HERO CARD */}
           <Card className="p-5 sm:p-6 relative overflow-hidden bg-white border border-slate-200/80 shadow-xs print:border-none print:shadow-none">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
@@ -550,9 +725,15 @@ export default function ScorecardView({
                     <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
                       {session.type || "Scoring"}
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200/60">
-                      Saved Round
-                    </span>
+                    {isRealSavedSession ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200/60">
+                        Saved Round
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold border border-amber-300">
+                        Live Draft • Unsaved
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-500 mt-1 flex-wrap font-medium">
                     <span className="flex items-center gap-1 text-slate-700 font-semibold">
@@ -571,6 +752,17 @@ export default function ScorecardView({
 
           {/* Top Actions */}
           <div className="flex items-center gap-2.5 flex-wrap print:hidden">
+            {!isRealSavedSession && (
+              <button
+                type="button"
+                onClick={handleSaveLiveRound}
+                disabled={isSavingLive}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                <span>{isSavingLive ? "Saving..." : "Save to Official Records"}</span>
+              </button>
+            )}
             {onBack && (
               <button
                 type="button"

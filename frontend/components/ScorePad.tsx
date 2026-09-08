@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Undo2 } from "lucide-react";
+import { Undo2, Check } from "lucide-react";
 import { ScoreValue, ArrowShot } from "./ScoreEntryContainer";
 
 interface ScorePadProps {
@@ -114,32 +114,52 @@ export default function ScorePad({
         </div>
       </div>
       
-      {!isSessionComplete ? (
-        <div className="flex gap-2 mt-4">
+      <div className="flex flex-col gap-2 mt-4">
+        {!isSessionComplete ? (
+          <div className="flex gap-2">
+            <button 
+              type="button"
+              onClick={handleUndo}
+              disabled={currentArrows.length === 0}
+              className="flex items-center justify-center px-4 bg-black/5 hover:bg-black/10 border border-black/10 rounded-lg text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              title="Undo last arrow"
+            >
+              <Undo2 className="w-5 h-5" />
+            </button>
+            <button 
+              type="button"
+              onClick={handleSubmitEnd}
+              disabled={currentArrows.length < 6}
+              className="flex-1 py-2.5 sm:py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[13px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              Submit End ({currentArrows.length}/6)
+            </button>
+          </div>
+        ) : null}
+
+        {/* Save button: ALWAYS visible once any arrow or end is shot, or when session completes */}
+        {(totalScore > 0 || currentEndIndex > 0 || currentArrows.length > 0 || isSessionComplete) && (
           <button 
-            onClick={handleUndo}
-            disabled={currentArrows.length === 0}
-            className="flex items-center justify-center px-4 bg-black/5 hover:bg-black/10 border border-black/10 rounded-lg text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            onClick={handleSaveSession}
+            disabled={isSaving}
+            className={`w-full py-3 px-4 rounded-xl text-[13px] sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer ${
+              isSessionComplete
+                ? "bg-accent hover:bg-accent/90 text-white shadow-md active:scale-98"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white active:scale-98"
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            <Undo2 className="w-5 h-5" />
+            <Check className="w-4 h-4" />
+            <span>
+              {isSaving
+                ? "Saving to Official Scorecards..."
+                : isSessionComplete
+                ? "Finish & Save Session to Scorecards"
+                : `Finish & Save Round (${totalScore} pts • ${currentEndIndex * 6 + currentArrows.length} arrows)`}
+            </span>
           </button>
-          <button 
-            onClick={handleSubmitEnd}
-            disabled={currentArrows.length < 6}
-            className="flex-1 py-2.5 sm:py-3 bg-black/5 hover:bg-black/10 border border-black/10 rounded-lg text-[13px] font-semibold text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Submit End
-          </button>
-        </div>
-      ) : (
-        <button 
-          onClick={handleSaveSession}
-          disabled={isSaving}
-          className="w-full mt-4 py-2.5 sm:py-3 bg-accent text-panel border border-accent rounded-lg text-[13px] font-semibold transition-colors hover:shadow-[0_0_15px_rgba(255,90,78,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSaving ? "Saving..." : "Save Session"}
-        </button>
-      )}
+        )}
+      </div>
     </div>
   );
 }

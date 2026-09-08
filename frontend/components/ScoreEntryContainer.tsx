@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { apiPost } from "@/lib/api";
 import { Session } from "@/lib/data";
-import { Award } from "lucide-react";
+import { Award, Check } from "lucide-react";
 import ScorePad from "./ScorePad";
 import ArrowPlot from "./ArrowPlot";
 import ArcheryTimer from "./ArcheryTimer";
@@ -27,8 +27,60 @@ export default function ScoreEntryContainer() {
   const [setup, setSetup] = useState<SessionSetupValues | null>(null);
   const [showScorecardPreview, setShowScorecardPreview] = useState(false);
 
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("archerx_live_draft");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.ends) && parsed.ends.length > 0) {
+          if (parsed.setup) setSetup(parsed.setup);
+          setEnds(parsed.ends);
+          if (typeof parsed.currentEndIndex === "number") {
+            setCurrentEndIndex(parsed.currentEndIndex);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to restore draft session", e);
+    }
+  }, []);
+
   const currentArrows = ends[currentEndIndex] || [];
   const isSessionComplete = currentEndIndex >= 6;
+
+  const calculateValue = (s: ScoreValue): number => {
+    if (s === "X") return 10;
+    if (s === "M") return 0;
+    return parseInt(s, 10);
+  };
+
+  const currentEndScore = currentArrows.reduce((sum, arrow) => sum + calculateValue(arrow.score), 0);
+  const totalScore = ends.flat().reduce((sum, arrow) => sum + calculateValue(arrow.score), 0);
+
+  // Save live session draft to localStorage on every change
+  useEffect(() => {
+    try {
+      const allArrowsCount = ends.flat().length;
+      if (allArrowsCount > 0 && setup) {
+        localStorage.setItem(
+          "archerx_live_draft",
+          JSON.stringify({
+            setup,
+            ends,
+            currentEndIndex,
+            totalScore,
+            arrows: allArrowsCount,
+            distance: setup.distance,
+            bow: setup.bow,
+            date: new Date().toLocaleDateString(),
+          })
+        );
+      }
+    } catch (e) {
+      console.error("Failed to persist draft session", e);
+    }
+  }, [ends, currentEndIndex, setup, totalScore]);
 
   const handleScoreInput = (score: ScoreValue, cx: number | null = null, cy: number | null = null) => {
     if (isSessionComplete) return;
@@ -67,47 +119,53 @@ export default function ScoreEntryContainer() {
     }
   };
 
-  const calculateValue = (s: ScoreValue): number => {
-    if (s === "X") return 10;
-    if (s === "M") return 0;
-    return parseInt(s, 10);
-  };
-
-  const currentEndScore = currentArrows.reduce((sum, arrow) => sum + calculateValue(arrow.score), 0);
-  const totalScore = ends.flat().reduce((sum, arrow) => sum + calculateValue(arrow.score), 0);
-
   const handleSaveSession = async () => {
+    if (isSaving) return;
     setIsSaving(true);
     try {
-      const allArrows = ends.flat();
+      // Build effective ends: all submitted non-empty ends
+      const savedEnds: ArrowShot[][] = ends.filter(e => Array.isArray(e) && e.length > 0);
+      const allArrows = savedEnds.flat();
+
+      if (allArrows.length === 0) {
+        alert("Please enter at least 1 arrow before saving.");
+        setIsSaving(false);
+        return;
+      }
+
       const tensCount = allArrows.filter(a => a.score === "10" || a.score === "X").length;
-      const average = allArrows.length > 0 ? (totalScore / allArrows.length).toFixed(2) : "0.00";
+      const calculatedTotal = allArrows.reduce((sum, a) => sum + calculateValue(a.score), 0);
+      const average = (calculatedTotal / allArrows.length).toFixed(2);
       
-      const distance = setup?.distance || "";
-      const bow = setup?.bow || "";
+      const distance = setup?.distance || "70m";
+      const bow = setup?.bow || "Recurve Bow";
       const payload = {
         name: `${bow ? `${bow} ` : ""}${distance ? `${distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
         type: setup?.type || "Practice",
         distance,
         bow,
         arrows: allArrows.length,
-        score: totalScore,
+        score: calculatedTotal,
         avg: Number(average),
         tens: tensCount,
-        note: `Logged via Interactive Score Pad${bow ? ` (${bow})` : ""}${distance ? ` at ${distance}` : ""}`,
-        arrowData: JSON.stringify(ends)
+        note: `Logged via Interactive Score Pad (${bow} at ${distance})`,
+        arrowData: JSON.stringify(savedEnds)
       };
 
       const saved = await apiPost<Session>("/api/sessions", payload);
 
+      try {
+        localStorage.removeItem("archerx_live_draft");
+      } catch {}
+
       if (saved && (saved._id || saved.id)) {
         window.location.href = `/scorecard/${saved._id || saved.id}`;
       } else {
-        window.location.href = "/practice";
+        window.location.href = "/scorecard";
       }
     } catch (err) {
-      console.error(err);
-      alert(`Failed to save session: ${err instanceof Error ? err.message : "unknown error"}`);
+      console.error("Failed to save session:", err);
+      alert(`Failed to save session: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setIsSaving(false);
     }
@@ -120,14 +178,14 @@ export default function ScoreEntryContainer() {
   const liveSessionPreview: Session = {
     name: `${setup?.bow ? `${setup.bow} ` : ""}${setup?.distance ? `${setup.distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
     type: setup?.type || "Practice",
-    distance: setup?.distance || "50m",
+    distance: setup?.distance || "70m",
     bow: setup?.bow,
-    arrows: ends.flat().length || 36,
+    arrows: ends.flat().length,
     score: totalScore,
     avg: Number(ends.flat().length > 0 ? (totalScore / ends.flat().length).toFixed(2) : 0),
     tens: ends.flat().filter(a => a.score === "10" || a.score === "X").length,
     note: `Logged via Interactive Score Pad${setup?.bow ? ` (${setup.bow})` : ""}${setup?.distance ? ` at ${setup.distance}` : ""}`,
-    arrowData: JSON.stringify(ends),
+    arrowData: JSON.stringify(ends.filter(e => Array.isArray(e) && e.length > 0)),
   };
 
   return (
@@ -143,18 +201,36 @@ export default function ScoreEntryContainer() {
       </span>
       <span className="text-[12px] sm:text-[13px] text-text-dim font-medium">{setup.type}</span>
       
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-2 flex-wrap">
+        {ends.flat().length > 0 && (
+          <button
+            type="button"
+            onClick={handleSaveSession}
+            disabled={isSaving}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            title="Save this round to your official scorecard database"
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>{isSaving ? "Saving..." : `Save Session (${totalScore} pts)`}</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setShowScorecardPreview(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0c1e38] text-white text-[12px] font-bold shadow-sm hover:bg-[#152e50] transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0c1e38] text-white text-[12px] font-bold shadow-sm hover:bg-[#152e50] transition-all cursor-pointer"
         >
           <Award className="w-3.5 h-3.5 text-amber-400" />
           <span>View Scorecard</span>
         </button>
         <button
           type="button"
-          onClick={() => setSetup(null)}
+          onClick={() => {
+            if (ends.flat().length > 0 && !confirm("Change setup? Unsaved arrows from this round will be cleared.")) return;
+            try { localStorage.removeItem("archerx_live_draft"); } catch {}
+            setEnds(Array(6).fill([]));
+            setCurrentEndIndex(0);
+            setSetup(null);
+          }}
           className="text-[12px] text-text-dim underline hover:text-text cursor-pointer"
         >
           Change setup
@@ -195,6 +271,9 @@ export default function ScoreEntryContainer() {
       session={liveSessionPreview}
       isOpen={showScorecardPreview}
       onClose={() => setShowScorecardPreview(false)}
+      onSave={handleSaveSession}
+      isLivePreview={true}
+      isSaving={isSaving}
     />
     </>
   );
