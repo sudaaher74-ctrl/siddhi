@@ -1,20 +1,34 @@
+"use client";
+
 import React from "react";
 import { Send, Bot } from "lucide-react";
+import { useUser } from "@/hooks/useUser";
 
 export default function AIChat() {
+  const { user } = useUser();
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .filter(Boolean)
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
+    : "ME";
+
   return (
     <div className="flex flex-col h-[calc(100vh-210px)] lg:h-[calc(100vh-140px)] bg-panel border border-border rounded-[14px] overflow-hidden">
       <div className="flex-1 p-4 sm:p-6 overflow-y-auto flex flex-col gap-6">
-        
         {/* User Message */}
         <div className="flex gap-3 sm:gap-4 self-end max-w-[90%] sm:max-w-[80%]">
           <div className="bg-black/5 rounded-2xl rounded-tr-sm p-3 sm:p-4 text-[13px] text-black/90 border border-black/5">
             Hey Coach, my arrows have been grouping a bit to the left today, especially when the wind picks up. Any tips?
           </div>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-[#b71c1c] flex-shrink-0 flex items-center justify-center text-black text-xs font-bold">
-            AM
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-[#b71c1c] flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
+            {initials}
           </div>
         </div>
+
 
         {/* AI Message */}
         <div className="flex gap-3 sm:gap-4 max-w-[90%] sm:max-w-[80%]">

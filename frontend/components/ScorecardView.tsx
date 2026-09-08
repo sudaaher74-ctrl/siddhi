@@ -28,8 +28,10 @@ import { BOW_OPTIONS, BOW_DISTANCES, BowOption } from "./SessionSetup";
 interface ScorecardViewProps {
   session?: Session;
   allSessions?: Session[];
+  initialUser?: { name?: string; email?: string; avatar?: string } | null;
   onBack?: () => void;
 }
+
 
 export interface BowConfig {
   name: BowOption;
@@ -205,10 +207,12 @@ const getArrowBadgeClass = (score: string) => {
 export default function ScorecardView({
   session: initialSession,
   allSessions,
+  initialUser,
   onBack,
 }: ScorecardViewProps) {
   const router = useRouter();
   const { user } = useUser();
+
 
   const [selectedBow, setSelectedBow] = useState<BowOption>(() => {
     return getBowFromSession(initialSession);
@@ -388,13 +392,16 @@ export default function ScorecardView({
   );
   const ninesDisplay: number = computedNines;
 
-  const athleteName = user?.name || "Sudarshan Aher";
-  const userInitials = athleteName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
+  const athleteName = user?.name || initialUser?.name || "Athlete";
+  const userInitials =
+    athleteName
+      .split(" ")
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase() || "AT";
+
 
   const eventDistance = selectedDistance || session.distance || currentBowConfig.defaultDistance;
   const eventName = `${eventDistance} ${currentBowConfig.shortName}`;

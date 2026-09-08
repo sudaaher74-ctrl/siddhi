@@ -90,6 +90,26 @@ describe('sessions', () => {
     expect(res.body).toHaveLength(0);
   });
 
+  it('cannot fetch, update, or delete another user\'s session by id', async () => {
+    const a = await createUserAndLogin({ email: 'user-a@example.com' });
+    const b = await createUserAndLogin({ email: 'user-b@example.com' });
+
+    const created = await authed(request(app).post('/api/sessions'), a.token).send(validSession);
+    const sessionId = created.body._id;
+
+    // User B tries to read User A's session
+    const getRes = await authed(request(app).get(`/api/sessions/${sessionId}`), b.token);
+    expect(getRes.status).toBe(404);
+
+    // User B tries to update User A's session
+    const putRes = await authed(request(app).put(`/api/sessions/${sessionId}`), b.token).send({ score: 999 });
+    expect(putRes.status).toBe(404);
+
+    // User B tries to delete User A's session
+    const delRes = await authed(request(app).delete(`/api/sessions/${sessionId}`), b.token);
+    expect(delRes.status).toBe(404);
+  });
+
   it('ignores a client-supplied user id', async () => {
     const a = await createUserAndLogin({ email: 'owner@example.com' });
     const b = await createUserAndLogin({ email: 'victim@example.com' });
@@ -102,6 +122,7 @@ describe('sessions', () => {
     const victimList = await authed(request(app).get('/api/sessions'), b.token);
     expect(victimList.body).toHaveLength(0);
   });
+
 
   it('fetches a single session by id', async () => {
     const { token } = await createUserAndLogin();

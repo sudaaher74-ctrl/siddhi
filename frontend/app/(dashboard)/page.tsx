@@ -7,8 +7,41 @@ import EquipmentStatus from "@/components/EquipmentStatus";
 import RecentAchievements from "@/components/RecentAchievements";
 import QuickActions from "@/components/QuickActions";
 import MotivationCard from "@/components/MotivationCard";
-import { Session, sessions as mockSessions } from "@/lib/data";
+import { Session } from "@/lib/data";
 import { cookies } from "next/headers";
+
+export const dynamic = "force-dynamic";
+
+interface UserProfile {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role?: string;
+  avatar?: string;
+}
+
+async function getUser(): Promise<UserProfile | null> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    if (!token) return null;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+    const res = await fetch(`${apiUrl}/api/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error("Error fetching user for dashboard:", error);
+    return null;
+  }
+}
 
 async function getSessions(): Promise<Session[]> {
   try {
@@ -27,20 +60,22 @@ async function getSessions(): Promise<Session[]> {
       throw new Error(`Failed to fetch: ${res.status}`);
     }
     
-    return await res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error("Error fetching sessions, falling back to mock data:", error);
-    return mockSessions;
+    console.error("Error fetching sessions:", error);
+    return [];
   }
 }
 
 export default async function DashboardPage() {
-  const sessions = await getSessions();
+  const [sessions, user] = await Promise.all([getSessions(), getUser()]);
 
   return (
     <>
-      <TopBar />
-      <HeroPerformanceCard sessions={sessions} />
+      <TopBar subtitle={user?.name ? `Welcome back, ${user.name.split(' ')[0]}` : undefined} />
+      <HeroPerformanceCard sessions={sessions} initialUser={user} />
+
       <HomeKpiGrid sessions={sessions} />
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-[12px]">

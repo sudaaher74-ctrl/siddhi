@@ -6,17 +6,35 @@ import Link from "next/link";
 import Card from "./ui/Card";
 import { useUser } from "@/hooks/useUser";
 
-export default function HeroPerformanceCard({ sessions = [] }: { sessions?: Session[] }) {
+interface UserData {
+  name?: string;
+  role?: string;
+  email?: string;
+}
+
+export default function HeroPerformanceCard({
+  sessions = [],
+  initialUser = null,
+}: {
+  sessions?: Session[];
+  initialUser?: UserData | null;
+}) {
   const { user } = useUser();
+  const activeUser = user || initialUser;
+  const displayName = activeUser?.name || "Athlete";
+  const firstName = displayName.split(" ")[0] || "Athlete";
+
   const today = new Date().toLocaleDateString();
-  const todaysSessions = sessions.filter(s => s.createdAt && new Date(s.createdAt).toLocaleDateString() === today);
-  
+  const todaysSessions = sessions.filter(
+    (s) => s.createdAt && new Date(s.createdAt).toLocaleDateString() === today
+  );
+
   const practicedToday = todaysSessions.length > 0;
   const arrowsToday = todaysSessions.reduce((sum, s) => sum + (Number(s.arrows) || 0), 0);
-  
+
   const latestSession = sessions[0];
   const latestScore = latestSession ? latestSession.score : "0";
-  
+
   const totalArrows = sessions.reduce((sum, s) => sum + (Number(s.arrows) || 0), 0);
   const totalScore = sessions.reduce((sum, s) => sum + (Number(s.score) || 0), 0);
   const overallAvg = totalArrows > 0 ? (totalScore / totalArrows).toFixed(2) : "0.00";
@@ -25,27 +43,40 @@ export default function HeroPerformanceCard({ sessions = [] }: { sessions?: Sess
     <Card className="bg-gradient-to-br from-panel to-panel shadow-sm border border-border/50 relative overflow-hidden p-6 md:p-8">
       {/* Abstract background shape for premium feel */}
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
-      
+
       <div className="relative z-10 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
-        
         {/* Left Side: Identity & Status */}
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl md:text-[32px] font-bold tracking-tight text-text truncate max-w-[200px] sm:max-w-[300px]">
-              {user ? user.name : 'Loading...'}
+          <div className="text-xs font-bold tracking-wider uppercase text-accent mb-1 flex items-center gap-1.5">
+            <span>Welcome back, {firstName}</span>
+            <span>👋</span>
+          </div>
+
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
+            <h1 className="text-2xl md:text-[32px] font-black tracking-tight text-text">
+              {displayName}
             </h1>
-            <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[11px] font-bold tracking-wide uppercase">
-              Elite Rank
+            <span className="px-2.5 py-0.5 rounded-full bg-accent/10 text-accent text-[11px] font-bold tracking-wide uppercase">
+              {activeUser?.role === "admin" ? "Admin" : "Elite Rank"}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-2 text-text-dim text-sm font-medium">
-            <div className={`w-2 h-2 rounded-full ${practicedToday ? 'bg-green-500' : 'bg-orange-400'}`} />
-            {practicedToday ? 'Practiced Today' : 'Rest Day'}
+            <div
+              className={`w-2 h-2 rounded-full ${practicedToday ? "bg-green-500" : "bg-orange-400"}`}
+            />
+            {practicedToday ? "Practiced Today" : "Rest Day"}
             <span className="text-black/20">•</span>
-            <span>{practicedToday ? "Keep the momentum going!" : "Time to hit the range."}</span>
+            <span>
+              {practicedToday
+                ? "Keep the momentum going!"
+                : sessions.length === 0
+                ? "Ready for your first session? Hit the range!"
+                : "Time to hit the range."}
+            </span>
           </div>
         </div>
+
 
         {/* Middle: Core Metrics */}
         <div className="flex gap-6 md:gap-8 hidden md:flex">

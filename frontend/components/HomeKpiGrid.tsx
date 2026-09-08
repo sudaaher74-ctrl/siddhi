@@ -24,8 +24,9 @@ export default function HomeKpiGrid({ sessions = [] }: { sessions?: Session[] })
     { label: "Overall Average", value: avg, icon: Crosshair, color: "text-emerald-500", bg: "bg-emerald-500/10" },
     { label: "Best Session", value: bestScore.toString(), icon: Award, color: "text-amber-500", bg: "bg-amber-500/10" },
     { label: "10+X Rate", value: `${tenRate}%`, icon: Zap, color: "text-orange-500", bg: "bg-orange-500/10" },
-    { label: "Practice Streak", value: "1d", icon: Flame, color: "text-rose-500", bg: "bg-rose-500/10" },
+    { label: "Practice Streak", value: sessions.length > 0 ? "1d" : "0d", icon: Flame, color: "text-rose-500", bg: "bg-rose-500/10" },
   ];
+
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-[12px]">

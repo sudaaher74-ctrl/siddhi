@@ -29,11 +29,14 @@ import ScorecardModal from "./ScorecardModal";
 
 interface MonthlyLogViewProps {
   initialSessions: Session[];
+  initialUser?: { name?: string; email?: string; phone?: string } | null;
 }
 
-export default function MonthlyLogView({ initialSessions }: MonthlyLogViewProps) {
+export default function MonthlyLogView({ initialSessions, initialUser }: MonthlyLogViewProps) {
   const { user } = useUser();
+  const activeUser = user || initialUser;
   const [sessions] = useState<Session[]>(initialSessions);
+
 
   // Month & Year state (defaults to current date)
   const today = new Date();
@@ -228,9 +231,11 @@ export default function MonthlyLogView({ initialSessions }: MonthlyLogViewProps)
         <div className="flex flex-wrap items-center gap-2">
           {/* Monthly PDF Export Button */}
           <button
-            onClick={() => exportMonthlyReportPDF(sessions, user, currentYear, currentMonth)}
+            onClick={() => exportMonthlyReportPDF(sessions, activeUser || null, currentYear, currentMonth)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent-soft text-black font-semibold text-xs transition-all shadow-sm active:scale-95"
           >
+
+
             <FileDown className="w-4 h-4 text-black" />
             Download Monthly PDF ({monthName})
           </button>
@@ -617,9 +622,11 @@ export default function MonthlyLogView({ initialSessions }: MonthlyLogViewProps)
                   <button
                     key={week.weekNum}
                     onClick={() => {
-                      exportWeeklyReportPDF(sessions, user, week.start, week.end, `Week ${week.weekNum}`);
+                      exportWeeklyReportPDF(sessions, activeUser || null, week.start, week.end, `Week ${week.weekNum}`);
                       setShowWeekExportModal(false);
                     }}
+
+
                     className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-accent hover:bg-accent/5 text-left transition-colors"
                   >
                     <div>

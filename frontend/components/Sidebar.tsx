@@ -50,17 +50,31 @@ export default function Sidebar() {
         );
       })}
       <div className="mt-auto flex items-center justify-between p-[9px_8px] rounded-[10px] bg-black/5 border border-black/5 pt-4">
-        <div className="flex items-center gap-[9px]">
+        <div className="flex items-center gap-[9px] min-w-0 flex-1">
           <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] flex items-center justify-center text-white font-sans font-semibold text-[11px] flex-shrink-0">
-            {user ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '..'}
+            {user
+              ? user.name
+                  .split(" ")
+                  .filter(Boolean)
+                  .map((n) => n[0])
+                  .join("")
+                  .substring(0, 2)
+                  .toUpperCase() || "AT"
+              : ".."}
           </div>
-          <div>
-            <div className="text-[12px] font-semibold text-text-mid truncate max-w-[100px]">
-              {user ? user.name : 'Loading...'}
+          <div className="min-w-0 flex-1">
+            <div
+              className="text-[12px] font-semibold text-text-mid truncate max-w-[100px]"
+              title={user?.name || ""}
+            >
+              {user ? user.name : "Athlete"}
             </div>
-            <div className="text-[10px] text-text-dim capitalize">{user?.role || 'Athlete'}</div>
+            <div className="text-[10px] text-text-dim capitalize">
+              {user?.role || "Athlete"}
+            </div>
           </div>
         </div>
+
         
         <Link 
           href="/feedback"

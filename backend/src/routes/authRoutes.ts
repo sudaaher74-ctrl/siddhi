@@ -22,7 +22,11 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
  * cannot read it. It is also returned in the body for backwards compatibility
  * with clients that still send an Authorization header.
  */
-const sendAuth = (res: Response, user: { _id: unknown; email: string }, status = 200) => {
+const sendAuth = (
+  res: Response,
+  user: { _id: unknown; email: string; name?: string; role?: string; avatar?: string },
+  status = 200
+) => {
   const token = generateToken(String(user._id));
 
   res.cookie('token', token, {
@@ -33,8 +37,16 @@ const sendAuth = (res: Response, user: { _id: unknown; email: string }, status =
     path: '/',
   });
 
-  res.status(status).json({ _id: user._id, email: user.email, token });
+  res.status(status).json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    avatar: user.avatar,
+    token,
+  });
 };
+
 
 // POST /api/auth/register
 router.post('/register', authLimiter, validateBody(registerSchema), async (req, res) => {

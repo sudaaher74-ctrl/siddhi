@@ -6,7 +6,10 @@ import ArrowPlot from "@/components/ArrowPlot";
 import { Session } from "@/lib/data";
 import { cookies } from "next/headers";
 
+export const dynamic = "force-dynamic";
+
 async function getSessions(): Promise<Session[]> {
+
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;

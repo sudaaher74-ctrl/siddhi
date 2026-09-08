@@ -107,9 +107,9 @@ EquipmentConstructor.find = function (query: { user?: any } = {}) {
   return new QueryHelper<IEquipment[]>(async () => {
     let sql = 'SELECT * FROM equipment';
     const args: any[] = [];
-    if (query.user) {
+    if ('user' in query) {
       sql += ' WHERE user_id = ?';
-      args.push(String(query.user));
+      args.push(String(query.user || ''));
     }
     sql += ' ORDER BY created_at DESC';
     const res = await db.execute({ sql, args });
@@ -128,13 +128,11 @@ EquipmentConstructor.findOneAndUpdate = async function (
   _options?: any
 ) {
   const id = query._id || query.id;
-  const userId = query.user ? String(query.user) : undefined;
-
   let findSql = 'SELECT * FROM equipment WHERE id = ?';
   const findArgs: any[] = [id];
-  if (userId) {
+  if ('user' in query) {
     findSql += ' AND user_id = ?';
-    findArgs.push(userId);
+    findArgs.push(String(query.user || ''));
   }
 
   const check = await db.execute({ sql: findSql, args: findArgs });
@@ -153,17 +151,17 @@ EquipmentConstructor.findOneAndUpdate = async function (
 EquipmentConstructor.findOneAndDelete = async function (query: { _id?: string; id?: string; user?: any }) {
   const id = query._id || query.id;
   if (!id) return null;
-  const userId = query.user ? String(query.user) : undefined;
 
   let findSql = 'SELECT * FROM equipment WHERE id = ?';
   const findArgs: any[] = [id];
-  if (userId) {
+  if ('user' in query) {
     findSql += ' AND user_id = ?';
-    findArgs.push(userId);
+    findArgs.push(String(query.user || ''));
   }
 
   const check = await db.execute({ sql: findSql, args: findArgs });
   if (check.rows.length === 0) return null;
+
 
   await db.execute({ sql: 'DELETE FROM equipment WHERE id = ?', args: [id] });
   return mapEquipmentRow(check.rows[0]);

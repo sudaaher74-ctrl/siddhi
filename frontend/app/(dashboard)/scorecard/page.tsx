@@ -30,13 +30,36 @@ async function getSessions(): Promise<Session[]> {
   }
 }
 
+async function getUser(): Promise<{ name: string; email: string; avatar?: string; role?: string } | null> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    if (!token) return null;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+    const res = await fetch(`${apiUrl}/api/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error("Error fetching user for scorecard:", error);
+    return null;
+  }
+}
+
 export default async function ScorecardPage() {
-  const sessions = await getSessions();
+  const [sessions, user] = await Promise.all([getSessions(), getUser()]);
 
   return (
     <>
       <TopBar title="Scorecard" />
-      <ScorecardView session={sessions[0] || undefined} allSessions={sessions} />
+      <ScorecardView session={sessions[0] || undefined} allSessions={sessions} initialUser={user} />
     </>
   );
 }
+

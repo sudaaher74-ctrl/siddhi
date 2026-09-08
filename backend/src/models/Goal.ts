@@ -105,9 +105,9 @@ GoalConstructor.find = function (query: { user?: any } = {}) {
   return new QueryHelper<IGoal[]>(async () => {
     let sql = 'SELECT * FROM goals';
     const args: any[] = [];
-    if (query.user) {
+    if ('user' in query) {
       sql += ' WHERE user_id = ?';
-      args.push(String(query.user));
+      args.push(String(query.user || ''));
     }
     sql += ' ORDER BY created_at DESC';
     const res = await db.execute({ sql, args });
@@ -126,13 +126,11 @@ GoalConstructor.findOneAndUpdate = async function (
   _options?: any
 ) {
   const id = query._id || query.id;
-  const userId = query.user ? String(query.user) : undefined;
-
   let findSql = 'SELECT * FROM goals WHERE id = ?';
   const findArgs: any[] = [id];
-  if (userId) {
+  if ('user' in query) {
     findSql += ' AND user_id = ?';
-    findArgs.push(userId);
+    findArgs.push(String(query.user || ''));
   }
 
   const check = await db.execute({ sql: findSql, args: findArgs });
@@ -153,13 +151,12 @@ GoalConstructor.findOneAndUpdate = async function (
 GoalConstructor.findOneAndDelete = async function (query: { _id?: string; id?: string; user?: any }) {
   const id = query._id || query.id;
   if (!id) return null;
-  const userId = query.user ? String(query.user) : undefined;
 
   let findSql = 'SELECT * FROM goals WHERE id = ?';
   const findArgs: any[] = [id];
-  if (userId) {
+  if ('user' in query) {
     findSql += ' AND user_id = ?';
-    findArgs.push(userId);
+    findArgs.push(String(query.user || ''));
   }
 
   const check = await db.execute({ sql: findSql, args: findArgs });
@@ -168,5 +165,6 @@ GoalConstructor.findOneAndDelete = async function (query: { _id?: string; id?: s
   await db.execute({ sql: 'DELETE FROM goals WHERE id = ?', args: [id] });
   return mapGoalRow(check.rows[0]);
 };
+
 
 export default GoalConstructor;

@@ -129,9 +129,9 @@ SessionConstructor.find = function (query: { user?: any } = {}) {
   return new QueryHelper<ISession[]>(async () => {
     let sql = 'SELECT * FROM sessions';
     const args: any[] = [];
-    if (query.user) {
+    if ('user' in query) {
       sql += ' WHERE user_id = ?';
-      args.push(String(query.user));
+      args.push(String(query.user || ''));
     }
     sql += ' ORDER BY created_at DESC';
     const res = await db.execute({ sql, args });
@@ -141,22 +141,22 @@ SessionConstructor.find = function (query: { user?: any } = {}) {
 
 SessionConstructor.findOne = async function (query: { _id?: string; id?: string; user?: any } = {}) {
   const id = query._id || query.id;
-  const userId = query.user ? String(query.user) : undefined;
   let sql = 'SELECT * FROM sessions WHERE 1=1';
   const args: any[] = [];
   if (id) {
     sql += ' AND id = ?';
     args.push(id);
   }
-  if (userId) {
+  if ('user' in query) {
     sql += ' AND user_id = ?';
-    args.push(userId);
+    args.push(String(query.user || ''));
   }
   sql += ' LIMIT 1';
   const res = await db.execute({ sql, args });
   if (res.rows.length === 0) return null;
   return mapSessionRow(res.rows[0]);
 };
+
 
 SessionConstructor.findById = async function (id: string, userId?: any) {
   return await SessionConstructor.findOne({ id, user: userId });
@@ -168,13 +168,11 @@ SessionConstructor.findOneAndUpdate = async function (
   _options?: any
 ) {
   const id = query._id || query.id;
-  const userId = query.user ? String(query.user) : undefined;
-
   let findSql = 'SELECT * FROM sessions WHERE id = ?';
   const findArgs: any[] = [id];
-  if (userId) {
+  if ('user' in query) {
     findSql += ' AND user_id = ?';
-    findArgs.push(userId);
+    findArgs.push(String(query.user || ''));
   }
 
   const check = await db.execute({ sql: findSql, args: findArgs });
@@ -199,14 +197,14 @@ SessionConstructor.findOneAndUpdate = async function (
 SessionConstructor.findOneAndDelete = async function (query: { _id?: string; id?: string; user?: any }) {
   const id = query._id || query.id;
   if (!id) return null;
-  const userId = query.user ? String(query.user) : undefined;
 
   let findSql = 'SELECT * FROM sessions WHERE id = ?';
   const findArgs: any[] = [id];
-  if (userId) {
+  if ('user' in query) {
     findSql += ' AND user_id = ?';
-    findArgs.push(userId);
+    findArgs.push(String(query.user || ''));
   }
+
 
   const check = await db.execute({ sql: findSql, args: findArgs });
   if (check.rows.length === 0) return null;
