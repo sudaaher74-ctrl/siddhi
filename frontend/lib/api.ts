@@ -59,6 +59,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   return (await res.json()) as T;
 }
 
+export const apiGet = <T>(path: string) => apiFetch<T>(path);
+
 export const apiPost = <T>(path: string, body: unknown) =>
   apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) });
 
@@ -66,3 +68,4 @@ export const apiPut = <T>(path: string, body: unknown) =>
   apiFetch<T>(path, { method: 'PUT', body: JSON.stringify(body) });
 
 export const apiDelete = <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' });
+

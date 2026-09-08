@@ -5,7 +5,7 @@ import TopBar from "@/components/TopBar";
 
 export const dynamic = "force-dynamic";
 
-async function getLatestSession(): Promise<Session | null> {
+async function getSessions(): Promise<Session[]> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
@@ -19,24 +19,24 @@ async function getLatestSession(): Promise<Session | null> {
     });
 
     if (!res.ok) {
-      return null;
+      return [];
     }
 
     const sessions = await res.json();
-    return Array.isArray(sessions) && sessions.length > 0 ? sessions[0] : null;
+    return Array.isArray(sessions) ? sessions : [];
   } catch (error) {
-    console.error("Error fetching latest session for scorecard:", error);
-    return null;
+    console.error("Error fetching sessions for scorecard:", error);
+    return [];
   }
 }
 
 export default async function ScorecardPage() {
-  const latestSession = await getLatestSession();
+  const sessions = await getSessions();
 
   return (
     <>
       <TopBar title="Scorecard" />
-      <ScorecardView session={latestSession || undefined} />
+      <ScorecardView session={sessions[0] || undefined} allSessions={sessions} />
     </>
   );
 }
