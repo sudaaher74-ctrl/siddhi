@@ -164,8 +164,48 @@ router.post('/logout', (req, res) => {
 
 // GET /api/auth/me - Current user profile
 router.get('/me', protect, async (req: AuthedRequest, res) => {
-  const { _id, name, email, phone, role, avatar, googleId } = requireUser(req);
-  res.json({ _id, name, email, phone, role, avatar, hasGoogleAuth: Boolean(googleId) });
+  const { _id, name, email, phone, role, avatar, googleId, createdAt } = requireUser(req);
+  res.json({
+    _id,
+    name,
+    email,
+    phone,
+    role,
+    avatar,
+    hasGoogleAuth: Boolean(googleId),
+    createdAt,
+  });
+});
+
+// PUT /api/auth/profile - Update current user profile
+router.put('/profile', protect, async (req: AuthedRequest, res) => {
+  try {
+    const user = requireUser(req);
+    const { name, phone } = req.body;
+
+    if (name && typeof name === 'string' && name.trim()) {
+      user.name = name.trim();
+    }
+    if (phone !== undefined) {
+      user.phone = typeof phone === 'string' ? phone.trim() : undefined;
+    }
+
+    await user.save();
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      avatar: user.avatar,
+      hasGoogleAuth: Boolean(user.googleId),
+      createdAt: user.createdAt,
+    });
+  } catch (error) {
+    console.error('Update profile failed:', error);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
 });
 
 export default router;
+

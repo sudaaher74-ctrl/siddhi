@@ -1,9 +1,10 @@
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
+import { ProfileProvider } from "@/context/ProfileContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <ProfileProvider>
       <div className="flex flex-col lg:flex-row gap-[14px] p-[14px] pb-[80px] lg:pb-[14px] min-h-screen">
         <div className="hidden lg:block">
           <Sidebar />
@@ -13,6 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
       <MobileNav />
-    </>
+    </ProfileProvider>
   );
 }
+

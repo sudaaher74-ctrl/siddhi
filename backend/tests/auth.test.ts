@@ -75,7 +75,25 @@ describe('authentication', () => {
     expect(res.body.email).toBe('cookie@example.com');
   });
 
+  it('updates profile name and phone', async () => {
+    const { token } = await createUserAndLogin();
+
+    const res = await authed(request(app).put('/api/auth/profile'), token).send({
+      name: 'Updated Archer Name',
+      phone: '+91 9876543210',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('Updated Archer Name');
+    expect(res.body.phone).toBe('+91 9876543210');
+
+    const me = await authed(request(app).get('/api/auth/me'), token);
+    expect(me.body.name).toBe('Updated Archer Name');
+    expect(me.body.phone).toBe('+91 9876543210');
+  });
+
   it('returns 401 (not 500) for a valid token whose user was deleted', async () => {
+
     const { token, user } = await createUserAndLogin();
     await User.findByIdAndDelete(user._id);
 
@@ -175,3 +193,5 @@ describe('authentication', () => {
     expect(sawLimit).toBe(true);
   });
 });
+
+

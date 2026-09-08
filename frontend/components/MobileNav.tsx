@@ -4,9 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Flag, LogOut, ShieldCheck, MessageSquare, Calendar, Award } from "lucide-react";
+import { useUser } from "@/hooks/useUser";
+import { useProfile } from "@/context/ProfileContext";
 
 export default function MobileNav() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const { openProfile } = useProfile();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -41,12 +45,42 @@ export default function MobileNav() {
           className={`absolute bottom-16 left-4 right-4 bg-white/95 backdrop-blur-lg border border-border rounded-2xl p-4 transition-transform duration-300 ${menuOpen ? 'translate-y-0' : 'translate-y-8'}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex justify-between items-center mb-4 pb-4 border-b border-black/5">
-            <h3 className="text-[14px] font-bold text-text">More Options</h3>
+          <div className="flex justify-between items-center mb-3 pb-3 border-b border-black/5">
+            <h3 className="text-[14px] font-bold text-text">Account & Options</h3>
             <button onClick={() => setMenuOpen(false)} className="p-1 bg-black/5 rounded-full text-black/70 hover:text-black">
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Athlete Profile Quick Card */}
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              openProfile();
+            }}
+            className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 transition-colors mb-3 text-left group"
+          >
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] text-white flex items-center justify-center text-xs font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
+              {user?.name
+                ? user.name
+                    .split(" ")
+                    .filter(Boolean)
+                    .map((n) => n[0])
+                    .join("")
+                    .substring(0, 2)
+                    .toUpperCase()
+                : "AT"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-bold text-slate-800 truncate">
+                {user?.name || "Athlete Profile"}
+              </div>
+              <div className="text-[11px] text-accent font-semibold flex items-center gap-1">
+                <span>View career data & profile details</span>
+              </div>
+            </div>
+          </button>
           <div className="grid grid-cols-2 gap-2">
             {moreNav.map((item) => {
               const isActive = pathname === item.href;

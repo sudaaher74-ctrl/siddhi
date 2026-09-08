@@ -5,10 +5,12 @@ import { navItems } from "@/lib/data";
 import Link from "next/link";
 import { LogOut, ShieldCheck, MessageSquare } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
+import { useProfile } from "@/context/ProfileContext";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useUser();
+  const { openProfile } = useProfile();
 
   const handleLogout = async () => {
     // Clears the httpOnly cookie server-side.
@@ -50,8 +52,13 @@ export default function Sidebar() {
         );
       })}
       <div className="mt-auto flex items-center justify-between p-[9px_8px] rounded-[10px] bg-black/5 border border-black/5 pt-4">
-        <div className="flex items-center gap-[9px] min-w-0 flex-1">
-          <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] flex items-center justify-center text-white font-sans font-semibold text-[11px] flex-shrink-0">
+        <button
+          type="button"
+          onClick={openProfile}
+          className="flex items-center gap-[9px] min-w-0 flex-1 p-1 -m-1 rounded-lg hover:bg-black/10 active:scale-95 transition-all text-left cursor-pointer group"
+          title="Click to view full profile & stats"
+        >
+          <div className="w-[28px] h-[28px] rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] flex items-center justify-center text-white font-sans font-semibold text-[11px] flex-shrink-0 group-hover:scale-105 transition-transform">
             {user
               ? user.name
                   .split(" ")
@@ -64,7 +71,7 @@ export default function Sidebar() {
           </div>
           <div className="min-w-0 flex-1">
             <div
-              className="text-[12px] font-semibold text-text-mid truncate max-w-[100px]"
+              className="text-[12px] font-semibold text-text-mid truncate max-w-[100px] group-hover:text-accent transition-colors"
               title={user?.name || ""}
             >
               {user ? user.name : "Athlete"}
@@ -73,7 +80,7 @@ export default function Sidebar() {
               {user?.role || "Athlete"}
             </div>
           </div>
-        </div>
+        </button>
 
         
         <Link 

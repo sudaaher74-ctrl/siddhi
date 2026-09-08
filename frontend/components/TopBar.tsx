@@ -2,6 +2,7 @@
 
 import { Search } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
+import { useProfile } from "@/context/ProfileContext";
 
 interface TopBarProps {
   title?: string;
@@ -10,6 +11,7 @@ interface TopBarProps {
 
 export default function TopBar({ title = "Dashboard", subtitle }: TopBarProps) {
   const { user } = useUser();
+  const { openProfile } = useProfile();
   const athleteName = user?.name || "";
   const initials = athleteName
     ? athleteName
@@ -32,12 +34,17 @@ export default function TopBar({ title = "Dashboard", subtitle }: TopBarProps) {
         </div>
         <div className="md:hidden flex items-center gap-2">
           {athleteName && (
-            <div className="flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={openProfile}
+              className="flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-200/80 active:scale-95 transition-all cursor-pointer"
+              title="Click to view full profile & stats"
+            >
               <span className="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center text-[10px] font-bold">
                 {initials}
               </span>
               <span className="max-w-[100px] truncate">{athleteName}</span>
-            </div>
+            </button>
           )}
           <div className="flex items-center gap-[7px] p-[5px_10px] rounded-full bg-accent/10 border border-accent/20 text-accent text-[11px] font-semibold w-max shadow-xs">
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulseCustom" />
@@ -57,19 +64,24 @@ export default function TopBar({ title = "Dashboard", subtitle }: TopBarProps) {
         </div>
 
         {athleteName && (
-          <div className="hidden md:flex items-center gap-2.5 py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-200/80 shadow-xs">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] text-white flex items-center justify-center text-[11px] font-bold flex-shrink-0">
+          <button
+            type="button"
+            onClick={openProfile}
+            className="hidden md:flex items-center gap-2.5 py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-200/80 shadow-xs hover:bg-white hover:border-slate-300 hover:shadow-sm active:scale-98 transition-all cursor-pointer group text-left"
+            title="Click to view full profile & stats"
+          >
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-target-red to-[#b71c1c] text-white flex items-center justify-center text-[11px] font-bold flex-shrink-0 group-hover:scale-105 transition-transform">
               {initials}
             </div>
             <div className="flex flex-col text-left">
-              <span className="text-xs font-bold text-slate-800 leading-tight max-w-[120px] lg:max-w-[150px] truncate">
+              <span className="text-xs font-bold text-slate-800 leading-tight max-w-[120px] lg:max-w-[150px] truncate group-hover:text-accent transition-colors">
                 {athleteName}
               </span>
               <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
                 {user?.role || "Athlete"}
               </span>
             </div>
-          </div>
+          </button>
         )}
       </div>
     </header>
