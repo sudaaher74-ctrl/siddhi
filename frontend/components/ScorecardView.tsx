@@ -743,50 +743,69 @@ export default function ScorecardView({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-center border-collapse min-w-[620px]">
+        <div className="overflow-x-auto p-3 sm:p-5">
+          <table className="w-full text-center border-collapse border border-slate-300 min-w-[640px] shadow-2xs rounded-xl overflow-hidden">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 font-semibold text-xs bg-slate-50/70">
-                <th className="py-3 px-3 text-center w-14">End</th>
-                <th className="py-3 px-2 text-center">Arrow 1</th>
-                <th className="py-3 px-2 text-center">Arrow 2</th>
-                <th className="py-3 px-2 text-center">Arrow 3</th>
-                <th className="py-3 px-2 text-center">Arrow 4</th>
-                <th className="py-3 px-2 text-center">Arrow 5</th>
-                <th className="py-3 px-2 text-center">Arrow 6</th>
-                <th className="py-3 px-3 text-center font-bold text-slate-900 bg-slate-100/60 w-24">
+              <tr className="border-b-2 border-slate-300 text-slate-700 font-bold text-xs bg-slate-100/90">
+                <th className="py-3 px-3 text-center border-r border-slate-300 w-16 uppercase tracking-wider bg-slate-200/50">
+                  End
+                </th>
+                <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  Arrow 1
+                </th>
+                <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  Arrow 2
+                </th>
+                <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  Arrow 3
+                </th>
+                <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  Arrow 4
+                </th>
+                <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  Arrow 5
+                </th>
+                <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  Arrow 6
+                </th>
+                <th className="py-3 px-3 text-center font-black text-slate-900 border-r border-slate-300 bg-slate-200/80 w-24 uppercase tracking-wider">
                   End Total
                 </th>
-                <th className="py-3 px-3 text-center font-bold text-slate-900 bg-slate-100/60 w-28">
+                <th className="py-3 px-3 text-center font-black text-slate-900 bg-slate-200/80 w-28 uppercase tracking-wider">
                   Running Total
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-200 bg-white">
               {ends.slice(0, 6).map((row, idx) => (
                 <tr
                   key={idx}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors h-14"
+                  className="border-b border-slate-200 hover:bg-slate-50/70 transition-colors h-14"
                 >
-                  <td className="py-2.5 px-3 font-bold text-slate-700 bg-slate-50/30">
+                  <td className="py-2.5 px-3 font-extrabold text-slate-800 border-r border-slate-300 bg-slate-50 text-center">
                     {idx + 1}
                   </td>
                   {row.map((arrowVal, arrowIdx) => (
-                    <td key={arrowIdx} className="py-2.5 px-1.5">
-                      <span
-                        className={`inline-flex items-center justify-center min-w-[32px] h-8 rounded-lg text-xs transition-all shadow-2xs ${getArrowBadgeClass(
-                          arrowVal
-                        )}`}
-                      >
-                        {arrowVal || "-"}
-                      </span>
+                    <td
+                      key={arrowIdx}
+                      className="py-2.5 px-2 border-r border-slate-200 text-center"
+                    >
+                      <div className="flex items-center justify-center">
+                        <span
+                          className={`inline-flex items-center justify-center min-w-[34px] h-8 px-2 rounded-md text-xs font-bold transition-all shadow-2xs ${getArrowBadgeClass(
+                            arrowVal
+                          )}`}
+                        >
+                          {arrowVal || "-"}
+                        </span>
+                      </div>
                     </td>
                   ))}
-                  <td className="py-2.5 px-3 font-black text-slate-900 bg-slate-50/40 text-sm">
+                  <td className="py-2.5 px-3 font-black text-slate-900 border-r border-slate-300 bg-slate-50/70 text-sm text-center">
                     {endTotals[idx] || 0}
                   </td>
-                  <td className="py-2.5 px-3 font-black text-slate-900 bg-slate-50/40 text-sm">
-                    <span className="inline-block px-2 py-0.5 rounded bg-slate-200/60 font-mono">
+                  <td className="py-2.5 px-3 font-black text-slate-900 bg-slate-50/70 text-sm text-center">
+                    <span className="inline-block px-2.5 py-0.5 rounded bg-slate-200/80 font-mono font-bold text-slate-900">
                       {runningTotals[idx] || 0}
                     </span>
                   </td>
@@ -794,14 +813,17 @@ export default function ScorecardView({
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-amber-50/50 border-t-2 border-amber-200/80 font-bold text-slate-900">
-                <td colSpan={7} className="py-3.5 px-5 text-left text-sm font-bold text-slate-900">
+              <tr className="bg-amber-50/90 border-t-2 border-amber-300 font-bold text-slate-900">
+                <td
+                  colSpan={7}
+                  className="py-3.5 px-5 text-left text-sm font-extrabold text-slate-900 border-r border-amber-200/90"
+                >
                   Round 1 Total ({eventName})
                 </td>
-                <td className="py-3.5 px-3 text-center text-sm font-black text-amber-900">
+                <td className="py-3.5 px-3 text-center text-sm font-black text-amber-950 border-r border-amber-200/90">
                   {round1Total}
                 </td>
-                <td className="py-3.5 px-3 text-center text-base font-black text-amber-900 font-mono">
+                <td className="py-3.5 px-3 text-center text-base font-black text-amber-950 font-mono">
                   {round1Total} / 360
                 </td>
               </tr>
@@ -818,61 +840,62 @@ export default function ScorecardView({
             <h3 className="text-sm font-bold text-slate-900">Round Summary</h3>
             <span className="text-xs text-slate-500 font-medium">{currentBowConfig.standardShort}</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-center border-collapse text-xs">
+          <div className="overflow-x-auto p-3 sm:p-5">
+            <table className="w-full text-center border-collapse border border-slate-300 text-xs shadow-2xs rounded-xl overflow-hidden">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-500 font-semibold bg-slate-50/70">
-                  <th className="py-2.5 px-3 text-left">Round</th>
-                  <th className="py-2.5 px-2 text-center">Distance</th>
-                  <th className="py-2.5 px-2 text-center font-bold text-slate-900">Score</th>
-                  <th className="py-2.5 px-2 text-center">Max Score</th>
-                  <th className="py-2.5 px-2 text-center">Xs</th>
-                  <th className="py-2.5 px-2 text-center">10s</th>
+                <tr className="border-b-2 border-slate-300 text-slate-700 font-bold bg-slate-100/90">
+                  <th className="py-2.5 px-3 text-left border-r border-slate-300">Round</th>
+                  <th className="py-2.5 px-2 text-center border-r border-slate-300">Distance</th>
+                  <th className="py-2.5 px-2 text-center font-black text-slate-900 border-r border-slate-300">Score</th>
+                  <th className="py-2.5 px-2 text-center border-r border-slate-300">Max Score</th>
+                  <th className="py-2.5 px-2 text-center border-r border-slate-300">Xs</th>
+                  <th className="py-2.5 px-2 text-center border-r border-slate-300">10s</th>
                   <th className="py-2.5 px-2 text-center">9s</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr className="border-b border-slate-100">
-                  <td className="py-3 px-3 text-left font-bold text-slate-900">Round 1</td>
-                  <td className="py-3 px-2 text-slate-600 font-semibold">{eventDistance}</td>
-                  <td className="py-3 px-2 font-black text-slate-900 text-sm">{round1Total}</td>
-                  <td className="py-3 px-2 text-slate-500">360</td>
-                  <td className="py-3 px-2 font-semibold text-slate-700">{xsDisplay}</td>
-                  <td className="py-3 px-2 font-semibold text-slate-700">{tensDisplay}</td>
-                  <td className="py-3 px-2 font-semibold text-slate-700">{ninesDisplay}</td>
+              <tbody className="divide-y divide-slate-200 bg-white">
+                <tr className="border-b border-slate-200 hover:bg-slate-50/50">
+                  <td className="py-3 px-3 text-left font-bold text-slate-900 border-r border-slate-300 bg-slate-50/50">Round 1</td>
+                  <td className="py-3 px-2 text-slate-700 font-semibold border-r border-slate-200">{eventDistance}</td>
+                  <td className="py-3 px-2 font-black text-slate-900 text-sm border-r border-slate-200">{round1Total}</td>
+                  <td className="py-3 px-2 text-slate-500 border-r border-slate-200">360</td>
+                  <td className="py-3 px-2 font-bold text-slate-700 border-r border-slate-200">{xsDisplay}</td>
+                  <td className="py-3 px-2 font-bold text-slate-700 border-r border-slate-200">{tensDisplay}</td>
+                  <td className="py-3 px-2 font-bold text-slate-700">{ninesDisplay}</td>
                 </tr>
-                <tr className="border-b border-slate-100 text-slate-400">
-                  <td className="py-3 px-3 text-left font-medium">Round 2</td>
-                  <td className="py-3 px-2">{eventDistance}</td>
-                  <td className="py-3 px-2 font-medium">-</td>
-                  <td className="py-3 px-2 text-slate-500">360</td>
-                  <td className="py-3 px-2">-</td>
-                  <td className="py-3 px-2">-</td>
+                <tr className="border-b border-slate-200 text-slate-400">
+                  <td className="py-3 px-3 text-left font-medium border-r border-slate-300 bg-slate-50/30">Round 2</td>
+                  <td className="py-3 px-2 border-r border-slate-200">{eventDistance}</td>
+                  <td className="py-3 px-2 font-medium border-r border-slate-200">-</td>
+                  <td className="py-3 px-2 text-slate-400 border-r border-slate-200">360</td>
+                  <td className="py-3 px-2 border-r border-slate-200">-</td>
+                  <td className="py-3 px-2 border-r border-slate-200">-</td>
                   <td className="py-3 px-2">-</td>
                 </tr>
-                <tr className="border-b border-slate-100 text-slate-400">
-                  <td className="py-3 px-3 text-left font-medium">Round 3</td>
-                  <td className="py-3 px-2">{eventDistance}</td>
-                  <td className="py-3 px-2 font-medium">-</td>
-                  <td className="py-3 px-2 text-slate-500">360</td>
-                  <td className="py-3 px-2">-</td>
-                  <td className="py-3 px-2">-</td>
+                <tr className="border-b border-slate-200 text-slate-400">
+                  <td className="py-3 px-3 text-left font-medium border-r border-slate-300 bg-slate-50/30">Round 3</td>
+                  <td className="py-3 px-2 border-r border-slate-200">{eventDistance}</td>
+                  <td className="py-3 px-2 font-medium border-r border-slate-200">-</td>
+                  <td className="py-3 px-2 text-slate-400 border-r border-slate-200">360</td>
+                  <td className="py-3 px-2 border-r border-slate-200">-</td>
+                  <td className="py-3 px-2 border-r border-slate-200">-</td>
                   <td className="py-3 px-2">-</td>
                 </tr>
               </tbody>
               <tfoot>
-                <tr className="bg-slate-50 font-bold text-slate-900 border-t-2 border-slate-200">
-                  <td className="py-3 px-3 text-left font-extrabold text-slate-900">Grand Total</td>
-                  <td className="py-3 px-2"></td>
-                  <td className="py-3 px-2 font-black text-slate-900 text-sm">{round1Total}</td>
-                  <td className="py-3 px-2 text-slate-600 font-semibold">1080</td>
-                  <td className="py-3 px-2 font-black text-slate-900">{xsDisplay}</td>
-                  <td className="py-3 px-2 font-black text-slate-900">{tensDisplay}</td>
+                <tr className="bg-slate-100/80 font-bold text-slate-900 border-t-2 border-slate-300">
+                  <td className="py-3 px-3 text-left font-extrabold text-slate-900 border-r border-slate-300">Grand Total</td>
+                  <td className="py-3 px-2 border-r border-slate-200"></td>
+                  <td className="py-3 px-2 font-black text-slate-900 text-sm border-r border-slate-200">{round1Total}</td>
+                  <td className="py-3 px-2 text-slate-700 font-bold border-r border-slate-200">1080</td>
+                  <td className="py-3 px-2 font-black text-slate-900 border-r border-slate-200">{xsDisplay}</td>
+                  <td className="py-3 px-2 font-black text-slate-900 border-r border-slate-200">{tensDisplay}</td>
                   <td className="py-3 px-2 font-black text-slate-900">{ninesDisplay}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
+
         </Card>
 
         {/* Coach Insight & Session Notes */}
