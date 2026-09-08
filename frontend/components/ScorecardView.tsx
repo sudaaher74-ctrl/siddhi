@@ -130,8 +130,10 @@ export default function ScorecardView({
 
   const computedTens = allArrows.filter((a) => a === "10" || a === "X").length;
   const computedXs = allArrows.filter((a) => a === "X").length;
+  const computedNines = allArrows.filter((a) => a === "9").length;
   const tensDisplay = computedTens > 0 ? computedTens : Number(session.tens) || 17;
   const xsDisplay = computedXs > 0 ? computedXs : 2;
+  const ninesDisplay = computedNines > 0 ? computedNines : 12;
 
   const athleteName = user?.name || "Sudarshan Aher";
   const userInitials = athleteName
@@ -477,8 +479,9 @@ export default function ScorecardView({
                   <th className="py-2.5 px-2 text-center">Distance</th>
                   <th className="py-2.5 px-2 text-center font-bold text-slate-900">Score</th>
                   <th className="py-2.5 px-2 text-center">Max Score</th>
-                  <th className="py-2.5 px-2 text-center">10s</th>
                   <th className="py-2.5 px-2 text-center">Xs</th>
+                  <th className="py-2.5 px-2 text-center">10s</th>
+                  <th className="py-2.5 px-2 text-center">9s</th>
                 </tr>
               </thead>
               <tbody>
@@ -487,14 +490,16 @@ export default function ScorecardView({
                   <td className="py-3 px-2 text-slate-600">{eventDistance}</td>
                   <td className="py-3 px-2 font-black text-slate-900 text-sm">{round1Total}</td>
                   <td className="py-3 px-2 text-slate-500">360</td>
-                  <td className="py-3 px-2 font-semibold text-slate-700">{tensDisplay}</td>
                   <td className="py-3 px-2 font-semibold text-slate-700">{xsDisplay}</td>
+                  <td className="py-3 px-2 font-semibold text-slate-700">{tensDisplay}</td>
+                  <td className="py-3 px-2 font-semibold text-slate-700">{ninesDisplay}</td>
                 </tr>
                 <tr className="border-b border-slate-100 text-slate-400">
                   <td className="py-3 px-3 text-left font-medium">Round 2</td>
                   <td className="py-3 px-2">{eventDistance}</td>
                   <td className="py-3 px-2 font-medium">-</td>
                   <td className="py-3 px-2 text-slate-500">360</td>
+                  <td className="py-3 px-2">-</td>
                   <td className="py-3 px-2">-</td>
                   <td className="py-3 px-2">-</td>
                 </tr>
@@ -505,6 +510,7 @@ export default function ScorecardView({
                   <td className="py-3 px-2 text-slate-500">360</td>
                   <td className="py-3 px-2">-</td>
                   <td className="py-3 px-2">-</td>
+                  <td className="py-3 px-2">-</td>
                 </tr>
               </tbody>
               <tfoot>
@@ -513,8 +519,9 @@ export default function ScorecardView({
                   <td className="py-3 px-2"></td>
                   <td className="py-3 px-2 font-black text-slate-900 text-sm">{round1Total}</td>
                   <td className="py-3 px-2 text-slate-600 font-semibold">1080</td>
-                  <td className="py-3 px-2 font-black text-slate-900">{tensDisplay}</td>
                   <td className="py-3 px-2 font-black text-slate-900">{xsDisplay}</td>
+                  <td className="py-3 px-2 font-black text-slate-900">{tensDisplay}</td>
+                  <td className="py-3 px-2 font-black text-slate-900">{ninesDisplay}</td>
                 </tr>
               </tfoot>
             </table>
