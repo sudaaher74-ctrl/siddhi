@@ -82,14 +82,14 @@ export default async function DashboardPage() {
         {/* Left Column (2/3 width on large screens) */}
         <div className="xl:col-span-2 flex flex-col gap-[12px]">
           <ScoreTrend sessions={sessions} minimal={true} />
-          <HomeGoalsProgress sessions={sessions} />
+          <HomeGoalsProgress />
           <QuickActions />
         </div>
 
         {/* Right Column (1/3 width on large screens) */}
         <div className="flex flex-col gap-[12px]">
           <EquipmentStatus />
-          <RecentAchievements />
+          <RecentAchievements sessions={sessions} />
         </div>
       </div>
       

@@ -101,45 +101,52 @@ export default function ScoreTrend({
           </div>
         )}
       </div>
-      <div className="w-full h-[150px] mt-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
-            <defs>
-              <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.28} />
-                <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="rgba(0,0,0,0.06)" vertical={false} />
-            <XAxis dataKey="session" hide />
-            <YAxis 
-              domain={['auto', 'auto']} 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: "rgba(0,0,0,0.35)", fontSize: 9, fontFamily: "var(--font-mono), monospace" }}
-            />
-            <Tooltip 
-              labelFormatter={(label, payload) => {
-                const item = payload?.[0]?.payload;
-                return item ? item.date : `Session ${label}`;
-              }}
-              contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '11px', boxShadow: 'var(--tw-shadow-card)' }}
-              itemStyle={{ color: 'var(--text)' }}
-            />
-            <Area 
-              type="linear" 
-              dataKey="score" 
-              stroke="var(--accent)" 
-              strokeWidth={2.5} 
-              fillOpacity={1} 
-              fill="url(#trendFill)" 
-              animationDuration={1800}
-              animationEasing="ease-out"
-              activeDot={{ r: 4, fill: "#ffffff", stroke: "var(--accent)", strokeWidth: 2.5 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+      {chartData.length === 0 ? (
+        <div className="h-[150px] mt-2 flex flex-col items-center justify-center text-center p-4 bg-slate-50/60 rounded-xl border border-dashed border-slate-200">
+          <p className="text-xs font-semibold text-slate-700">No session trend recorded yet</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Log rounds to visualize your scoring progression</p>
+        </div>
+      ) : (
+        <div className="w-full h-[150px] mt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
+              <defs>
+                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="rgba(0,0,0,0.06)" vertical={false} />
+              <XAxis dataKey="session" hide />
+              <YAxis 
+                domain={['auto', 'auto']} 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: "rgba(0,0,0,0.35)", fontSize: 9, fontFamily: "var(--font-mono), monospace" }}
+              />
+              <Tooltip 
+                labelFormatter={(label, payload) => {
+                  const item = payload?.[0]?.payload;
+                  return item ? item.date : `Session ${label}`;
+                }}
+                contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '11px', boxShadow: 'var(--tw-shadow-card)' }}
+                itemStyle={{ color: 'var(--text)' }}
+              />
+              <Area 
+                type="linear" 
+                dataKey="score" 
+                stroke="var(--accent)" 
+                strokeWidth={2.5} 
+                fillOpacity={1} 
+                fill="url(#trendFill)" 
+                animationDuration={1800}
+                animationEasing="ease-out"
+                activeDot={{ r: 4, fill: "#ffffff", stroke: "var(--accent)", strokeWidth: 2.5 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
       {!minimal && (
         <div className="flex flex-wrap gap-2 sm:gap-4 mt-2 text-[11px] text-text-dim justify-between sm:justify-start">
           <span>

@@ -32,7 +32,7 @@ export default function PracticeKPIs({ sessions }: PracticeKPIsProps) {
     ? (sessions.reduce((acc, s) => acc + safeParseFloat(s.avg), 0) / sessions.length).toFixed(2)
     : "0.00";
 
-  // Dummy Best End calculation (since we might not have all arrowData parsed easily)
+  // Best End calculation from recorded arrow data
   let bestEnd = 0;
   sessions.forEach(s => {
     if (s.arrowData) {
@@ -51,10 +51,6 @@ export default function PracticeKPIs({ sessions }: PracticeKPIsProps) {
       }
     }
   });
-  
-  if (bestEnd === 0 && sessions.length > 0) {
-      bestEnd = 58; // Placeholder if no detailed arrowData
-  }
 
   // Weekly Arrows (assuming sessions within last 7 days)
   const oneWeekAgo = new Date();
@@ -91,13 +87,13 @@ export default function PracticeKPIs({ sessions }: PracticeKPIsProps) {
     },
     {
       label: "Best End",
-      value: bestEnd.toString(),
+      value: bestEnd > 0 ? bestEnd.toString() : "-",
       icon: <Crosshair className="w-5 h-5 text-emerald-500" />,
-      subtext: "6 arrows",
+      subtext: bestEnd > 0 ? "Highest end" : "No end data",
     },
     {
       label: "Intensity",
-      value: sessions.length > 0 ? "High" : "None",
+      value: sessions.length === 0 ? "None" : sessions.length >= 5 ? "High" : "Active",
       icon: <Activity className="w-5 h-5 text-orange-500" />,
       subtext: "Based on frequency",
     }

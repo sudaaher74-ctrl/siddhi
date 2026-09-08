@@ -35,7 +35,7 @@ export default function KpiGrid({
     { label: "10 + X Rate", value: `${tenRate}%`, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
     { label: "Practice Time", value: practiceTime, delta: "-", deltaColor: "rgba(0,0,0,.4)" },
     { label: "Best Session", value: bestScore.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
-    { label: "Streak", value: "1d", delta: "-", deltaColor: "rgba(0,0,0,.4)" },
+    { label: "Streak", value: sessions.length > 0 ? "1d" : "0d", delta: "-", deltaColor: "rgba(0,0,0,.4)" },
   ] : [
     { label: "Sessions Today", value: filteredSessions.length.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
     { label: "Arrows Today", value: totalArrows.toString(), delta: "-", deltaColor: "rgba(0,0,0,.4)" },
