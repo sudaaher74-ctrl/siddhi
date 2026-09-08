@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/lib/api";
-import { DISTANCE_OPTIONS, SESSION_TYPES } from "./SessionSetup";
+import { BOW_OPTIONS, BOW_DISTANCES, BowOption, DISTANCE_OPTIONS, SESSION_TYPES } from "./SessionSetup";
 
 export default function ManualSessionModal() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function ManualSessionModal() {
   
   const [formData, setFormData] = useState({
     name: `Practice Session - ${new Date().toLocaleDateString()}`,
+    bow: "Recurve Bow" as BowOption,
     type: "Practice",
     distance: "70m",
     arrows: "36",
@@ -24,6 +25,26 @@ export default function ManualSessionModal() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleBowChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedBow = e.target.value as BowOption;
+    const validDistances = BOW_DISTANCES[selectedBow] || DISTANCE_OPTIONS;
+    let nextDistance = formData.distance;
+    if (!validDistances.includes(formData.distance)) {
+      if (selectedBow === "Compound Bow") {
+        nextDistance = "50m";
+      } else if (selectedBow === "Indian Bow") {
+        nextDistance = "30m";
+      } else {
+        nextDistance = "70m";
+      }
+    }
+    setFormData((prev) => ({
+      ...prev,
+      bow: selectedBow,
+      distance: nextDistance,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,6 +59,7 @@ export default function ManualSessionModal() {
         name: formData.name,
         type: formData.type,
         distance: formData.distance,
+        bow: formData.bow,
         arrows: arrowsNum,
         score: scoreNum,
         tens: parseInt(formData.tens) || 0,
@@ -107,7 +129,20 @@ export default function ManualSessionModal() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Bow</label>
+                  <select
+                    name="bow"
+                    value={formData.bow}
+                    onChange={handleBowChange}
+                    className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
+                  >
+                    {BOW_OPTIONS.map((b) => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Type</label>
                   <select 
@@ -129,7 +164,7 @@ export default function ManualSessionModal() {
                     onChange={handleChange}
                     className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
                   >
-                    {DISTANCE_OPTIONS.map((d) => (
+                    {(BOW_DISTANCES[formData.bow] || DISTANCE_OPTIONS).map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>

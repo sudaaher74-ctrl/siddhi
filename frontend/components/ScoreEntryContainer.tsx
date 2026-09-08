@@ -84,15 +84,17 @@ export default function ScoreEntryContainer() {
       const average = allArrows.length > 0 ? (totalScore / allArrows.length).toFixed(2) : "0.00";
       
       const distance = setup?.distance || "";
+      const bow = setup?.bow || "";
       const payload = {
-        name: `${distance ? `${distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
+        name: `${bow ? `${bow} ` : ""}${distance ? `${distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
         type: setup?.type || "Practice",
         distance,
+        bow,
         arrows: allArrows.length,
         score: totalScore,
         avg: Number(average),
         tens: tensCount,
-        note: `Logged via Interactive Score Pad${distance ? ` at ${distance}` : ""}`,
+        note: `Logged via Interactive Score Pad${bow ? ` (${bow})` : ""}${distance ? ` at ${distance}` : ""}`,
         arrowData: JSON.stringify(ends)
       };
 
@@ -116,24 +118,30 @@ export default function ScoreEntryContainer() {
   }
 
   const liveSessionPreview: Session = {
-    name: `${setup?.distance ? `${setup.distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
+    name: `${setup?.bow ? `${setup.bow} ` : ""}${setup?.distance ? `${setup.distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
     type: setup?.type || "Practice",
     distance: setup?.distance || "50m",
+    bow: setup?.bow,
     arrows: ends.flat().length || 36,
     score: totalScore,
     avg: Number(ends.flat().length > 0 ? (totalScore / ends.flat().length).toFixed(2) : 0),
     tens: ends.flat().filter(a => a.score === "10" || a.score === "X").length,
-    note: `Logged via Interactive Score Pad${setup?.distance ? ` at ${setup.distance}` : ""}`,
+    note: `Logged via Interactive Score Pad${setup?.bow ? ` (${setup.bow})` : ""}${setup?.distance ? ` at ${setup.distance}` : ""}`,
     arrowData: JSON.stringify(ends),
   };
 
   return (
     <>
-    <div className="flex items-center gap-3 mt-4">
-      <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-accent/10 text-accent text-[13px] font-bold">
+    <div className="flex items-center gap-2 sm:gap-3 mt-4 flex-wrap">
+      {setup.bow && (
+        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-900 text-white text-[12px] sm:text-[13px] font-semibold">
+          {setup.bow}
+        </span>
+      )}
+      <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-accent/10 text-accent text-[12px] sm:text-[13px] font-bold">
         {setup.distance}
       </span>
-      <span className="text-[13px] text-text-dim">{setup.type}</span>
+      <span className="text-[12px] sm:text-[13px] text-text-dim font-medium">{setup.type}</span>
       
       <div className="ml-auto flex items-center gap-2">
         <button
@@ -147,9 +155,9 @@ export default function ScoreEntryContainer() {
         <button
           type="button"
           onClick={() => setSetup(null)}
-          className="text-[12px] text-text-dim underline hover:text-text"
+          className="text-[12px] text-text-dim underline hover:text-text cursor-pointer"
         >
-          Change target
+          Change setup
         </button>
       </div>
     </div>

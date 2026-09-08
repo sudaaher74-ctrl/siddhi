@@ -15,6 +15,7 @@ export type Session = {
   tens: string | number;
   note: string;
   distance?: string;
+  bow?: string;
   createdAt?: string;
   arrowData?: string;
 };

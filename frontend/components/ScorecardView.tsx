@@ -142,7 +142,8 @@ export default function ScorecardView({
     .toUpperCase();
 
   const eventDistance = session.distance || "50m";
-  const eventName = `${eventDistance} Recurve`;
+  const eventBow = session.bow || (session.name?.toLowerCase().includes("compound") ? "Compound Bow" : session.name?.toLowerCase().includes("indian") ? "Indian Bow" : "Recurve Bow");
+  const eventName = `${eventDistance} ${eventBow.replace(/ Bow$/, "")}`;
 
   const sessionDate = session.createdAt ? new Date(session.createdAt) : new Date();
   const formattedDate = sessionDate.toLocaleDateString("en-GB", {

@@ -14,6 +14,7 @@ export interface ISession {
   tens: number;
   note: string;
   distance?: string;
+  bow?: string;
   arrowData?: string;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -32,6 +33,7 @@ const mapSessionRow = (row: any): ISession => ({
   tens: Number(row.tens),
   note: String(row.note || ''),
   distance: String(row.distance || ''),
+  bow: String(row.bow || ''),
   arrowData: row.arrow_data ? String(row.arrow_data) : undefined,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -40,7 +42,7 @@ const mapSessionRow = (row: any): ISession => ({
     await db.execute({
       sql: `
         UPDATE sessions
-        SET name = ?, type = ?, arrows = ?, score = ?, avg = ?, tens = ?, note = ?, distance = ?, arrow_data = ?, updated_at = ?
+        SET name = ?, type = ?, arrows = ?, score = ?, avg = ?, tens = ?, note = ?, distance = ?, bow = ?, arrow_data = ?, updated_at = ?
         WHERE id = ?
       `,
       args: [
@@ -52,6 +54,7 @@ const mapSessionRow = (row: any): ISession => ({
         this.tens,
         this.note || '',
         this.distance || '',
+        this.bow || '',
         this.arrowData || null,
         now,
         this.id,
@@ -77,8 +80,8 @@ export class SessionModelInstance {
 
     await db.execute({
       sql: `
-        INSERT INTO sessions (id, user_id, name, type, arrows, score, avg, tens, note, distance, arrow_data, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO sessions (id, user_id, name, type, arrows, score, avg, tens, note, distance, bow, arrow_data, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       args: [
         id,
@@ -91,6 +94,7 @@ export class SessionModelInstance {
         Number(this.data.tens),
         this.data.note || '',
         this.data.distance || '',
+        this.data.bow || '',
         this.data.arrowData || null,
         createdAt,
         now,
@@ -108,6 +112,7 @@ export class SessionModelInstance {
       tens: this.data.tens,
       note: this.data.note,
       distance: this.data.distance,
+      bow: this.data.bow,
       arrow_data: this.data.arrowData,
       created_at: createdAt,
       updated_at: now,
@@ -179,6 +184,7 @@ SessionConstructor.findOneAndUpdate = async function (
   if (updateData.name !== undefined) current.name = updateData.name;
   if (updateData.type !== undefined) current.type = updateData.type;
   if (updateData.distance !== undefined) current.distance = updateData.distance;
+  if (updateData.bow !== undefined) current.bow = updateData.bow;
   if (updateData.arrows !== undefined) current.arrows = Number(updateData.arrows);
   if (updateData.score !== undefined) current.score = Number(updateData.score);
   if (updateData.avg !== undefined) current.avg = Number(updateData.avg);

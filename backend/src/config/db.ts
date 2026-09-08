@@ -39,12 +39,19 @@ export const initTables = async (client: Client = db) => {
       tens INTEGER NOT NULL,
       note TEXT DEFAULT '',
       distance TEXT DEFAULT '',
+      bow TEXT DEFAULT '',
       arrow_data TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+
+  try {
+    await client.execute(`ALTER TABLE sessions ADD COLUMN bow TEXT DEFAULT ''`);
+  } catch {
+    // Column may already exist
+  }
 
   await client.execute(`
     CREATE TABLE IF NOT EXISTS goals (

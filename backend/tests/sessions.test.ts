@@ -6,6 +6,7 @@ const validSession = {
   name: '70m Practice',
   type: 'Practice',
   distance: '70m',
+  bow: 'Recurve Bow',
   arrows: 36,
   score: 320,
   avg: 8.89,
@@ -27,6 +28,7 @@ describe('sessions', () => {
     expect(created.body.score).toBe(320);
     expect(typeof created.body.score).toBe('number');
     expect(created.body.distance).toBe('70m');
+    expect(created.body.bow).toBe('Recurve Bow');
 
     const list = await authed(request(app).get('/api/sessions'), token);
     expect(list.body).toHaveLength(1);
