@@ -1,7 +1,6 @@
 import TopBar from "@/components/TopBar";
 import KpiGrid from "@/components/KpiGrid";
-import ScoreTrend from "@/components/ScoreTrend";
-import PerformanceRadar from "@/components/PerformanceRadar";
+import AnalyticsGoalChart, { Goal } from "@/components/AnalyticsGoalChart";
 import ArrowPlot from "@/components/ArrowPlot";
 import { Session } from "@/lib/data";
 import { cookies } from "next/headers";
@@ -9,7 +8,6 @@ import { cookies } from "next/headers";
 export const dynamic = "force-dynamic";
 
 async function getSessions(): Promise<Session[]> {
-
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
@@ -23,7 +21,7 @@ async function getSessions(): Promise<Session[]> {
     });
     
     if (!res.ok) {
-      throw new Error(`Failed to fetch: ${res.status}`);
+      throw new Error(`Failed to fetch sessions: ${res.status}`);
     }
     
     return await res.json();
@@ -33,8 +31,36 @@ async function getSessions(): Promise<Session[]> {
   }
 }
 
+async function getGoals(): Promise<Goal[]> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+    const res = await fetch(`${apiUrl}/api/goals`, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      cache: 'no-store'
+    });
+    
+    if (!res.ok) {
+      return [];
+    }
+    
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Error fetching goals:", error);
+    return [];
+  }
+}
+
 export default async function AnalyticsPage() {
-  const sessions = await getSessions();
+  const [sessions, goals] = await Promise.all([
+    getSessions(),
+    getGoals(),
+  ]);
 
   return (
     <>
@@ -44,9 +70,8 @@ export default async function AnalyticsPage() {
         <KpiGrid sessions={sessions} mode="daily" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[12px] mt-4">
-        <ScoreTrend sessions={sessions} mode="daily" />
-        <PerformanceRadar sessions={sessions} mode="daily" />
+      <div className="mt-4">
+        <AnalyticsGoalChart sessions={sessions} initialGoals={goals} />
       </div>
 
       <div className="mt-4">
@@ -55,3 +80,4 @@ export default async function AnalyticsPage() {
     </>
   );
 }
+
