@@ -22,6 +22,8 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
 
   // Track if we already started alarming for this countdown
   const hasBuzzedRef = useRef(false);
+  const hasSpoken30sRef = useRef(false);
+  const hasSpoken10sRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const wakeLockRef = useRef<WakeLock | null>(null);
   const endsAtRef = useRef<number | null>(null);
@@ -217,6 +219,8 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
     setTimeLeft(TOTAL_SECONDS);
     setIsRunning(false);
     hasBuzzedRef.current = false;
+    hasSpoken30sRef.current = false;
+    hasSpoken10sRef.current = false;
     endsAtRef.current = null;
     lastTickRef.current = TOTAL_SECONDS;
     releaseWakeLock();
@@ -242,7 +246,20 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
     const tick = () => {
       const remaining = Math.max(0, Math.round(((endsAtRef.current ?? 0) - Date.now()) / 1000));
       if (remaining !== lastTickRef.current) {
-        if (remaining === 30 || remaining === 10) warningBeep();
+        // 30 seconds and 10 seconds warnings
+        if (lastTickRef.current > 30 && remaining <= 30) {
+          warningBeep();
+          if (voiceLeadInEnabled && !hasSpoken30sRef.current) {
+            hasSpoken30sRef.current = true;
+            speak("30 seconds left");
+          }
+        } else if (lastTickRef.current > 10 && remaining <= 10) {
+          warningBeep();
+          if (voiceLeadInEnabled && !hasSpoken10sRef.current) {
+            hasSpoken10sRef.current = true;
+            speak("10 seconds left");
+          }
+        }
         lastTickRef.current = remaining;
         setTimeLeft(remaining);
       }
@@ -251,7 +268,7 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
     const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRunning, warningBeep]);
+  }, [isRunning, warningBeep, speak, voiceLeadInEnabled]);
 
   // Trigger continuous alarm when time reaches 0
   useEffect(() => {
@@ -336,8 +353,12 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
 
       // If starting fresh and voice lead-in is enabled, trigger 1-2-3-Start
       if (voiceLeadInEnabled && timeLeft === TOTAL_SECONDS) {
+        hasSpoken30sRef.current = false;
+        hasSpoken10sRef.current = false;
         startLeadInCountdown();
       } else {
+        if (timeLeft > 30) hasSpoken30sRef.current = false;
+        if (timeLeft > 10) hasSpoken10sRef.current = false;
         lastTickRef.current = timeLeft;
         endsAtRef.current = Date.now() + timeLeft * 1000;
         setIsRunning(true);
@@ -353,6 +374,8 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
     setTimeLeft(TOTAL_SECONDS);
     setIsRunning(false);
     hasBuzzedRef.current = false;
+    hasSpoken30sRef.current = false;
+    hasSpoken10sRef.current = false;
     endsAtRef.current = null;
     lastTickRef.current = TOTAL_SECONDS;
     releaseWakeLock();
@@ -364,6 +387,8 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
     clearLeadIn();
     stopAlarmLoop();
     hasBuzzedRef.current = false;
+    hasSpoken30sRef.current = snoozeSeconds <= 30;
+    hasSpoken10sRef.current = false;
 
     // Reset clock to snooze duration and immediately resume countdown
     setTimeLeft(snoozeSeconds);
@@ -392,7 +417,7 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
 
   // Change ring color based on time left
   let circleColor = "text-accent";
-  if (timeLeft <= 30) circleColor = "text-gold";
+  if (timeLeft <= 30) circleColor = "text-amber-500";
   if (timeLeft <= 10) circleColor = "text-[#E53935]";
 
   return (
@@ -406,18 +431,18 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
             End Timer
           </h2>
 
-          {/* Voice 1-2-3 lead-in toggle */}
+          {/* Voice toggle */}
           <button
             type="button"
             onClick={() => setVoiceLeadInEnabled(!voiceLeadInEnabled)}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
               voiceLeadInEnabled
-                ? "bg-accent/10 text-accent"
-                : "bg-black/5 text-text-dim hover:text-text"
+                ? "bg-accent/10 text-accent border border-accent/20"
+                : "bg-black/5 text-text-dim hover:text-text border border-transparent"
             }`}
-            title="When active, timer speaks '1, 2, 3, Start!' before countdown"
+            title="When active, timer speaks '1, 2, 3, Start!' and announces '30 seconds left'"
           >
-            <span>VOICE: {voiceLeadInEnabled ? "1-2-3 START" : "OFF"}</span>
+            <span>VOICE: {voiceLeadInEnabled ? "ON (Start & 30s)" : "OFF"}</span>
           </button>
         </div>
 
@@ -473,11 +498,22 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
                 </span>
               </div>
             ) : (
-              <span className={`text-4xl font-mono font-bold ${
-                timeLeft === 0 ? "text-[#E53935]" : "text-black"
-              }`}>
-                {formatTime(timeLeft)}
-              </span>
+              <div className="flex flex-col items-center justify-center">
+                <span className={`text-4xl font-mono font-bold transition-colors ${
+                  timeLeft <= 10 ? "text-[#E53935]" : timeLeft <= 30 ? "text-amber-600" : "text-black"
+                }`}>
+                  {formatTime(timeLeft)}
+                </span>
+                {timeLeft <= 30 && timeLeft > 0 && isRunning && (
+                  <span className={`text-[9.5px] font-black uppercase tracking-wider animate-pulse px-2 py-0.5 rounded-full mt-0.5 ${
+                    timeLeft <= 10
+                      ? "bg-rose-100 text-rose-700 border border-rose-300"
+                      : "bg-amber-100 text-amber-800 border border-amber-300"
+                  }`}>
+                    {timeLeft <= 10 ? "10s Alert!" : "30s Left"}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -559,8 +595,10 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
             ? "Voice starting: 1... 2... 3... Start!"
             : isAlarming
             ? "🚨 Alarming! Tap Snooze for extra time or Dismiss to stop."
+            : timeLeft <= 30 && timeLeft > 0 && isRunning
+            ? "⚠️ 30 seconds left! Complete and release your arrows."
             : voiceLeadInEnabled && timeLeft === TOTAL_SECONDS
-            ? "Starting timer will speak '1, 2, 3, Start!' first."
+            ? "Starting timer will speak '1, 2, 3, Start!' and call 30s left."
             : "Tap Play to begin timer."}
         </p>
       </div>
