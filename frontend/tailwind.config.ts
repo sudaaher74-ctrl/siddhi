@@ -65,12 +65,18 @@ const config: Config = {
           "80%": { transform: "translate(1px, 1px) scale(1)", opacity: "1" },
           "100%": { transform: "translate(0, 0) scale(1)", opacity: "1" },
         },
+        dotPop: {
+          "0%": { transform: "scale(0)", opacity: "0.2" },
+          "70%": { transform: "scale(1.3)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
       },
       animation: {
         dashin: "dashin 1.8s ease-out both",
         fadeup: "fadeup 0.5s both",
         pulseCustom: "pulseCustom 1.6s infinite",
         shootArrow: "shootArrow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards",
+        dotPop: "dotPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards",
       },
     },
   },

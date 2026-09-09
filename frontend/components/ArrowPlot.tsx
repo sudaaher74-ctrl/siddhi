@@ -265,26 +265,18 @@ export default function ArrowPlot({
               return (
                 <g 
                   key={i} 
-                  className={isNew ? "animate-shootArrow" : ""} 
+                  className={isNew ? "animate-dotPop" : ""} 
                   style={{ transformOrigin: `${cx}px ${cy}px` }} 
                 >
-                  {!heatmapMode && (
-                    <>
-                      <line x1={cx} y1={cy} x2={cx + (isZoomed ? 12 : 18)} y2={cy + (isZoomed ? 12 : 18)} stroke="#1E293B" strokeWidth={isZoomed ? "1" : "1.5"} strokeLinecap="round" />
-                      <line x1={cx + (isZoomed ? 9 : 13)} y1={cy + (isZoomed ? 9 : 13)} x2={cx + (isZoomed ? 12 : 18)} y2={cy + (isZoomed ? 6 : 9)} stroke="#E53935" strokeWidth={isZoomed ? "1" : "1.5"} strokeLinecap="round" />
-                      <line x1={cx + (isZoomed ? 9 : 13)} y1={cy + (isZoomed ? 9 : 13)} x2={cx + (isZoomed ? 6 : 9)} y2={cy + (isZoomed ? 12 : 18)} stroke="#4FC3F7" strokeWidth={isZoomed ? "1" : "1.5"} strokeLinecap="round" />
-                    </>
-                  )}
-                  
-                  {/* Impact Dot */}
+                  {/* Simple White Dot */}
                   <circle 
                     cx={cx} 
                     cy={cy} 
-                    r={heatmapMode ? "3.5" : (isZoomed ? "2.2" : "2.5")} 
+                    r={heatmapMode ? "3.5" : (isZoomed ? "2.2" : "2.8")} 
                     fill={heatmapMode ? "var(--accent)" : "#FFFFFF"} 
-                    fillOpacity={heatmapMode ? 0.6 : 1}
-                    stroke={heatmapMode ? "none" : "#000000"} 
-                    strokeWidth={heatmapMode ? "0" : "1"} 
+                    fillOpacity={heatmapMode ? 0.7 : 1}
+                    stroke={heatmapMode ? "none" : "#0f172a"} 
+                    strokeWidth={heatmapMode ? "0" : (isZoomed ? "0.6" : "0.8")} 
                   />
                 </g>
               );
