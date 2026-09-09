@@ -268,15 +268,15 @@ export default function ArrowPlot({
                   className={isNew ? "animate-dotPop" : ""} 
                   style={{ transformOrigin: `${cx}px ${cy}px` }} 
                 >
-                  {/* Simple White Dot */}
+                  {/* White Arrow Dot */}
                   <circle 
                     cx={cx} 
                     cy={cy} 
-                    r={heatmapMode ? "3.5" : (isZoomed ? "2.2" : "2.8")} 
-                    fill={heatmapMode ? "var(--accent)" : "#FFFFFF"} 
-                    fillOpacity={heatmapMode ? 0.7 : 1}
-                    stroke={heatmapMode ? "none" : "#0f172a"} 
-                    strokeWidth={heatmapMode ? "0" : (isZoomed ? "0.6" : "0.8")} 
+                    r={heatmapMode ? "3.2" : (isZoomed ? "2.2" : "2.8")} 
+                    fill="#FFFFFF" 
+                    fillOpacity={heatmapMode ? 0.92 : 1}
+                    stroke="rgba(15, 23, 42, 0.75)" 
+                    strokeWidth={heatmapMode ? "0.7" : (isZoomed ? "0.6" : "0.8")} 
                   />
                 </g>
               );
