@@ -24,12 +24,12 @@ export default function TopBar({ title = "Dashboard", subtitle }: TopBarProps) {
     : "";
 
   return (
-    <header className="flex flex-col md:flex-row md:items-center gap-4 md:gap-[12px] sticky top-0 z-50 bg-white/80 backdrop-blur-md pb-4 pt-2 -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-transparent print:hidden">
-      <div className="flex justify-between items-start w-full md:w-auto">
+    <header className="flex flex-col md:flex-row md:items-center gap-2 md:gap-[12px] sticky top-0 z-40 bg-white/90 backdrop-blur-md pb-2.5 pt-1 sm:pt-2 px-1 sm:px-0 border-b border-black/[0.04] print:hidden">
+      <div className="flex justify-between items-center w-full md:w-auto">
         <div>
-          <h1 className="text-[24px] font-bold text-slate-900 tracking-tight">{title}</h1>
+          <h1 className="text-[20px] sm:text-[24px] font-bold text-slate-900 tracking-tight leading-tight">{title}</h1>
           {subtitle && (
-            <p className="text-xs text-slate-500 font-medium mt-0.5">{subtitle}</p>
+            <p className="text-[11px] sm:text-xs text-slate-500 font-medium">{subtitle}</p>
           )}
         </div>
         <div className="md:hidden flex items-center gap-2">

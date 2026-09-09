@@ -53,7 +53,64 @@ export default function SessionsTable({ sessions }: SessionsTableProps) {
               {daySessions.length} session{daySessions.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <div className="overflow-x-auto">
+          {/* Mobile Card List View (sm:hidden) */}
+          <div className="sm:hidden divide-y divide-slate-100">
+            {daySessions.map((s, i) => (
+              <div
+                key={i}
+                onClick={() => setSelectedSession(s)}
+                className="p-4 flex flex-col gap-2.5 active:bg-slate-50 cursor-pointer"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-bold text-sm text-slate-900 truncate">
+                    {s.name}
+                  </div>
+                  {s.distance ? (
+                    <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 text-xs font-bold whitespace-nowrap">
+                      {s.distance}
+                    </span>
+                  ) : null}
+                </div>
+                {s.note ? (
+                  <p className="text-xs text-slate-500 truncate -mt-1">{s.note}</p>
+                ) : null}
+                <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs text-slate-600">
+                  <div className="flex items-center gap-3 font-mono">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-sans">Score</span>
+                      <span className="text-base font-black text-slate-900">{s.score}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-sans">Avg</span>
+                      <span className="font-bold text-slate-700">{s.avg}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-sans">Arrows</span>
+                      <span className="font-bold text-slate-700">{s.arrows}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-sans">10s</span>
+                      <span className="font-bold text-amber-600">{s.tens}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedSession(s);
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[11.5px] font-bold shadow-xs active:scale-95 cursor-pointer"
+                  >
+                    <Award className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Scorecard</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View (hidden sm:block) */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[720px]">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-slate-200 text-[11px] tracking-wider uppercase text-slate-400 font-semibold">

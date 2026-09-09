@@ -131,6 +131,7 @@ export default function ArrowPlot({
     if (isSessionComplete || currentArrows.length >= 6) return;
     const finalAim = updateAim(e.clientX, e.clientY) || pointerState;
     if (finalAim && handleScoreInput) {
+      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(14);
       handleScoreInput(finalAim.score, finalAim.x, finalAim.y);
     }
     setIsDragging(false);

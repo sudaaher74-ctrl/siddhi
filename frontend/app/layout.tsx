@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
 
 import "./globals.css";
@@ -18,6 +18,15 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "ArcherX AI — Dashboard",
   description: "Elite archery self-tracking: scores, grouping, AI coaching.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#FFFFFF",
 };
 
 

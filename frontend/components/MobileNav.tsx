@@ -19,12 +19,6 @@ export default function MobileNav() {
     window.location.href = "/login";
   };
 
-  const mainNav = [
-    { label: "Home", href: "/", icon: Home },
-    { label: "Score", href: "/score-entry", icon: Target },
-    { label: "Scorecard", href: "/scorecard", icon: Award },
-    { label: "Stats", href: "/analytics", icon: LineChart },
-  ];
 
   const moreNav = [
     { label: "Practice", href: "/practice", icon: Crosshair },
@@ -127,40 +121,107 @@ export default function MobileNav() {
       </div>
 
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white/80 backdrop-blur-md border-t border-border px-4 py-2 pb-safe">
-        <div className="flex justify-between items-center max-w-md mx-auto">
-          {mainNav.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`flex flex-col items-center gap-1 min-w-[48px] transition-colors ${
-                  isActive ? "text-accent" : "text-black/40 hover:text-black/80"
-                }`}
-              >
-                <div className={`p-1 rounded-full ${isActive ? 'bg-accent/10' : ''}`}>
-                  <Icon className="w-[18px] h-[18px]" />
-                </div>
-                <span className="text-[9px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-          
-          <button 
-            onClick={() => setMenuOpen(!menuOpen)}
-            className={`flex flex-col items-center gap-1 min-w-[48px] transition-colors ${
-              menuOpen ? "text-black" : "text-black/40 hover:text-black/80"
+      <nav 
+        aria-label="Mobile Navigation"
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-1.5 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.04)]"
+      >
+        <div className="flex justify-around items-center max-w-md mx-auto">
+          {/* 1. Home */}
+          <Link
+            href="/"
+            onClick={() => {
+              setMenuOpen(false);
+              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(8);
+            }}
+            className={`flex flex-col items-center justify-center min-w-[54px] py-1 transition-all active:scale-95 ${
+              pathname === "/" ? "text-accent font-bold" : "text-slate-500 hover:text-slate-900"
             }`}
           >
-            <div className={`p-1 rounded-full ${menuOpen ? 'bg-black/10' : ''}`}>
-              <Menu className="w-[18px] h-[18px]" />
+            <div className={`p-1.5 rounded-xl transition-colors ${pathname === "/" ? "bg-accent/10" : ""}`}>
+              <Home className="w-5 h-5" />
             </div>
-            <span className="text-[9px] font-medium">More</span>
+            <span className="text-[10px] tracking-tight mt-0.5">Home</span>
+          </Link>
+
+          {/* 2. Scorecard */}
+          <Link
+            href="/scorecard"
+            onClick={() => {
+              setMenuOpen(false);
+              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(8);
+            }}
+            className={`flex flex-col items-center justify-center min-w-[54px] py-1 transition-all active:scale-95 ${
+              pathname === "/scorecard" || pathname.startsWith("/scorecard/")
+                ? "text-accent font-bold"
+                : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl transition-colors ${
+              pathname === "/scorecard" || pathname.startsWith("/scorecard/") ? "bg-accent/10" : ""
+            }`}>
+              <Award className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] tracking-tight mt-0.5">Scorecard</span>
+          </Link>
+
+          {/* 3. Center Elevated Action: Live Score */}
+          <Link
+            href="/score-entry"
+            onClick={() => {
+              setMenuOpen(false);
+              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(15);
+            }}
+            className="flex flex-col items-center -mt-5 group active:scale-90 transition-transform"
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all ${
+              pathname === "/score-entry"
+                ? "bg-accent text-white ring-4 ring-accent/25 scale-105 shadow-accent/30"
+                : "bg-slate-900 text-white hover:bg-slate-800 ring-2 ring-white"
+            }`}>
+              <Target className="w-6 h-6 animate-none" />
+            </div>
+            <span className={`text-[10px] font-bold tracking-tight mt-1 ${
+              pathname === "/score-entry" ? "text-accent" : "text-slate-700"
+            }`}>
+              Shoot
+            </span>
+          </Link>
+
+          {/* 4. Analytics / Stats */}
+          <Link
+            href="/analytics"
+            onClick={() => {
+              setMenuOpen(false);
+              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(8);
+            }}
+            className={`flex flex-col items-center justify-center min-w-[54px] py-1 transition-all active:scale-95 ${
+              pathname === "/analytics" ? "text-accent font-bold" : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl transition-colors ${pathname === "/analytics" ? "bg-accent/10" : ""}`}>
+              <LineChart className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] tracking-tight mt-0.5">Stats</span>
+          </Link>
+
+          {/* 5. More Menu Drawer */}
+          <button 
+            type="button"
+            onClick={() => {
+              setMenuOpen(!menuOpen);
+              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(8);
+            }}
+            className={`flex flex-col items-center justify-center min-w-[54px] py-1 transition-all active:scale-95 cursor-pointer ${
+              menuOpen ? "text-slate-900 font-bold" : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl transition-colors ${menuOpen ? "bg-slate-100" : ""}`}>
+              <Menu className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] tracking-tight mt-0.5">More</span>
           </button>
         </div>
-      </div>
+      </nav>
     </>
   );
 }

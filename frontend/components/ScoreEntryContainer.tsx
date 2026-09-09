@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { apiPost } from "@/lib/api";
 import { Session } from "@/lib/data";
-import { Award, Check } from "lucide-react";
+import { Award, Check, Undo2, ChevronRight, Target, Hash, Clock } from "lucide-react";
 import ScorePad from "./ScorePad";
 import ArrowPlot from "./ArrowPlot";
 import ArcheryTimer from "./ArcheryTimer";
@@ -171,6 +171,8 @@ export default function ScoreEntryContainer() {
     }
   };
 
+  const [mobileMode, setMobileMode] = useState<"target" | "keypad" | "timer">("target");
+
   if (!setup) {
     return <SessionSetup onStart={setSetup} />;
   }
@@ -188,39 +190,50 @@ export default function ScoreEntryContainer() {
     arrowData: JSON.stringify(ends.filter(e => Array.isArray(e) && e.length > 0)),
   };
 
+  // Helper for arrow zone styling in Mobile HUD
+  const getArrowBadgeClass = (score: ScoreValue) => {
+    if (score === "X" || score === "10" || score === "9") return "bg-[#FEF08A] text-[#854D0E] border-amber-400 shadow-xs";
+    if (score === "8" || score === "7") return "bg-[#FECACA] text-[#991B1B] border-rose-300 shadow-xs";
+    if (score === "6" || score === "5") return "bg-[#BAE6FD] text-[#075985] border-sky-300 shadow-xs";
+    if (score === "4" || score === "3") return "bg-[#334155] text-white border-slate-700 shadow-xs";
+    if (score === "2" || score === "1") return "bg-white text-slate-900 border-slate-300 shadow-xs";
+    return "bg-slate-200 text-slate-600 border-slate-300 shadow-xs";
+  };
+
   return (
     <>
-    <div className="flex items-center gap-2 sm:gap-3 mt-4 flex-wrap">
+    {/* Setup Tags & Action Bar */}
+    <div className="flex items-center gap-1.5 sm:gap-3 mt-1 sm:mt-4 flex-wrap">
       {setup.bow && (
-        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-900 text-white text-[12px] sm:text-[13px] font-semibold">
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-900 text-white text-[11px] sm:text-[13px] font-semibold">
           {setup.bow}
         </span>
       )}
-      <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-accent/10 text-accent text-[12px] sm:text-[13px] font-bold">
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-accent/10 text-accent text-[11px] sm:text-[13px] font-bold">
         {setup.distance}
       </span>
-      <span className="text-[12px] sm:text-[13px] text-text-dim font-medium">{setup.type}</span>
+      <span className="text-[11px] sm:text-[13px] text-text-dim font-medium">{setup.type}</span>
       
-      <div className="ml-auto flex items-center gap-2 flex-wrap">
+      <div className="ml-auto flex items-center gap-1.5 sm:gap-2 flex-wrap">
         {ends.flat().length > 0 && (
           <button
             type="button"
             onClick={handleSaveSession}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-[12px] font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50"
             title="Save this round to your official scorecard database"
           >
             <Check className="w-3.5 h-3.5" />
-            <span>{isSaving ? "Saving..." : `Save Session (${totalScore} pts)`}</span>
+            <span>{isSaving ? "Saving..." : `Save (${totalScore} pts)`}</span>
           </button>
         )}
         <button
           type="button"
           onClick={() => setShowScorecardPreview(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0c1e38] text-white text-[12px] font-bold shadow-sm hover:bg-[#152e50] transition-all cursor-pointer"
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0c1e38] text-white text-[11px] sm:text-[12px] font-bold shadow-xs hover:bg-[#152e50] transition-all cursor-pointer"
         >
           <Award className="w-3.5 h-3.5 text-amber-400" />
-          <span>View Scorecard</span>
+          <span className="hidden xs:inline">Scorecard</span>
         </button>
         <button
           type="button"
@@ -231,13 +244,185 @@ export default function ScoreEntryContainer() {
             setCurrentEndIndex(0);
             setSetup(null);
           }}
-          className="text-[12px] text-text-dim underline hover:text-text cursor-pointer"
+          className="text-[11px] sm:text-[12px] text-text-dim underline hover:text-text cursor-pointer"
         >
-          Change setup
+          Setup
         </button>
       </div>
     </div>
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-[12px] mt-4">
+
+    {/* MOBILE-ONLY: Sticky Live Scoring HUD & Mode Tabs */}
+    <div className="lg:hidden flex flex-col gap-2 mt-2">
+      {/* Sticky Live HUD */}
+      <div className="bg-white/95 backdrop-blur-md rounded-xl border border-slate-200/90 p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-md bg-slate-900 text-white text-[11px] font-bold uppercase tracking-wider">
+              {isSessionComplete ? "Complete" : `End ${currentEndIndex + 1} / 6`}
+            </span>
+            <span className="text-[12px] font-bold text-slate-700">
+              {currentEndScore} <span className="text-[10px] text-slate-400 font-normal">pts</span>
+            </span>
+          </div>
+          <div className="text-[13px] font-bold font-mono text-accent">
+            Total: {totalScore} <span className="text-[10px] text-slate-400 font-sans font-normal">pts</span>
+          </div>
+        </div>
+
+        {/* 6 Arrow Pills (Always Visible, One-Tap Edit) */}
+        <div className="flex items-center justify-between gap-1 mb-2.5">
+          {Array.from({ length: 6 }).map((_, i) => {
+            const arrow = currentArrows[i];
+            const isTenOrX = arrow && (arrow.score === "10" || arrow.score === "X");
+            return (
+              <button
+                key={i}
+                type="button"
+                disabled={!arrow}
+                onClick={() => {
+                  if (arrow && isTenOrX) {
+                    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+                    handleUpdateArrowScore(i, arrow.score === "10" ? "X" : "10");
+                  }
+                }}
+                className={`flex-1 h-9 rounded-lg flex items-center justify-center font-mono font-bold text-sm border transition-all ${
+                  arrow
+                    ? `${getArrowBadgeClass(arrow.score)} ${isTenOrX ? "cursor-pointer ring-1 ring-amber-400" : ""}`
+                    : "border-dashed border-slate-300 text-slate-300 bg-slate-50"
+                }`}
+              >
+                {arrow ? arrow.score : "-"}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Action Buttons Row */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={currentArrows.length === 0 || isSessionComplete}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+            title="Undo last arrow"
+          >
+            <Undo2 className="w-3.5 h-3.5" />
+            <span>Undo ({currentArrows.length}/6)</span>
+          </button>
+
+          {!isSessionComplete && (
+            <button
+              type="button"
+              onClick={handleSubmitEnd}
+              disabled={currentArrows.length < 6}
+              className={`flex-1 flex items-center justify-center gap-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                currentArrows.length === 6
+                  ? "bg-slate-900 text-white shadow-sm active:scale-95"
+                  : "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
+              }`}
+            >
+              <span>{currentArrows.length === 6 ? `Submit End ${currentEndIndex + 1}` : `Shoot ${6 - currentArrows.length} more`}</span>
+              {currentArrows.length === 6 && <ChevronRight className="w-4 h-4" />}
+            </button>
+          )}
+
+          {isSessionComplete && (
+            <button
+              type="button"
+              onClick={handleSaveSession}
+              disabled={isSaving}
+              className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-sm active:scale-95"
+            >
+              {isSaving ? "Saving..." : "Save Round to Scorecard"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Mode Switcher Segmented Control */}
+      <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80">
+        <button
+          type="button"
+          onClick={() => {
+            setMobileMode("target");
+            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(8);
+          }}
+          className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition-all ${
+            mobileMode === "target"
+              ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
+              : "text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          <Target className="w-3.5 h-3.5 text-accent" />
+          <span>Target Face</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMobileMode("keypad");
+            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(8);
+          }}
+          className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition-all ${
+            mobileMode === "keypad"
+              ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
+              : "text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          <Hash className="w-3.5 h-3.5 text-amber-500" />
+          <span>Keypad</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMobileMode("timer");
+            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(8);
+          }}
+          className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition-all ${
+            mobileMode === "timer"
+              ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
+              : "text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5 text-sky-500" />
+          <span>Timer</span>
+        </button>
+      </div>
+
+      {/* Mobile Active Mode Content */}
+      <div className="mt-1">
+        {mobileMode === "target" && (
+          <ArrowPlot 
+            currentArrows={currentArrows}
+            handleScoreInput={handleScoreInput}
+            handleUndo={handleUndo}
+            isSessionComplete={isSessionComplete}
+          />
+        )}
+        {mobileMode === "keypad" && (
+          <ScorePad 
+            currentArrows={currentArrows}
+            currentEndIndex={currentEndIndex}
+            isSessionComplete={isSessionComplete}
+            handleScoreInput={handleScoreInput}
+            handleUpdateArrowScore={handleUpdateArrowScore}
+            handleUndo={handleUndo}
+            handleSubmitEnd={handleSubmitEnd}
+            handleSaveSession={handleSaveSession}
+            isSaving={isSaving}
+            currentEndScore={currentEndScore}
+            totalScore={totalScore}
+          />
+        )}
+        {mobileMode === "timer" && (
+          <ArcheryTimer resetCount={timerResetCount} />
+        )}
+      </div>
+    </div>
+
+    {/* DESKTOP-ONLY Layout (Side-by-side on lg: screens) */}
+    <div className="hidden lg:grid lg:grid-cols-[1fr_1.5fr] gap-[14px] mt-4">
       <div>
         <ScorePad 
           currentArrows={currentArrows}

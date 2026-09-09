@@ -48,20 +48,25 @@ export default function ScorePad({
         <div className="text-[12px] font-bold text-text-dim">Total: {totalScore}</div>
       </div>
       
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5 sm:mb-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
         {scores.map((score, i) => (
           <button
             key={i}
-            onClick={() => handleScoreInput(score, null, null)}
+            type="button"
+            onClick={() => {
+              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(12);
+              handleScoreInput(score, null, null);
+            }}
             disabled={isSessionComplete || currentArrows.length >= 6}
             className={`
-              flex items-center justify-center h-12 sm:h-14 rounded-xl text-[16px] sm:text-lg font-bold border border-black/5 transition-colors
-              ${isSessionComplete || currentArrows.length >= 6 ? 'opacity-50 cursor-not-allowed' : ''}
-              ${score === 'X' || score === '10' || score === '9' ? 'bg-[#FFD700]/20 text-[#FFD700] hover:bg-[#FFD700]/30' : ''}
-              ${score === '8' || score === '7' ? 'bg-[#E53935]/20 text-[#E53935] hover:bg-[#E53935]/30' : ''}
-              ${score === '6' || score === '5' ? 'bg-[#4FC3F7]/20 text-[#4FC3F7] hover:bg-[#4FC3F7]/30' : ''}
-              ${score === '4' || score === '3' ? 'bg-[#1C1C1C]/60 text-black hover:bg-[#1C1C1C]/80' : ''}
-              ${score === '2' || score === '1' || score === 'M' ? 'bg-black/10 text-black hover:bg-black/20' : ''}
+              flex items-center justify-center h-[52px] sm:h-14 rounded-xl text-[18px] sm:text-xl font-bold border border-black/10 transition-all cursor-pointer select-none active:scale-95
+              ${isSessionComplete || currentArrows.length >= 6 ? 'opacity-40 cursor-not-allowed active:scale-100' : ''}
+              ${score === 'X' || score === '10' || score === '9' ? 'bg-[#FEF08A] text-[#854D0E] hover:bg-[#FDE047] border-amber-300 shadow-xs' : ''}
+              ${score === '8' || score === '7' ? 'bg-[#FECACA] text-[#991B1B] hover:bg-[#FCA5A5] border-rose-300 shadow-xs' : ''}
+              ${score === '6' || score === '5' ? 'bg-[#BAE6FD] text-[#075985] hover:bg-[#7DD3FC] border-sky-300 shadow-xs' : ''}
+              ${score === '4' || score === '3' ? 'bg-[#334155] text-white hover:bg-[#1E293B] border-slate-700 shadow-xs' : ''}
+              ${score === '2' || score === '1' ? 'bg-white text-slate-900 hover:bg-slate-50 border-slate-300 shadow-xs' : ''}
+              ${score === 'M' ? 'bg-slate-200 text-slate-600 hover:bg-slate-300 border-slate-300 shadow-xs' : ''}
             `}
           >
             {score}
@@ -69,31 +74,42 @@ export default function ScorePad({
         ))}
       </div>
       
-      <div className="flex justify-between items-center bg-black/5 rounded-lg p-3 sm:p-4 border border-black/5">
+      <div className="flex justify-between items-center bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-200/80">
         <div>
-          <div className="text-[10px] sm:text-[11px] text-text-dim uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <span>Current End</span>
+          <div className="text-[10px] sm:text-[11px] text-text-dim uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <span className="font-bold text-slate-700">Current End ({currentArrows.length}/6)</span>
             {currentArrows.some(a => a.score === "10" || a.score === "X") && (
-              <span className="text-[9px] text-accent/80 font-normal lowercase">(tap 10/X to switch)</span>
+              <span className="text-[9px] text-accent font-semibold">(tap 10/X to switch)</span>
             )}
           </div>
-          <div className="text-[20px] sm:text-[24px] font-mono font-bold text-black tracking-widest flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {displayArrows.map((a, i) => {
-              if (i < currentArrows.length && handleUpdateArrowScore) {
-                const isTenOrX = a === "10" || a === "X";
+              const isFilled = i < currentArrows.length;
+              const isTenOrX = a === "10" || a === "X";
+
+              let badgeStyle = "bg-slate-200/60 text-slate-400 border border-slate-300/40";
+              if (isFilled) {
+                if (a === "X" || a === "10" || a === "9") badgeStyle = "bg-[#FEF08A] text-[#854D0E] border border-amber-400 shadow-xs";
+                else if (a === "8" || a === "7") badgeStyle = "bg-[#FECACA] text-[#991B1B] border border-rose-300 shadow-xs";
+                else if (a === "6" || a === "5") badgeStyle = "bg-[#BAE6FD] text-[#075985] border border-sky-300 shadow-xs";
+                else if (a === "4" || a === "3") badgeStyle = "bg-[#334155] text-white border border-slate-700 shadow-xs";
+                else if (a === "2" || a === "1") badgeStyle = "bg-white text-slate-900 border border-slate-300 shadow-xs";
+                else if (a === "M") badgeStyle = "bg-slate-200 text-slate-600 border border-slate-300 shadow-xs";
+              }
+
+              if (isFilled && handleUpdateArrowScore) {
                 return (
                   <button
                     key={i}
                     type="button"
                     title={isTenOrX ? `Click to switch to ${a === "X" ? "10" : "X"}` : `Arrow ${i + 1}: ${a}`}
                     onClick={() => {
+                      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
                       if (a === "10") handleUpdateArrowScore(i, "X");
                       else if (a === "X") handleUpdateArrowScore(i, "10");
                     }}
-                    className={`inline-flex items-center justify-center min-w-[26px] h-8 rounded text-center transition-all ${
-                      isTenOrX
-                        ? "cursor-pointer hover:bg-gold/30 hover:scale-110 active:scale-95 text-[#B45309]"
-                        : "cursor-default text-black"
+                    className={`inline-flex items-center justify-center min-w-[34px] sm:min-w-[38px] h-9 sm:h-10 rounded-lg text-[15px] sm:text-base font-mono font-bold transition-all active:scale-95 ${badgeStyle} ${
+                      isTenOrX ? "cursor-pointer ring-2 ring-amber-400/40" : "cursor-default"
                     }`}
                   >
                     {a}
@@ -101,16 +117,16 @@ export default function ScorePad({
                 );
               }
               return (
-                <span key={i} className="inline-flex items-center justify-center min-w-[26px] h-8 text-black/20">
+                <span key={i} className={`inline-flex items-center justify-center min-w-[34px] sm:min-w-[38px] h-9 sm:h-10 rounded-lg text-[15px] sm:text-base font-mono font-bold ${badgeStyle}`}>
                   {a}
                 </span>
               );
             })}
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-[10px] sm:text-[11px] text-text-dim uppercase tracking-wider mb-1">End Score</div>
-          <div className="text-[20px] sm:text-[24px] font-bold text-accent">{currentEndScore}</div>
+        <div className="text-right pl-2">
+          <div className="text-[10px] sm:text-[11px] text-text-dim uppercase tracking-wider mb-1 font-semibold">End Score</div>
+          <div className="text-[22px] sm:text-[26px] font-bold font-mono text-accent leading-none">{currentEndScore}</div>
         </div>
       </div>
       

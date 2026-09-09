@@ -779,13 +779,13 @@ export default function ScorecardView({
               </div>
 
           {/* Top Actions */}
-          <div className="flex items-center gap-2.5 flex-wrap print:hidden">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto print:hidden">
             {!isRealSavedSession && (
               <button
                 type="button"
                 onClick={handleSaveLiveRound}
                 disabled={isSavingLive}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 min-h-[42px]"
               >
                 <Check className="w-4 h-4" />
                 <span>{isSavingLive ? "Saving..." : "Save to Official Records"}</span>
@@ -795,7 +795,7 @@ export default function ScorecardView({
               <button
                 type="button"
                 onClick={handleBack}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px]"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
@@ -805,16 +805,16 @@ export default function ScorecardView({
             <button
               type="button"
               onClick={() => setIsEditOpen(true)}
-              className="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px]"
             >
               <Edit3 className="w-3.5 h-3.5 text-slate-500" />
-              <span>Edit Scores</span>
+              <span>Edit</span>
             </button>
 
             <button
               type="button"
               onClick={handleDownloadPDF}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px]"
               title="Download 1-page Official PDF Scorecard"
             >
               <Download className="w-3.5 h-3.5 text-accent" />
@@ -824,7 +824,7 @@ export default function ScorecardView({
             <button
               type="button"
               onClick={handlePrint}
-              className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="hidden sm:flex px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all shadow-xs items-center justify-center gap-1.5 cursor-pointer min-h-[42px]"
             >
               <Printer className="w-3.5 h-3.5 text-slate-500" />
               <span>Print</span>
@@ -833,10 +833,11 @@ export default function ScorecardView({
             <button
               type="button"
               onClick={handleShare}
-              className="px-4 py-2 rounded-xl bg-accent hover:bg-accent/90 text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px]"
+              title="Share Scorecard"
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span>Share</span>
+              <span className="hidden sm:inline">Share</span>
             </button>
 
             {isRealSavedSession && (
@@ -844,7 +845,7 @@ export default function ScorecardView({
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="p-2 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                className="p-2.5 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors cursor-pointer min-h-[42px] min-w-[42px] flex items-center justify-center"
                 title="Delete Session"
               >
                 <Trash2 className="w-4 h-4" />
@@ -947,6 +948,9 @@ export default function ScorecardView({
             <p className="text-xs print:text-[9.5px] text-slate-500 mt-0.5 print:mt-0">
               Individual arrow records, end subtotals, and progressive running score
             </p>
+            <div className="sm:hidden text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-1 print:hidden">
+              <span>👉 Swipe table to view all 6 arrows &amp; totals</span>
+            </div>
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 print:py-0.5 print:px-2 rounded-full bg-accent/10 text-accent text-xs print:text-[9.5px] font-bold">
             <span>{eventDistance}</span>
@@ -958,11 +962,11 @@ export default function ScorecardView({
         </div>
 
         {ends.length > 0 ? (
-          <div className="overflow-x-auto p-3 sm:p-5 print:p-1.5">
+          <div className="overflow-x-auto p-3 sm:p-5 print:p-1.5 overscroll-x-contain [webkit-overflow-scrolling:touch]">
             <table className="w-full text-center border-collapse border border-slate-300 min-w-[640px] print:min-w-0 shadow-2xs rounded-xl overflow-hidden print:text-xs">
               <thead>
                 <tr className="border-b-2 border-slate-300 text-slate-700 font-bold text-xs print:text-[10px] bg-slate-100/90">
-                  <th className="py-3 px-3 print:py-1.5 print:px-1 text-center border-r border-slate-300 w-16 uppercase tracking-wider bg-slate-200/50">
+                  <th className="py-3 px-3 print:py-1.5 print:px-1 text-center border-r border-slate-300 w-16 uppercase tracking-wider bg-slate-200/90 sticky left-0 z-10">
                     End
                   </th>
                   <th className="py-3 px-2 print:py-1.5 print:px-1 text-center border-r border-slate-300 uppercase tracking-wider">
@@ -997,7 +1001,7 @@ export default function ScorecardView({
                     key={idx}
                     className="border-b border-slate-200 hover:bg-slate-50/70 transition-colors h-14 print:h-6"
                   >
-                    <td className="py-2.5 px-3 print:py-0.5 print:px-1 font-extrabold text-slate-800 border-r border-slate-300 bg-slate-50 text-center">
+                    <td className="py-2.5 px-3 print:py-0.5 print:px-1 font-extrabold text-slate-800 border-r border-slate-300 bg-slate-100/95 sticky left-0 z-10 text-center shadow-[1px_0_0_0_#cbd5e1]">
                       {idx + 1}
                     </td>
                     {row.map((arrowVal, arrowIdx) => (

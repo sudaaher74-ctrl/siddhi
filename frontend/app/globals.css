@@ -26,10 +26,40 @@
     --text-dim: #9CA3AF;
   }
 
-  body {
+  html, body {
     @apply m-0 bg-background text-text font-sans antialiased;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  button, a, input, select, textarea {
+    touch-action: manipulation;
   }
 }
+
+/* Mobile Safe Area and Touch Helpers */
+.pb-safe {
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+}
+
+.pt-safe {
+  padding-top: max(8px, env(safe-area-inset-top, 8px));
+}
+
+.mb-safe {
+  margin-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+}
+
+/* Hide scrollbar for clean horizontal chip scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 
 @media print {
   @page {

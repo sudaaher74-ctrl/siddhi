@@ -682,13 +682,13 @@ interface CustomTooltipProps {
         </div>
 
         {/* Action Controls & Filters */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="w-full lg:w-auto flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 flex-nowrap lg:flex-wrap">
           {/* Chart Style Switcher: Line (Default) vs Area */}
-          <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-[11px] font-semibold">
+          <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-[11px] font-semibold flex-shrink-0">
             <button
               type="button"
               onClick={() => setChartType("line")}
-              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 chartType === "line"
                   ? "bg-white text-slate-900 shadow-sm font-bold"
                   : "text-slate-500 hover:text-slate-800"
@@ -701,7 +701,7 @@ interface CustomTooltipProps {
             <button
               type="button"
               onClick={() => setChartType("area")}
-              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 chartType === "area"
                   ? "bg-white text-slate-900 shadow-sm font-bold"
                   : "text-slate-500 hover:text-slate-800"
@@ -713,13 +713,13 @@ interface CustomTooltipProps {
           </div>
 
           {/* Timeframe selector */}
-          <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-[11px] font-semibold">
+          <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-[11px] font-semibold flex-shrink-0">
             {(["ALL", "D", "W", "M"] as TimeframeType[]).map((tf) => (
               <button
                 key={tf}
                 type="button"
                 onClick={() => setTimeframe(tf)}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   timeframe === tf
                     ? "bg-white text-slate-900 shadow-sm font-bold"
                     : "text-slate-500 hover:text-slate-800"
@@ -731,13 +731,13 @@ interface CustomTooltipProps {
           </div>
 
           {/* Metric Selector Dropdown / Pill Group */}
-          <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-[11px] font-semibold">
+          <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-[11px] font-semibold flex-shrink-0">
             {(["avg", "score", "tens", "arrows"] as MetricType[]).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setActiveMetric(m)}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   activeMetric === m
                     ? "bg-accent text-white shadow-sm font-bold"
                     : "text-slate-500 hover:text-slate-800"
@@ -758,7 +758,7 @@ interface CustomTooltipProps {
           <button
             type="button"
             onClick={handleOpenAddGoal}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[12px] font-semibold transition-all shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[12px] font-semibold transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer whitespace-nowrap flex-shrink-0"
           >
             <Plus className="w-3.5 h-3.5 text-accent" />
             <span>Add Goal</span>

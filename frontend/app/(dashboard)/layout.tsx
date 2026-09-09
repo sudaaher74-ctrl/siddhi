@@ -5,7 +5,7 @@ import { ProfileProvider } from "@/context/ProfileContext";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProfileProvider>
-      <div className="flex flex-col lg:flex-row gap-[14px] p-[14px] pb-[80px] lg:pb-[14px] min-h-screen print:p-0 print:m-0 print:gap-0 print:min-h-0 print:block">
+      <div className="flex flex-col lg:flex-row gap-[12px] sm:gap-[14px] px-3 py-2.5 sm:p-[14px] pb-[100px] lg:pb-[14px] min-h-screen print:p-0 print:m-0 print:gap-0 print:min-h-0 print:block">
         <div className="hidden lg:block print:hidden">
           <Sidebar />
         </div>
