@@ -23,7 +23,7 @@ import { Session } from "@/lib/data";
 import { useUser } from "@/hooks/useUser";
 import EditScoresModal from "./EditScoresModal";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
-import { exportScorecardPDF } from "@/lib/pdfExport";
+import { exportScorecardPDF, parseArrowDataEnds, getTargetShotCoordinates } from "@/lib/pdfExport";
 import Card from "./ui/Card";
 import { BOW_OPTIONS, BOW_DISTANCES, BowOption } from "./SessionSetup";
 
@@ -1152,12 +1152,102 @@ export default function ScorecardView({
         </div>
       </div>
 
-      {/* Official WA Scorecard Signatures (Print Only) */}
-      <div className="hidden print:flex items-center justify-between pt-2 px-3 text-[9px] text-slate-600 font-semibold border-t border-slate-300 mt-0.5">
-        <div>Archer Signature: _______________________</div>
-        <div>Scorer / Judge Signature: _______________________</div>
-        <div>Date: _________________</div>
-      </div>
+      {/* 5. ROUND-BY-ROUND TARGET HEATMAPS (ENDS 1 – 6) */}
+      <Card noPadding className="mt-5 print:mt-2 bg-white border border-slate-200/80 shadow-xs overflow-hidden print:border print:border-slate-300 print:shadow-none">
+        <div className="p-4 print:py-1.5 print:px-2.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-accent print:w-3 print:h-3" />
+            <h3 className="text-sm print:text-xs font-bold text-slate-900">
+              Round-by-Round Target Heatmaps (Ends 1 – 6)
+            </h3>
+          </div>
+          <span className="text-[11px] print:text-[8.5px] font-semibold text-slate-500">
+            Shot dispersion & grouping analysis
+          </span>
+        </div>
+
+        <div className="p-4 print:p-1.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 print:grid-cols-6 gap-3 print:gap-1.5">
+          {Array.from({ length: 6 }).map((_, endIdx) => {
+            const structuredEnds = parseArrowDataEnds(session?.arrowData, ends);
+            const endArrows = structuredEnds[endIdx] || [];
+            const endScore = endTotals[endIdx] ?? 0;
+            const endAvg = endArrows.length > 0 ? (endScore / endArrows.length).toFixed(1) : "0.0";
+
+            return (
+              <div
+                key={endIdx}
+                className="bg-slate-50/80 rounded-xl p-3 print:p-1 border border-slate-200/80 flex flex-col items-center text-center shadow-2xs"
+              >
+                <div className="flex items-center justify-between w-full mb-2 print:mb-1 px-1">
+                  <span className="text-xs print:text-[9px] font-bold text-slate-800">
+                    End {endIdx + 1}
+                  </span>
+                  <span className="text-xs print:text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60">
+                    {endScore} pts
+                  </span>
+                </div>
+
+                {/* SVG Target Face */}
+                <div className="relative w-full aspect-square max-w-[130px] my-1 flex items-center justify-center">
+                  <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xs">
+                    {/* White (1 & 2) */}
+                    <circle cx="50" cy="50" r="46" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="0.8" />
+                    <circle cx="50" cy="50" r="41.4" fill="none" stroke="#E2E8F0" strokeWidth="0.6" />
+
+                    {/* Black (3 & 4) */}
+                    <circle cx="50" cy="50" r="36.8" fill="#1E293B" />
+                    <circle cx="50" cy="50" r="32.2" fill="none" stroke="#475569" strokeWidth="0.5" />
+
+                    {/* Blue (5 & 6) */}
+                    <circle cx="50" cy="50" r="27.6" fill="#38BDF8" />
+                    <circle cx="50" cy="50" r="23" fill="none" stroke="#0284C7" strokeWidth="0.5" />
+
+                    {/* Red (7 & 8) */}
+                    <circle cx="50" cy="50" r="18.4" fill="#EF4444" />
+                    <circle cx="50" cy="50" r="13.8" fill="none" stroke="#B91C1C" strokeWidth="0.5" />
+
+                    {/* Gold (9 & 10) */}
+                    <circle cx="50" cy="50" r="9.2" fill="#FACC15" />
+                    <circle cx="50" cy="50" r="4.6" fill="none" stroke="#A16207" strokeWidth="0.5" />
+                    <circle cx="50" cy="50" r="2.3" fill="none" stroke="#A16207" strokeWidth="0.4" />
+
+                    {/* Crosshair */}
+                    <line x1="48" y1="50" x2="52" y2="50" stroke="#000" strokeWidth="0.5" />
+                    <line x1="50" y1="48" x2="50" y2="52" stroke="#000" strokeWidth="0.5" />
+
+                    {/* Arrows */}
+                    {endArrows.slice(0, 6).map((arrow, aIdx) => {
+                      const coords = getTargetShotCoordinates(arrow, aIdx, endIdx, 50, 50, 46);
+                      return (
+                        <g key={aIdx}>
+                          <circle cx={coords.x} cy={coords.y} r="4" fill="#F97316" fillOpacity="0.4" />
+                          <circle cx={coords.x} cy={coords.y} r="2.2" fill="#FFFFFF" stroke="#0F172A" strokeWidth="0.8" />
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
+
+                {/* Arrow score chips */}
+                <div className="grid grid-cols-6 gap-1 w-full mt-2 print:mt-1">
+                  {endArrows.slice(0, 6).map((arrow, aIdx) => (
+                    <span
+                      key={aIdx}
+                      className={`h-5 print:h-4 flex items-center justify-center rounded text-[10px] print:text-[8px] font-bold shadow-2xs ${getArrowBadgeClass(arrow.score)}`}
+                    >
+                      {arrow.score}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="text-[10px] print:text-[7.5px] text-slate-400 font-medium mt-1.5">
+                  Avg: {endAvg} / arr
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
     </>
   )}
 

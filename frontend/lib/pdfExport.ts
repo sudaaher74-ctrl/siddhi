@@ -447,6 +447,98 @@ export interface ExportScorecardParams {
   session?: Session;
 }
 
+export interface ArrowShotData {
+  score: string;
+  cx: number | null;
+  cy: number | null;
+}
+
+export function parseArrowDataEnds(arrowData?: string, fallbackEnds?: string[][]): ArrowShotData[][] {
+  if (arrowData) {
+    try {
+      const parsed = JSON.parse(arrowData);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((endItem: unknown, endIdx: number) => {
+          if (Array.isArray(endItem)) {
+            return endItem.map((a: unknown, arrowIdx: number) => {
+              if (typeof a === "object" && a !== null) {
+                const obj = a as { score?: unknown; cx?: unknown; cy?: unknown };
+                return {
+                  score: String(obj.score ?? (fallbackEnds?.[endIdx]?.[arrowIdx] || "0")),
+                  cx: typeof obj.cx === "number" ? obj.cx : null,
+                  cy: typeof obj.cy === "number" ? obj.cy : null,
+                };
+              }
+              return {
+                score: String(a),
+                cx: null,
+                cy: null,
+              };
+            });
+          }
+          return [];
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (fallbackEnds) {
+    return fallbackEnds.map((end) =>
+      end.map((score) => ({
+        score: String(score),
+        cx: null,
+        cy: null,
+      }))
+    );
+  }
+
+  return [];
+}
+
+export function getTargetShotCoordinates(
+  arrow: ArrowShotData,
+  arrowIdx: number,
+  endIdx: number,
+  targetCenterX: number,
+  targetCenterY: number,
+  targetRadius: number
+): { x: number; y: number } {
+  if (arrow.cx !== null && arrow.cy !== null && !isNaN(arrow.cx) && !isNaN(arrow.cy)) {
+    const normX = (arrow.cx - 115) / 110;
+    const normY = (arrow.cy - 115) / 110;
+    return {
+      x: targetCenterX + normX * targetRadius,
+      y: targetCenterY + normY * targetRadius,
+    };
+  }
+
+  const val = arrow.score.toUpperCase().trim();
+  let ringRatio = 0.05;
+
+  if (val === "X") ringRatio = 0.035;
+  else if (val === "10") ringRatio = 0.075;
+  else if (val === "9") ringRatio = 0.15;
+  else if (val === "8") ringRatio = 0.25;
+  else if (val === "7") ringRatio = 0.35;
+  else if (val === "6") ringRatio = 0.45;
+  else if (val === "5") ringRatio = 0.55;
+  else if (val === "4") ringRatio = 0.65;
+  else if (val === "3") ringRatio = 0.75;
+  else if (val === "2") ringRatio = 0.85;
+  else if (val === "1") ringRatio = 0.95;
+  else if (val === "M" || val === "0") ringRatio = 1.08;
+
+  const angleDeg = (arrowIdx * 58 + endIdx * 41 + 25) % 360;
+  const angleRad = (angleDeg * Math.PI) / 180;
+
+  return {
+    x: targetCenterX + Math.cos(angleRad) * (ringRatio * targetRadius),
+    y: targetCenterY + Math.sin(angleRad) * (ringRatio * targetRadius),
+  };
+}
+
 /**
  * Generates and downloads an Official Archery Scorecard guaranteed to fit on EXACTLY ONE A4 PAGE.
  */
@@ -924,112 +1016,175 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
 
   y += summaryBoxHeight + 12;
 
-  // 7. Official World Archery Signatures & Certified Seal Block
-  const sigBoxHeight = 135;
+  // 7. End-by-End Target Heatmaps (Ends 1 to 6)
+  const heatmapBoxHeight = 136;
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(203, 213, 225);
   doc.setLineWidth(0.9);
-  doc.roundedRect(margin, y, contentWidth, sigBoxHeight, 5, 5, "FD");
+  doc.roundedRect(margin, y, contentWidth, heatmapBoxHeight, 5, 5, "FD");
 
-  // Header inside signature box
+  // Header inside heatmap box
   doc.setFillColor(241, 245, 249);
-  doc.roundedRect(margin + 1, y + 1, contentWidth - 2, 24, 4, 4, "F");
+  doc.roundedRect(margin + 1, y + 1, contentWidth - 2, 20, 4, 4, "F");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(51, 65, 85);
-  doc.text("OFFICIAL WORLD ARCHERY ROUND VERIFICATION & CERTIFICATION", margin + 12, y + 16);
+  doc.text("ROUND-BY-ROUND TARGET HEATMAPS & SHOT DISPERSION (ENDS 1 – 6)", margin + 10, y + 13);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(100, 116, 139);
-  doc.text("World Archery Rulebook Book 3 (Target Archery) • Rule 14.1 & 14.2", margin + contentWidth - 12, y + 16, { align: "right" });
+  doc.text("Target impact grouping & distribution per end", margin + contentWidth - 10, y + 13, { align: "right" });
 
-  // 3 Columns: Archer Signature, Scorer / Judge Signature, Certified Seal & Date
-  const sigColWidth = (contentWidth - 24) / 3;
-  const sigContentY = y + 28;
+  const structuredEnds = parseArrowDataEnds(params.session?.arrowData, params.ends);
+  const targetColW = (contentWidth - 12) / 6;
+  const targetRadius = 24.5;
 
-  // Column 1: Archer Verification
-  const col1X = margin + 12;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(15, 23, 42);
-  doc.text("ARCHER VERIFICATION", col1X, sigContentY + 14);
+  for (let i = 0; i < 6; i++) {
+    const colX = margin + 6 + i * targetColW;
+    const targetCenterX = colX + targetColW / 2;
+    const targetCenterY = y + 59;
+    const endScore = params.endTotals?.[i] ?? 0;
+    const endArrows = structuredEnds[i] || [];
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(100, 116, 139);
-  doc.text("I certify that these scores and values are correct.", col1X, sigContentY + 26);
+    // Column divider line
+    if (i > 0) {
+      doc.setDrawColor(241, 245, 249);
+      doc.setLineWidth(0.8);
+      doc.line(colX, y + 23, colX, y + heatmapBoxHeight - 6);
+    }
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
-  doc.text(params.athleteName, col1X, sigContentY + 52);
+    // End Title & Score
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`End ${i + 1}`, targetCenterX, y + 30, { align: "center" });
 
-  // Line for signature
-  doc.setDrawColor(148, 163, 184);
-  doc.setLineWidth(0.8);
-  doc.line(col1X, sigContentY + 74, col1X + sigColWidth - 16, sigContentY + 74);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(5, 150, 105);
+    doc.text(`${endScore} pts`, targetCenterX, y + 38, { align: "center" });
 
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(7);
-  doc.setTextColor(148, 163, 184);
-  doc.text("Archer's Signature", col1X, sigContentY + 86);
+    // Target Concentric Rings (Official World Archery colors)
+    const R = targetRadius;
 
-  // Column 2: Official Scorer / Judge
-  const col2X = margin + 12 + sigColWidth;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(15, 23, 42);
-  doc.text("OFFICIAL SCORER / JUDGE", col2X, sigContentY + 14);
+    // 1 & 2: White rings (r = R)
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.6);
+    doc.circle(targetCenterX, targetCenterY, R, "FD");
+    doc.circle(targetCenterX, targetCenterY, R * 0.9, "S");
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(100, 116, 139);
-  doc.text("Recorded and verified against official target face.", col2X, sigContentY + 26);
+    // 3 & 4: Black rings (r = 0.8 * R)
+    doc.setFillColor(30, 41, 59);
+    doc.circle(targetCenterX, targetCenterY, R * 0.8, "F");
+    doc.setDrawColor(71, 85, 105);
+    doc.setLineWidth(0.35);
+    doc.circle(targetCenterX, targetCenterY, R * 0.7, "S");
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
-  doc.text("Accredited Judge / Scorer", col2X, sigContentY + 52);
+    // 5 & 6: Blue rings (r = 0.6 * R)
+    doc.setFillColor(56, 189, 248);
+    doc.circle(targetCenterX, targetCenterY, R * 0.6, "F");
+    doc.setDrawColor(14, 116, 144);
+    doc.setLineWidth(0.35);
+    doc.circle(targetCenterX, targetCenterY, R * 0.5, "S");
 
-  // Line for signature
-  doc.line(col2X, sigContentY + 74, col2X + sigColWidth - 16, sigContentY + 74);
+    // 7 & 8: Red rings (r = 0.4 * R)
+    doc.setFillColor(239, 68, 68);
+    doc.circle(targetCenterX, targetCenterY, R * 0.4, "F");
+    doc.setDrawColor(185, 28, 28);
+    doc.setLineWidth(0.35);
+    doc.circle(targetCenterX, targetCenterY, R * 0.3, "S");
 
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(7);
-  doc.setTextColor(148, 163, 184);
-  doc.text("Scorer / Judge Signature", col2X, sigContentY + 86);
+    // 9 & 10: Gold / Yellow rings (r = 0.2 * R)
+    doc.setFillColor(250, 204, 21);
+    doc.circle(targetCenterX, targetCenterY, R * 0.2, "F");
+    doc.setDrawColor(161, 98, 7);
+    doc.setLineWidth(0.35);
+    doc.circle(targetCenterX, targetCenterY, R * 0.1, "S");
+    doc.circle(targetCenterX, targetCenterY, R * 0.05, "S");
 
-  // Column 3: Certified Seal & Verification Date
-  const col3X = margin + 12 + sigColWidth * 2;
-  const sealCenterX = col3X + sigColWidth / 2 - 4;
-  const sealCenterY = sigContentY + 38;
+    // Center Crosshair
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.4);
+    doc.line(targetCenterX - 1.5, targetCenterY, targetCenterX + 1.5, targetCenterY);
+    doc.line(targetCenterX, targetCenterY - 1.5, targetCenterX, targetCenterY + 1.5);
 
-  // Double-Ring Red Tournament Seal
-  doc.setDrawColor(229, 57, 53); // target red
-  doc.setLineWidth(1.2);
-  doc.circle(sealCenterX, sealCenterY, 23, "S");
-  doc.setLineWidth(0.5);
-  doc.circle(sealCenterX, sealCenterY, 20.5, "S");
+    // Heatmap / Plotted Arrow Shots
+    endArrows.slice(0, 6).forEach((arrow, aIdx) => {
+      const { x: shotX, y: shotY } = getTargetShotCoordinates(
+        arrow,
+        aIdx,
+        i,
+        targetCenterX,
+        targetCenterY,
+        targetRadius
+      );
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(5.5);
-  doc.setTextColor(229, 57, 53);
-  doc.text("ARCHERX AI", sealCenterX, sealCenterY - 9, { align: "center" });
-  doc.setFontSize(7);
-  doc.text("VERIFIED", sealCenterX, sealCenterY - 1, { align: "center" });
-  doc.setFontSize(5.5);
-  doc.text("RECORD", sealCenterX, sealCenterY + 7, { align: "center" });
-  doc.setFontSize(4.5);
-  doc.text("WA 14.1 CERTIFIED", sealCenterX, sealCenterY + 13.5, { align: "center" });
+      // Arrow Dot
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(15, 23, 42);
+      doc.setLineWidth(0.6);
+      doc.circle(shotX, shotY, 1.7, "FD");
+    });
 
-  // Date line under seal
-  doc.line(col3X + 12, sigContentY + 74, col3X + sigColWidth - 16, sigContentY + 74);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(71, 85, 105);
-  doc.text(`Date: ${params.formattedDate}`, col3X + sigColWidth / 2 - 2, sigContentY + 86, { align: "center" });
+    // Arrow score badges below target
+    const badgeW = 10.5;
+    const badgeH = 10;
+    const badgeGap = 1.2;
+    const totalBadgesW = 6 * badgeW + 5 * badgeGap;
+    const badgeStartX = targetCenterX - totalBadgesW / 2;
+    const badgeY = targetCenterY + R + 6;
+
+    endArrows.slice(0, 6).forEach((arrow, aIdx) => {
+      const bX = badgeStartX + aIdx * (badgeW + badgeGap);
+      const val = arrow.score.toUpperCase().trim();
+
+      let fillRGB = [226, 232, 240];
+      let strokeRGB = [203, 213, 225];
+      let textRGB = [100, 116, 139];
+
+      if (val === "X" || val === "10" || val === "9") {
+        fillRGB = [254, 240, 138];
+        strokeRGB = [251, 191, 36];
+        textRGB = [133, 77, 14];
+      } else if (val === "8" || val === "7") {
+        fillRGB = [254, 202, 202];
+        strokeRGB = [248, 113, 113];
+        textRGB = [153, 27, 27];
+      } else if (val === "6" || val === "5") {
+        fillRGB = [186, 230, 253];
+        strokeRGB = [56, 189, 248];
+        textRGB = [7, 89, 133];
+      } else if (val === "4" || val === "3") {
+        fillRGB = [51, 65, 85];
+        strokeRGB = [30, 41, 59];
+        textRGB = [255, 255, 255];
+      } else if (val === "2" || val === "1") {
+        fillRGB = [255, 255, 255];
+        strokeRGB = [203, 213, 225];
+        textRGB = [15, 23, 42];
+      }
+
+      doc.setFillColor(fillRGB[0], fillRGB[1], fillRGB[2]);
+      doc.setDrawColor(strokeRGB[0], strokeRGB[1], strokeRGB[2]);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(bX, badgeY, badgeW, badgeH, 1.5, 1.5, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(5.5);
+      doc.setTextColor(textRGB[0], textRGB[1], textRGB[2]);
+      doc.text(val, bX + badgeW / 2, badgeY + 7.2, { align: "center" });
+    });
+
+    // End Average
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+    doc.setTextColor(100, 116, 139);
+    const avgEnd = (endScore / 6).toFixed(1);
+    doc.text(`Avg: ${avgEnd} / arr`, targetCenterX, badgeY + 19, { align: "center" });
+  }
 
   // 8. Security & Compliance Footer (Bottom of Page 1)
   doc.setDrawColor(226, 232, 240);
