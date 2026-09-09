@@ -1286,30 +1286,54 @@ export default function ScorecardView({
                 {/* SVG Target Face */}
                 <div className="relative w-full aspect-square max-w-[130px] my-1 flex items-center justify-center">
                   <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xs">
-                    {/* White (1 & 2) */}
-                    <circle cx="50" cy="50" r="46" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="0.8" />
-                    <circle cx="50" cy="50" r="41.4" fill="none" stroke="#E2E8F0" strokeWidth="0.6" />
+                    {selectedBow === "Compound Bow" ? (
+                      /* World Archery 80cm 6-Ring Compound Face (5 to 10 + X) */
+                      <>
+                        {/* White paper background */}
+                        <rect x="2" y="2" width="96" height="96" rx="6" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="0.8" />
+                        {/* Blue (5 & 6) */}
+                        <circle cx="50" cy="50" r="44" fill="#0284C7" stroke="#000000" strokeWidth="0.8" />
+                        <circle cx="50" cy="50" r="36.6" fill="none" stroke="#000000" strokeWidth="0.6" />
+                        {/* Red (7 & 8) */}
+                        <circle cx="50" cy="50" r="29.3" fill="#EF4444" stroke="#000000" strokeWidth="0.8" />
+                        <circle cx="50" cy="50" r="22" fill="none" stroke="#000000" strokeWidth="0.6" />
+                        {/* Gold (9 & 10) */}
+                        <circle cx="50" cy="50" r="14.6" fill="#FACC15" stroke="#000000" strokeWidth="0.8" />
+                        <circle cx="50" cy="50" r="7.3" fill="none" stroke="#000000" strokeWidth="0.6" />
+                        <circle cx="50" cy="50" r="3.6" fill="none" stroke="#000000" strokeWidth="0.5" />
+                        {/* Crosshair */}
+                        <line x1="48.5" y1="50" x2="51.5" y2="50" stroke="#000" strokeWidth="0.6" />
+                        <line x1="50" y1="48.5" x2="50" y2="51.5" stroke="#000" strokeWidth="0.6" />
+                      </>
+                    ) : (
+                      /* World Archery Full 10-Ring Face (1 to 10 + X) */
+                      <>
+                        {/* White (1 & 2) */}
+                        <circle cx="50" cy="50" r="46" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="0.8" />
+                        <circle cx="50" cy="50" r="41.4" fill="none" stroke="#E2E8F0" strokeWidth="0.6" />
 
-                    {/* Black (3 & 4) */}
-                    <circle cx="50" cy="50" r="36.8" fill="#1E293B" />
-                    <circle cx="50" cy="50" r="32.2" fill="none" stroke="#475569" strokeWidth="0.5" />
+                        {/* Black (3 & 4) */}
+                        <circle cx="50" cy="50" r="36.8" fill="#1E293B" />
+                        <circle cx="50" cy="50" r="32.2" fill="none" stroke="#475569" strokeWidth="0.5" />
 
-                    {/* Blue (5 & 6) */}
-                    <circle cx="50" cy="50" r="27.6" fill="#38BDF8" />
-                    <circle cx="50" cy="50" r="23" fill="none" stroke="#0284C7" strokeWidth="0.5" />
+                        {/* Blue (5 & 6) */}
+                        <circle cx="50" cy="50" r="27.6" fill="#38BDF8" />
+                        <circle cx="50" cy="50" r="23" fill="none" stroke="#0284C7" strokeWidth="0.5" />
 
-                    {/* Red (7 & 8) */}
-                    <circle cx="50" cy="50" r="18.4" fill="#EF4444" />
-                    <circle cx="50" cy="50" r="13.8" fill="none" stroke="#B91C1C" strokeWidth="0.5" />
+                        {/* Red (7 & 8) */}
+                        <circle cx="50" cy="50" r="18.4" fill="#EF4444" />
+                        <circle cx="50" cy="50" r="13.8" fill="none" stroke="#B91C1C" strokeWidth="0.5" />
 
-                    {/* Gold (9 & 10) */}
-                    <circle cx="50" cy="50" r="9.2" fill="#FACC15" />
-                    <circle cx="50" cy="50" r="4.6" fill="none" stroke="#A16207" strokeWidth="0.5" />
-                    <circle cx="50" cy="50" r="2.3" fill="none" stroke="#A16207" strokeWidth="0.4" />
+                        {/* Gold (9 & 10) */}
+                        <circle cx="50" cy="50" r="9.2" fill="#FACC15" />
+                        <circle cx="50" cy="50" r="4.6" fill="none" stroke="#A16207" strokeWidth="0.5" />
+                        <circle cx="50" cy="50" r="2.3" fill="none" stroke="#A16207" strokeWidth="0.4" />
 
-                    {/* Crosshair */}
-                    <line x1="48" y1="50" x2="52" y2="50" stroke="#000" strokeWidth="0.5" />
-                    <line x1="50" y1="48" x2="50" y2="52" stroke="#000" strokeWidth="0.5" />
+                        {/* Crosshair */}
+                        <line x1="48" y1="50" x2="52" y2="50" stroke="#000" strokeWidth="0.5" />
+                        <line x1="50" y1="48" x2="50" y2="52" stroke="#000" strokeWidth="0.5" />
+                      </>
+                    )}
 
                     {/* Arrows */}
                     {endArrows.slice(0, 6).map((arrow, aIdx) => {

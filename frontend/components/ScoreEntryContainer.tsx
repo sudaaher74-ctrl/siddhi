@@ -398,6 +398,7 @@ export default function ScoreEntryContainer() {
             handleScoreInput={handleScoreInput}
             handleUndo={handleUndo}
             isSessionComplete={isSessionComplete}
+            bowType={setup?.bow}
           />
         )}
         {mobileMode === "keypad" && (
@@ -413,6 +414,7 @@ export default function ScoreEntryContainer() {
             isSaving={isSaving}
             currentEndScore={currentEndScore}
             totalScore={totalScore}
+            bowType={setup?.bow}
           />
         )}
         {mobileMode === "timer" && (
@@ -436,6 +438,7 @@ export default function ScoreEntryContainer() {
           isSaving={isSaving}
           currentEndScore={currentEndScore}
           totalScore={totalScore}
+          bowType={setup?.bow}
         />
       </div>
       <div>
@@ -444,6 +447,7 @@ export default function ScoreEntryContainer() {
           handleScoreInput={handleScoreInput}
           handleUndo={handleUndo}
           isSessionComplete={isSessionComplete}
+          bowType={setup?.bow}
         />
         <div className="mt-4">
           <ArcheryTimer resetCount={timerResetCount} />

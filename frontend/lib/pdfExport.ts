@@ -1162,50 +1162,91 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
     doc.setTextColor(5, 150, 105);
     doc.text(`${endScore} pts`, targetCenterX, y + 38, { align: "center" });
 
-    // Target Concentric Rings (Official World Archery colors)
+    // Target Concentric Rings
     const R = targetRadius;
+    const isCompound = params.selectedBow === "Compound Bow";
 
-    // 1 & 2: White rings (r = R)
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(203, 213, 225);
-    doc.setLineWidth(0.6);
-    doc.circle(targetCenterX, targetCenterY, R, "FD");
-    doc.circle(targetCenterX, targetCenterY, R * 0.9, "S");
+    if (isCompound) {
+      // World Archery 80cm 6-ring Compound Face (Rings 5 to 10 + X)
+      // White outer paper square
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(targetCenterX - R, targetCenterY - R, R * 2, R * 2, 3, 3, "FD");
 
-    // 3 & 4: Black rings (r = 0.8 * R)
-    doc.setFillColor(30, 41, 59);
-    doc.circle(targetCenterX, targetCenterY, R * 0.8, "F");
-    doc.setDrawColor(71, 85, 105);
-    doc.setLineWidth(0.35);
-    doc.circle(targetCenterX, targetCenterY, R * 0.7, "S");
+      // 5 & 6: Blue rings (r = R * 0.95 and R * 0.79)
+      doc.setFillColor(2, 132, 199);
+      doc.circle(targetCenterX, targetCenterY, R * 0.95, "F");
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.4);
+      doc.circle(targetCenterX, targetCenterY, R * 0.95, "S");
+      doc.circle(targetCenterX, targetCenterY, R * 0.79, "S");
 
-    // 5 & 6: Blue rings (r = 0.6 * R)
-    doc.setFillColor(56, 189, 248);
-    doc.circle(targetCenterX, targetCenterY, R * 0.6, "F");
-    doc.setDrawColor(14, 116, 144);
-    doc.setLineWidth(0.35);
-    doc.circle(targetCenterX, targetCenterY, R * 0.5, "S");
+      // 7 & 8: Red rings (r = R * 0.63 and R * 0.47)
+      doc.setFillColor(239, 68, 68);
+      doc.circle(targetCenterX, targetCenterY, R * 0.63, "F");
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.4);
+      doc.circle(targetCenterX, targetCenterY, R * 0.63, "S");
+      doc.circle(targetCenterX, targetCenterY, R * 0.47, "S");
 
-    // 7 & 8: Red rings (r = 0.4 * R)
-    doc.setFillColor(239, 68, 68);
-    doc.circle(targetCenterX, targetCenterY, R * 0.4, "F");
-    doc.setDrawColor(185, 28, 28);
-    doc.setLineWidth(0.35);
-    doc.circle(targetCenterX, targetCenterY, R * 0.3, "S");
+      // 9 & 10: Gold / Yellow rings (r = R * 0.31 and R * 0.16)
+      doc.setFillColor(250, 204, 21);
+      doc.circle(targetCenterX, targetCenterY, R * 0.31, "F");
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.4);
+      doc.circle(targetCenterX, targetCenterY, R * 0.31, "S");
+      doc.circle(targetCenterX, targetCenterY, R * 0.16, "S");
 
-    // 9 & 10: Gold / Yellow rings (r = 0.2 * R)
-    doc.setFillColor(250, 204, 21);
-    doc.circle(targetCenterX, targetCenterY, R * 0.2, "F");
-    doc.setDrawColor(161, 98, 7);
-    doc.setLineWidth(0.35);
-    doc.circle(targetCenterX, targetCenterY, R * 0.1, "S");
-    doc.circle(targetCenterX, targetCenterY, R * 0.05, "S");
+      // Inner X ring (r = R * 0.08)
+      doc.circle(targetCenterX, targetCenterY, R * 0.08, "S");
 
-    // Center Crosshair
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.4);
-    doc.line(targetCenterX - 1.5, targetCenterY, targetCenterX + 1.5, targetCenterY);
-    doc.line(targetCenterX, targetCenterY - 1.5, targetCenterX, targetCenterY + 1.5);
+      // Center Crosshair
+      doc.line(targetCenterX - 1.5, targetCenterY, targetCenterX + 1.5, targetCenterY);
+      doc.line(targetCenterX, targetCenterY - 1.5, targetCenterX, targetCenterY + 1.5);
+    } else {
+      // 1 & 2: White rings (r = R)
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.6);
+      doc.circle(targetCenterX, targetCenterY, R, "FD");
+      doc.circle(targetCenterX, targetCenterY, R * 0.9, "S");
+
+      // 3 & 4: Black rings (r = 0.8 * R)
+      doc.setFillColor(30, 41, 59);
+      doc.circle(targetCenterX, targetCenterY, R * 0.8, "F");
+      doc.setDrawColor(71, 85, 105);
+      doc.setLineWidth(0.35);
+      doc.circle(targetCenterX, targetCenterY, R * 0.7, "S");
+
+      // 5 & 6: Blue rings (r = 0.6 * R)
+      doc.setFillColor(56, 189, 248);
+      doc.circle(targetCenterX, targetCenterY, R * 0.6, "F");
+      doc.setDrawColor(14, 116, 144);
+      doc.setLineWidth(0.35);
+      doc.circle(targetCenterX, targetCenterY, R * 0.5, "S");
+
+      // 7 & 8: Red rings (r = 0.4 * R)
+      doc.setFillColor(239, 68, 68);
+      doc.circle(targetCenterX, targetCenterY, R * 0.4, "F");
+      doc.setDrawColor(185, 28, 28);
+      doc.setLineWidth(0.35);
+      doc.circle(targetCenterX, targetCenterY, R * 0.3, "S");
+
+      // 9 & 10: Gold / Yellow rings (r = 0.2 * R)
+      doc.setFillColor(250, 204, 21);
+      doc.circle(targetCenterX, targetCenterY, R * 0.2, "F");
+      doc.setDrawColor(161, 98, 7);
+      doc.setLineWidth(0.35);
+      doc.circle(targetCenterX, targetCenterY, R * 0.1, "S");
+      doc.circle(targetCenterX, targetCenterY, R * 0.05, "S");
+
+      // Center Crosshair
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.4);
+      doc.line(targetCenterX - 1.5, targetCenterY, targetCenterX + 1.5, targetCenterY);
+      doc.line(targetCenterX, targetCenterY - 1.5, targetCenterX, targetCenterY + 1.5);
+    }
 
     // Heatmap / Plotted Arrow Shots
     endArrows.slice(0, 6).forEach((arrow, aIdx) => {

@@ -16,6 +16,7 @@ interface ScorePadProps {
   isSaving?: boolean;
   currentEndScore: number;
   totalScore: number;
+  bowType?: string;
 }
 
 export default function ScorePad({
@@ -30,8 +31,12 @@ export default function ScorePad({
   isSaving,
   currentEndScore,
   totalScore,
+  bowType,
 }: ScorePadProps) {
-  const scores: ScoreValue[] = ["X", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "M"];
+  const isCompound = bowType?.toLowerCase().includes("compound") ?? false;
+  const scores: ScoreValue[] = isCompound
+    ? ["X", "10", "9", "8", "7", "6", "5", "M"]
+    : ["X", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "M"];
   
   // Display arrows (pad with dashes)
   const displayArrows: Array<ScoreValue | "-"> = currentArrows.map(a => a.score);
@@ -42,13 +47,20 @@ export default function ScorePad({
   return (
     <div className="bg-panel border border-border rounded-[14px] p-4 sm:p-6">
       <div className="flex justify-between items-center mb-3 sm:mb-4">
-        <h3 className="text-[14px] font-semibold text-text">
-          {isSessionComplete ? "Session Complete" : `Input Score (End ${currentEndIndex + 1}/6)`}
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-[14px] font-semibold text-text">
+            {isSessionComplete ? "Session Complete" : `Input Score (End ${currentEndIndex + 1}/6)`}
+          </h3>
+          {isCompound && (
+            <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300">
+              Compound (5–10)
+            </span>
+          )}
+        </div>
         <div className="text-[12px] font-bold text-text-dim">Total: {totalScore}</div>
       </div>
       
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
+      <div className={`grid ${isCompound ? 'grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 mb-4 sm:mb-6`}>
         {scores.map((score, i) => (
           <button
             key={i}
