@@ -37,9 +37,7 @@ const navLinks = [
   { label: "Scorecard", href: "/scorecard" },
   { label: "Monthly Log", href: "/monthly-log" },
   { label: "Analytics", href: "/analytics" },
-  { label: "AI Coach", href: "/ai-coach" },
   { label: "Equipment", href: "/equipment" },
-  { label: "Goals", href: "/goals" },
 ];
 
 export const navItems: NavItem[] = navLinks.map((item, i) => ({

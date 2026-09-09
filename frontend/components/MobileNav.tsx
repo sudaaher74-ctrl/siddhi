@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Target, LineChart, Bot, Menu, X, Crosshair, Wrench, Flag, LogOut, ShieldCheck, MessageSquare, Calendar, Award } from "lucide-react";
+import { Home, Target, LineChart, Menu, X, Crosshair, Wrench, LogOut, ShieldCheck, MessageSquare, Calendar, Award } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { useProfile } from "@/context/ProfileContext";
 
@@ -22,16 +22,14 @@ export default function MobileNav() {
   const mainNav = [
     { label: "Home", href: "/", icon: Home },
     { label: "Score", href: "/score-entry", icon: Target },
+    { label: "Scorecard", href: "/scorecard", icon: Award },
     { label: "Stats", href: "/analytics", icon: LineChart },
-    { label: "Coach", href: "/ai-coach", icon: Bot },
   ];
 
   const moreNav = [
-    { label: "Scorecard", href: "/scorecard", icon: Award },
-    { label: "Monthly Log", href: "/monthly-log", icon: Calendar },
     { label: "Practice", href: "/practice", icon: Crosshair },
+    { label: "Monthly Log", href: "/monthly-log", icon: Calendar },
     { label: "Equipment", href: "/equipment", icon: Wrench },
-    { label: "Goals", href: "/goals", icon: Flag },
   ];
 
   return (
