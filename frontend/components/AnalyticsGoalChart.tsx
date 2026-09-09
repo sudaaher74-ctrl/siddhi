@@ -5,6 +5,8 @@ import { Session } from "@/lib/data";
 import Card from "@/components/ui/Card";
 import {
   ResponsiveContainer,
+  LineChart,
+  Line,
   AreaChart,
   Area,
   XAxis,
@@ -25,6 +27,7 @@ import {
   Eye,
   EyeOff,
   Flame,
+  Activity,
 } from "lucide-react";
 import { apiFetch, apiPost } from "@/lib/api";
 
@@ -101,6 +104,7 @@ export default function AnalyticsGoalChart({
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
   const [activeMetric, setActiveMetric] = useState<MetricType>("avg");
   const [timeframe, setTimeframe] = useState<TimeframeType>("ALL");
+  const [chartType, setChartType] = useState<"line" | "area">("line");
   const [activeGoalId, setActiveGoalId] = useState<string | null>(null);
   const [showGoalLine, setShowGoalLine] = useState(true);
   const [showAvgLine, setShowAvgLine] = useState(true);
@@ -135,22 +139,29 @@ export default function AnalyticsGoalChart({
     }
   }, [initialGoals.length]);
 
-  // Determine active goal or default to the most relevant goal for the active metric
+  // Determine active goal specifically for the active metric
   const selectedGoal = useMemo(() => {
     if (goals.length === 0) return null;
+
+    const isMatch = (g: Goal, m: MetricType) => {
+      if (g.metricType === m) return true;
+      const targetNum = parseFloat(g.target.replace(/[^0-9.]/g, ""));
+      if (isNaN(targetNum)) return false;
+      if (m === "avg") return targetNum <= 10.5 && targetNum >= 6;
+      if (m === "score") return targetNum > 50;
+      if (m === "tens") return g.target.includes("%") || (targetNum <= 100 && targetNum >= 10);
+      if (m === "arrows") return targetNum > 100 && !g.target.includes("%");
+      return false;
+    };
+
     if (activeGoalId) {
       const found = goals.find((g) => (g._id || g.id) === activeGoalId);
-      if (found) return found;
+      if (found && isMatch(found, activeMetric)) return found;
     }
-    // Auto-select goal matching active metric or first active goal
-    const matched = goals.find((g) => {
-      const targetNum = parseFloat(g.target.replace(/[^0-9.]/g, ""));
-      if (activeMetric === "avg" && targetNum <= 10.5 && targetNum >= 6) return true;
-      if (activeMetric === "score" && targetNum > 50) return true;
-      if (activeMetric === "tens" && targetNum <= 100 && targetNum >= 10) return true;
-      return false;
-    });
-    return matched || goals[0];
+
+    // Auto-select goal matching the current active metric
+    const matched = goals.find((g) => isMatch(g, activeMetric));
+    return matched || null;
   }, [goals, activeGoalId, activeMetric]);
 
   // Extract numeric target from selected goal
@@ -172,6 +183,19 @@ export default function AnalyticsGoalChart({
     });
 
     if (timeframe === "ALL") {
+      // First pass: identify how many sessions occur per day
+      const dateCountMap = new Map<string, number>();
+      sorted.forEach((s) => {
+        const dObj = s.createdAt ? new Date(s.createdAt) : new Date();
+        const dLabel = dObj.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        });
+        dateCountMap.set(dLabel, (dateCountMap.get(dLabel) || 0) + 1);
+      });
+
+      const dateOccurrenceMap = new Map<string, number>();
+
       return sorted.map((s, idx): ChartPoint => {
         const avg = Number(s.avg) || 0;
         const score = Number(s.score) || 0;
@@ -185,16 +209,23 @@ export default function AnalyticsGoalChart({
         if (activeMetric === "arrows") val = arrows;
 
         const dateObj = s.createdAt ? new Date(s.createdAt) : new Date();
-        const formattedDate = dateObj.toLocaleDateString(undefined, {
+        const rawDate = dateObj.toLocaleDateString(undefined, {
           month: "short",
           day: "numeric",
         });
+
+        const totalOnDay = dateCountMap.get(rawDate) || 1;
+        const currentOccur = (dateOccurrenceMap.get(rawDate) || 0) + 1;
+        dateOccurrenceMap.set(rawDate, currentOccur);
+
+        // If multiple sessions occurred on the same day, display distinct labels: e.g. "9 Sept (R1)", "9 Sept (R2)"
+        const displayDate = totalOnDay > 1 ? `${rawDate} (R${currentOccur})` : rawDate;
 
         return {
           idx: idx + 1,
           id: s._id || s.id || `session-${idx}`,
           name: s.name || `Session ${idx + 1}`,
-          date: formattedDate,
+          date: displayDate,
           fullDate: dateObj.toLocaleDateString(undefined, {
             weekday: "short",
             year: "numeric",
@@ -395,6 +426,7 @@ export default function AnalyticsGoalChart({
         deadline: formData.deadline,
         progress: progressNum,
         completed: progressNum >= 100,
+        metricType: formData.metricType,
       };
 
       const newGoal = await apiPost<Goal>("/api/goals", payload);
@@ -412,6 +444,98 @@ export default function AnalyticsGoalChart({
   };
 
   const currentMetricCfg = METRIC_CONFIG[activeMetric];
+
+  // Dynamic Y-Axis Domain so line sits naturally in viewport
+  const yDomain = useMemo<[number | "auto", number | "auto"]>(() => {
+    if (chartData.length === 0) return currentMetricCfg.domain;
+    const values = chartData.map((d) => d.value);
+    if (goalTargetValue !== null && goalTargetValue > 0) {
+      values.push(goalTargetValue);
+    }
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    if (activeMetric === "avg") {
+      const lower = Math.max(0, Math.floor((min - 0.5) * 2) / 2);
+      const upper = Math.min(10.5, Math.ceil((max + 0.5) * 2) / 2);
+      return [lower, upper];
+    }
+    if (activeMetric === "tens") {
+      return [0, 100];
+    }
+    if (activeMetric === "score") {
+      const lower = Math.max(0, Math.floor((min - 20) / 25) * 25);
+      const upper = Math.ceil((max + 20) / 25) * 25;
+      return [lower, upper];
+    }
+    return [0, "auto"];
+  }, [chartData, activeMetric, goalTargetValue, currentMetricCfg]);
+
+interface TooltipPayloadItem {
+  payload?: ChartPoint;
+  value?: number | string | ReadonlyArray<number | string>;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: ReadonlyArray<TooltipPayloadItem>;
+}
+
+  // Shared Rich Tooltip
+  const renderTooltip = ({ active, payload }: CustomTooltipProps) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0];
+    const data = item.payload;
+    if (!data) return null;
+    const currentVal = data.value;
+    const diffFromGoal =
+      goalTargetValue !== null ? Number((currentVal - goalTargetValue).toFixed(2)) : null;
+
+    return (
+      <div className="bg-slate-900 text-white p-3.5 rounded-xl shadow-2xl border border-slate-800 text-xs min-w-[210px] animate-in fade-in-50 zoom-in-95 duration-150">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+          <span className="font-bold text-slate-200">{data.name}</span>
+          <span className="text-[10px] text-slate-400 font-mono">{data.fullDate}</span>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400">{currentMetricCfg.label}:</span>
+            <span className="font-bold font-mono text-accent text-sm">
+              {data.value} {currentMetricCfg.unit}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-400">Total Score:</span>
+            <span className="font-mono text-slate-200">
+              {data.score} ({data.arrows} arrows)
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-400">10s + Xs:</span>
+            <span className="font-mono text-amber-400">
+              {data.tens} ({data.tenRate}%)
+            </span>
+          </div>
+
+          {diffFromGoal !== null && (
+            <div className="pt-2 mt-1 border-t border-slate-800 flex items-center justify-between text-[11px]">
+              <span className="text-slate-400">Vs Active Goal:</span>
+              <span
+                className={`font-bold font-mono ${
+                  diffFromGoal >= 0 ? "text-emerald-400" : "text-amber-400"
+                }`}
+              >
+                {diffFromGoal >= 0 ? `+${diffFromGoal} 🎯` : `${diffFromGoal} ${currentMetricCfg.unit}`}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Card className="p-5 sm:p-7 relative overflow-hidden">
@@ -437,13 +561,43 @@ export default function AnalyticsGoalChart({
 
         {/* Action Controls & Filters */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Chart Style Switcher: Line (Default) vs Area */}
+          <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-[11px] font-semibold">
+            <button
+              type="button"
+              onClick={() => setChartType("line")}
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                chartType === "line"
+                  ? "bg-white text-slate-900 shadow-sm font-bold"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+              title="Line Chart (Clean trend with clear data dots)"
+            >
+              <Activity className="w-3.5 h-3.5 text-accent" />
+              <span>Line</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartType("area")}
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                chartType === "area"
+                  ? "bg-white text-slate-900 shadow-sm font-bold"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+              title="Area Chart (Gradient filled view)"
+            >
+              <span>Area</span>
+            </button>
+          </div>
+
           {/* Timeframe selector */}
           <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200/80 text-[11px] font-semibold">
             {(["ALL", "D", "W", "M"] as TimeframeType[]).map((tf) => (
               <button
                 key={tf}
+                type="button"
                 onClick={() => setTimeframe(tf)}
-                className={`px-3 py-1 rounded-lg transition-all ${
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                   timeframe === tf
                     ? "bg-white text-slate-900 shadow-sm font-bold"
                     : "text-slate-500 hover:text-slate-800"
@@ -459,8 +613,9 @@ export default function AnalyticsGoalChart({
             {(["avg", "score", "tens", "arrows"] as MetricType[]).map((m) => (
               <button
                 key={m}
+                type="button"
                 onClick={() => setActiveMetric(m)}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                   activeMetric === m
                     ? "bg-accent text-white shadow-sm font-bold"
                     : "text-slate-500 hover:text-slate-800"
@@ -479,8 +634,9 @@ export default function AnalyticsGoalChart({
 
           {/* Add Goal Button */}
           <button
+            type="button"
             onClick={handleOpenAddGoal}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[12px] font-semibold transition-all shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[12px] font-semibold transition-all shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-accent" />
             <span>Add Goal</span>
@@ -530,10 +686,11 @@ export default function AnalyticsGoalChart({
               <Target className="w-3.5 h-3.5 text-amber-500" />
               Active Goal
             </span>
-            {selectedGoal && (
+            {selectedGoal ? (
               <button
+                type="button"
                 onClick={() => setShowGoalLine(!showGoalLine)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
                 title={showGoalLine ? "Hide goal line" : "Show goal line"}
               >
                 {showGoalLine ? (
@@ -542,20 +699,38 @@ export default function AnalyticsGoalChart({
                   <EyeOff className="w-3.5 h-3.5" />
                 )}
               </button>
+            ) : (
+              <span className="text-[10px] font-mono text-slate-400 font-medium">None</span>
             )}
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-amber-600 font-mono tracking-tight">
-              {selectedGoal ? selectedGoal.target : "No Goal"}
-            </span>
-            {selectedGoal && (
-              <span className="text-[11px] font-medium text-slate-500 truncate max-w-[90px]">
-                {selectedGoal.deadline ? `by ${selectedGoal.deadline}` : ""}
+            {selectedGoal ? (
+              <>
+                <span className="text-2xl sm:text-3xl font-black text-amber-600 font-mono tracking-tight">
+                  {selectedGoal.target}
+                </span>
+                <span className="text-[11px] font-medium text-slate-500 truncate max-w-[90px]">
+                  {selectedGoal.deadline ? `by ${selectedGoal.deadline}` : ""}
+                </span>
+              </>
+            ) : (
+              <span className="text-xl sm:text-2xl font-bold text-slate-400 font-mono tracking-tight">
+                No Goal Set
               </span>
             )}
           </div>
           <div className="mt-1 text-[11px] text-slate-500 truncate">
-            {selectedGoal ? selectedGoal.title : "Click '+ Add Goal' above to set one"}
+            {selectedGoal ? (
+              selectedGoal.title
+            ) : (
+              <button
+                type="button"
+                onClick={handleOpenAddGoal}
+                className="text-accent hover:underline font-semibold cursor-pointer"
+              >
+                + Set target for {currentMetricCfg.label}
+              </button>
+            )}
           </div>
         </div>
 
@@ -566,7 +741,7 @@ export default function AnalyticsGoalChart({
               <Zap className="w-3.5 h-3.5 text-emerald-500" />
               Goal Status
             </span>
-            {stats.gapToGoal !== null && (
+            {selectedGoal && stats.gapToGoal !== null ? (
               <span
                 className={`font-mono text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
                   stats.gapToGoal >= 0
@@ -576,10 +751,12 @@ export default function AnalyticsGoalChart({
               >
                 {stats.gapToGoal >= 0 ? "TARGET MET" : "IN PROGRESS"}
               </span>
+            ) : (
+              <span className="text-[10px] font-mono text-slate-400">PENDING</span>
             )}
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            {stats.gapToGoal !== null ? (
+            {selectedGoal && stats.gapToGoal !== null ? (
               <>
                 <span
                   className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${
@@ -604,7 +781,7 @@ export default function AnalyticsGoalChart({
                   ? "bg-emerald-500"
                   : "bg-gradient-to-r from-amber-400 to-accent"
               }`}
-              style={{ width: `${Math.min(100, stats.goalPercent)}%` }}
+              style={{ width: `${selectedGoal ? Math.min(100, stats.goalPercent) : 0}%` }}
             />
           </div>
         </div>
@@ -649,156 +826,208 @@ export default function AnalyticsGoalChart({
       ) : (
         <div className="w-full h-[340px] sm:h-[380px] mt-2 relative">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={chartData}
-              margin={{ top: 20, right: 16, left: -10, bottom: 10 }}
-            >
-              <defs>
-                <linearGradient id="analyticsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#E53935" stopOpacity={0.35} />
-                  <stop offset="50%" stopColor="#E53935" stopOpacity={0.12} />
-                  <stop offset="100%" stopColor="#E53935" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-
-              <CartesianGrid
-                stroke="rgba(0, 0, 0, 0.05)"
-                strokeDasharray="4 4"
-                vertical={false}
-              />
-
-              <XAxis
-                dataKey="date"
-                axisLine={{ stroke: "rgba(0,0,0,0.1)" }}
-                tickLine={false}
-                tick={{
-                  fill: "rgba(0,0,0,0.45)",
-                  fontSize: 10,
-                  fontFamily: "var(--font-mono), monospace",
-                }}
-              />
-
-              <YAxis
-                domain={currentMetricCfg.domain}
-                axisLine={false}
-                tickLine={false}
-                tick={{
-                  fill: "rgba(0,0,0,0.45)",
-                  fontSize: 10,
-                  fontFamily: "var(--font-mono), monospace",
-                }}
-                unit={activeMetric === "tens" ? "%" : ""}
-              />
-
-              {/* Goal Target Benchmark Line */}
-              {showGoalLine && goalTargetValue !== null && (
-                <ReferenceLine
-                  y={goalTargetValue}
-                  stroke="#F59E0B"
-                  strokeDasharray="5 4"
-                  strokeWidth={2}
-                  label={{
-                    value: `🎯 Target Goal: ${selectedGoal?.target || goalTargetValue}`,
-                    position: "insideTopRight",
-                    fill: "#B45309",
-                    fontSize: 11,
-                    fontWeight: 700,
-                  }}
-                />
-              )}
-
-              {/* Overall Average Reference Line */}
-              {showAvgLine && stats.overallAvg > 0 && (
-                <ReferenceLine
-                  y={stats.overallAvg}
-                  stroke="rgba(15, 23, 42, 0.3)"
+            {chartType === "line" ? (
+              <LineChart
+                data={chartData}
+                margin={{ top: 20, right: 24, left: -6, bottom: 10 }}
+              >
+                <CartesianGrid
+                  stroke="rgba(0, 0, 0, 0.06)"
                   strokeDasharray="3 3"
-                  strokeWidth={1.5}
-                  label={{
-                    value: `Avg: ${stats.overallAvg}`,
-                    position: "insideBottomLeft",
-                    fill: "rgba(15, 23, 42, 0.5)",
-                    fontSize: 10,
-                    fontFamily: "monospace",
+                  vertical={false}
+                />
+
+                <XAxis
+                  dataKey="date"
+                  axisLine={{ stroke: "rgba(0,0,0,0.15)" }}
+                  tickLine={false}
+                  tick={{
+                    fill: "#64748B",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono), monospace",
                   }}
                 />
-              )}
 
-              {/* Custom Tooltip */}
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (!active || !payload || !payload.length) return null;
-                  const data = payload[0].payload;
-                  const currentVal = data.value;
-                  const diffFromGoal =
-                    goalTargetValue !== null ? Number((currentVal - goalTargetValue).toFixed(2)) : null;
+                <YAxis
+                  domain={yDomain}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#64748B",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono), monospace",
+                  }}
+                  unit={activeMetric === "tens" ? "%" : ""}
+                />
 
-                  return (
-                    <div className="bg-slate-900 text-white p-3.5 rounded-xl shadow-2xl border border-slate-800 text-xs min-w-[200px] animate-in fade-in-50 zoom-in-95 duration-150">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
-                        <span className="font-bold text-slate-200">{data.name}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{data.fullDate}</span>
-                      </div>
+                {/* Goal Target Benchmark Line */}
+                {showGoalLine && goalTargetValue !== null && (
+                  <ReferenceLine
+                    y={goalTargetValue}
+                    stroke="#F59E0B"
+                    strokeDasharray="5 4"
+                    strokeWidth={2}
+                    label={{
+                      value: `🎯 Goal: ${selectedGoal?.target || goalTargetValue}`,
+                      position: "insideTopRight",
+                      fill: "#B45309",
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
+                  />
+                )}
 
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400">{currentMetricCfg.label}:</span>
-                          <span className="font-bold font-mono text-accent text-sm">
-                            {data.value} {currentMetricCfg.unit}
-                          </span>
-                        </div>
+                {/* Overall Average Reference Line */}
+                {showAvgLine && stats.overallAvg > 0 && (
+                  <ReferenceLine
+                    y={stats.overallAvg}
+                    stroke="rgba(15, 23, 42, 0.3)"
+                    strokeDasharray="3 3"
+                    strokeWidth={1.5}
+                    label={{
+                      value: `Avg: ${stats.overallAvg}`,
+                      position: "insideBottomLeft",
+                      fill: "rgba(15, 23, 42, 0.5)",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                  />
+                )}
 
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-400">Total Score:</span>
-                          <span className="font-mono text-slate-200">
-                            {data.score} ({data.arrows} arrows)
-                          </span>
-                        </div>
+                <Tooltip content={renderTooltip} />
 
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-400">10s + Xs:</span>
-                          <span className="font-mono text-amber-400">
-                            {data.tens} ({data.tenRate}%)
-                          </span>
-                        </div>
+                {/* Main Progression Line with clear crisp dots */}
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  name={currentMetricCfg.label}
+                  stroke="#E53935"
+                  strokeWidth={3.5}
+                  dot={{
+                    r: 5.5,
+                    fill: "#FFFFFF",
+                    stroke: "#E53935",
+                    strokeWidth: 2.5,
+                  }}
+                  activeDot={{
+                    r: 8.5,
+                    fill: "#E53935",
+                    stroke: "#FFFFFF",
+                    strokeWidth: 3,
+                    className: "drop-shadow-[0_2px_10px_rgba(229,57,53,0.5)]",
+                  }}
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                />
+              </LineChart>
+            ) : (
+              <AreaChart
+                data={chartData}
+                margin={{ top: 20, right: 24, left: -6, bottom: 10 }}
+              >
+                <defs>
+                  <linearGradient id="analyticsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#E53935" stopOpacity={0.35} />
+                    <stop offset="50%" stopColor="#E53935" stopOpacity={0.12} />
+                    <stop offset="100%" stopColor="#E53935" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
 
-                        {diffFromGoal !== null && (
-                          <div className="pt-2 mt-1 border-t border-slate-800 flex items-center justify-between text-[11px]">
-                            <span className="text-slate-400">Vs Active Goal:</span>
-                            <span
-                              className={`font-bold font-mono ${
-                                diffFromGoal >= 0 ? "text-emerald-400" : "text-amber-400"
-                              }`}
-                            >
-                              {diffFromGoal >= 0 ? `+${diffFromGoal} 🎯` : `${diffFromGoal} pts`}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }}
-              />
+                <CartesianGrid
+                  stroke="rgba(0, 0, 0, 0.06)"
+                  strokeDasharray="3 3"
+                  vertical={false}
+                />
 
-              {/* Main Area Plot with Accent Curve */}
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#E53935"
-                strokeWidth={3}
-                fillOpacity={1}
-                fill="url(#analyticsGradient)"
-                animationDuration={1200}
-                animationEasing="ease-out"
-                activeDot={{
-                  r: 6,
-                  fill: "#FFFFFF",
-                  stroke: "#E53935",
-                  strokeWidth: 3,
-                  className: "drop-shadow-[0_2px_8px_rgba(229,57,53,0.5)]",
-                }}
-              />
-            </AreaChart>
+                <XAxis
+                  dataKey="date"
+                  axisLine={{ stroke: "rgba(0,0,0,0.15)" }}
+                  tickLine={false}
+                  tick={{
+                    fill: "#64748B",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono), monospace",
+                  }}
+                />
+
+                <YAxis
+                  domain={yDomain}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#64748B",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono), monospace",
+                  }}
+                  unit={activeMetric === "tens" ? "%" : ""}
+                />
+
+                {/* Goal Target Benchmark Line */}
+                {showGoalLine && goalTargetValue !== null && (
+                  <ReferenceLine
+                    y={goalTargetValue}
+                    stroke="#F59E0B"
+                    strokeDasharray="5 4"
+                    strokeWidth={2}
+                    label={{
+                      value: `🎯 Goal: ${selectedGoal?.target || goalTargetValue}`,
+                      position: "insideTopRight",
+                      fill: "#B45309",
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
+                  />
+                )}
+
+                {/* Overall Average Reference Line */}
+                {showAvgLine && stats.overallAvg > 0 && (
+                  <ReferenceLine
+                    y={stats.overallAvg}
+                    stroke="rgba(15, 23, 42, 0.3)"
+                    strokeDasharray="3 3"
+                    strokeWidth={1.5}
+                    label={{
+                      value: `Avg: ${stats.overallAvg}`,
+                      position: "insideBottomLeft",
+                      fill: "rgba(15, 23, 42, 0.5)",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                  />
+                )}
+
+                <Tooltip content={renderTooltip} />
+
+                {/* Main Area Plot with Accent Curve */}
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#E53935"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#analyticsGradient)"
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                  dot={{
+                    r: 4.5,
+                    fill: "#FFFFFF",
+                    stroke: "#E53935",
+                    strokeWidth: 2,
+                  }}
+                  activeDot={{
+                    r: 8,
+                    fill: "#FFFFFF",
+                    stroke: "#E53935",
+                    strokeWidth: 3,
+                    className: "drop-shadow-[0_2px_8px_rgba(229,57,53,0.5)]",
+                  }}
+                />
+              </AreaChart>
+            )}
           </ResponsiveContainer>
         </div>
       )}
@@ -822,11 +1051,23 @@ export default function AnalyticsGoalChart({
               return (
                 <button
                   key={gid}
+                  type="button"
                   onClick={() => {
                     setActiveGoalId(gid);
                     setShowGoalLine(true);
+                    // Switch metric if needed
+                    const targetNum = parseFloat(g.target.replace(/[^0-9.]/g, ""));
+                    if (g.metricType) {
+                      setActiveMetric(g.metricType);
+                    } else if (targetNum <= 10.5 && targetNum >= 6) {
+                      setActiveMetric("avg");
+                    } else if (targetNum > 50) {
+                      setActiveMetric("score");
+                    } else if (g.target.includes("%")) {
+                      setActiveMetric("tens");
+                    }
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-all cursor-pointer ${
                     isSelected
                       ? "bg-amber-500/10 border-amber-500/40 text-amber-800 font-bold shadow-xs"
                       : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
