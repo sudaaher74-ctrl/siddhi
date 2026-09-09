@@ -979,40 +979,136 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
     doc.text(`Note: "${params.sessionNote.trim().slice(0, 48)}"`, margin + 2, subSummaryY + 24);
   }
 
-  // Right Column: Performance Insight & Technical Analysis Card
-  doc.setFillColor(248, 250, 252);
+  // Right Column: Performance Line Chart (50 to 300 on X-axis, Round 1 to Round 6 on Y-axis)
+  doc.setFillColor(255, 255, 255);
   doc.setDrawColor(203, 213, 225);
   doc.setLineWidth(0.9);
   doc.roundedRect(rightColX, y, rightColWidth, summaryBoxHeight, 5, 5, "FD");
 
   // Top Red Accent Line
   doc.setFillColor(229, 57, 53);
-  doc.roundedRect(rightColX + 4, y, rightColWidth - 8, 3, 1, 1, "F");
+  doc.roundedRect(rightColX + 4, y, rightColWidth - 8, 2.5, 1, 1, "F");
 
+  // Header Title
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(229, 57, 53);
-  doc.text("PERFORMANCE ANALYSIS & TECHNICAL INSIGHT", rightColX + 12, y + 18);
-
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(51, 65, 85);
-  const insightLines = doc.splitTextToSize(
-    params.coachInsight || "Consistent arrow grouping and solid follow-through observed across round ends.",
-    rightColWidth - 24
-  );
-  doc.text(insightLines.slice(0, 4), rightColX + 12, y + 34);
+  doc.text("ROUND PERFORMANCE PROGRESSION", rightColX + 10, y + 13);
 
-  // Bottom stats row in Insight Box
-  doc.setFillColor(241, 245, 249);
-  doc.roundedRect(rightColX + 8, y + summaryBoxHeight - 26, rightColWidth - 16, 20, 3, 3, "F");
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text("Score Curve (50 – 300)", rightColX + rightColWidth - 10, y + 13, { align: "right" });
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text(`Target Accuracy: ${params.scorePercentage}%`, rightColX + 14, y + summaryBoxHeight - 13);
-  doc.setTextColor(5, 150, 105);
-  doc.text(`Average: ${params.averagePerArrow} pts/arr`, rightColX + rightColWidth - 88, y + summaryBoxHeight - 13);
+  // Chart Coordinates
+  const chartLeft = rightColX + 46;
+  const chartRight = rightColX + rightColWidth - 14;
+  const chartW = chartRight - chartLeft;
+  const chartTop = y + 23;
+  const chartBottom = y + summaryBoxHeight - 17;
+  const chartH = chartBottom - chartTop;
+
+  // X-axis: 50 to 300
+  const xMin = 50;
+  const xMax = 300;
+  const getX = (scoreVal: number) => {
+    const clamped = Math.max(xMin, Math.min(xMax, scoreVal));
+    return chartLeft + ((clamped - xMin) / (xMax - xMin)) * chartW;
+  };
+
+  // Vertical Grid Lines & Ticks (50, 100, 150, 200, 250, 300)
+  const xTicks = [50, 100, 150, 200, 250, 300];
+  xTicks.forEach((tickVal) => {
+    const tX = getX(tickVal);
+    doc.setDrawColor(241, 245, 249);
+    doc.setLineWidth(0.5);
+    doc.line(tX, chartTop, tX, chartBottom);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+    doc.setTextColor(148, 163, 184);
+    doc.text(String(tickVal), tX, chartBottom + 7, { align: "center" });
+  });
+
+  // X-axis baseline
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.7);
+  doc.line(chartLeft, chartBottom, chartRight, chartBottom);
+
+  // Y-axis: Round 1 (bottom) to Round 6 (top)
+  const getY = (roundIdx: number) => {
+    return chartBottom - (roundIdx / 5) * chartH;
+  };
+
+  // Horizontal Grid Lines & Y-axis labels
+  for (let rIdx = 0; rIdx < 6; rIdx++) {
+    const rY = getY(rIdx);
+    doc.setDrawColor(241, 245, 249);
+    doc.setLineWidth(0.5);
+    doc.line(chartLeft, rY, chartRight, rY);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Round ${rIdx + 1}`, chartLeft - 6, rY + 2.2, { align: "right" });
+  }
+
+  // Calculate Data Points (Running Totals for Ends 1 to 6)
+  const chartPoints: Array<{ x: number; y: number; score: number }> = [];
+  let runningSum = 0;
+  for (let rIdx = 0; rIdx < 6; rIdx++) {
+    const endTotal = params.endTotals?.[rIdx] ?? 0;
+    runningSum += endTotal;
+    const currentRunning = params.runningTotals?.[rIdx] ?? runningSum;
+    chartPoints.push({
+      x: getX(currentRunning),
+      y: getY(rIdx),
+      score: currentRunning,
+    });
+  }
+
+  // Draw Connecting Performance Line
+  doc.setDrawColor(229, 57, 53); // target red / vibrant accent
+  doc.setLineWidth(1.6);
+  for (let pIdx = 0; pIdx < chartPoints.length - 1; pIdx++) {
+    doc.line(
+      chartPoints[pIdx].x,
+      chartPoints[pIdx].y,
+      chartPoints[pIdx + 1].x,
+      chartPoints[pIdx + 1].y
+    );
+  }
+
+  // Draw Data Points & Labels
+  chartPoints.forEach((pt) => {
+    // Outer halo
+    doc.setFillColor(254, 202, 202);
+    doc.circle(pt.x, pt.y, 3.2, "F");
+
+    // Inner dot
+    doc.setFillColor(229, 57, 53);
+    doc.circle(pt.x, pt.y, 1.8, "F");
+
+    // Center white pin
+    doc.setFillColor(255, 255, 255);
+    doc.circle(pt.x, pt.y, 0.8, "F");
+
+    // Score label
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6);
+    doc.setTextColor(15, 23, 42);
+
+    const isNearRight = pt.x > chartRight - 22;
+    const labelX = isNearRight ? pt.x - 4.5 : pt.x + 4.5;
+    const textAlign = isNearRight ? "right" : "left";
+    doc.text(String(pt.score), labelX, pt.y + 2, { align: textAlign });
+  });
+
+  // Bottom Axis Label
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(5.5);
+  doc.setTextColor(148, 163, 184);
+  doc.text("Cumulative Score (50 – 300 pts)", chartLeft + chartW / 2, chartBottom + 13, { align: "center" });
 
   y += summaryBoxHeight + 12;
 

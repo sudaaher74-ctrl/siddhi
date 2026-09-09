@@ -1110,29 +1110,125 @@ export default function ScorecardView({
 
         {/* Coach Insight & Session Notes */}
         <div className="flex flex-col gap-4 print:gap-1.5">
-          <Card className="p-5 print:p-2 bg-gradient-to-br from-accent/5 via-panel to-amber-500/5 border border-accent/15 shadow-xs print:shadow-none">
-            <div className="flex items-start gap-3.5 print:gap-2">
-              <div className="p-2.5 print:p-1 rounded-xl bg-accent/10 text-accent flex-shrink-0 mt-0.5">
-                <Flame className="w-5 h-5 print:w-3.5 print:h-3.5 stroke-[2.5]" />
+          {/* Performance Progression Line Chart (50-300 X-axis, Round 1-6 Y-axis) */}
+          <Card noPadding className="bg-white border border-slate-200/80 shadow-xs overflow-hidden print:border print:border-slate-300 print:shadow-none">
+            <div className="p-4 print:py-1.5 print:px-2.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-accent print:w-3 print:h-3" />
+                <h3 className="text-sm print:text-xs font-bold text-slate-900">
+                  Performance Progression
+                </h3>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] print:text-[9px] font-extrabold tracking-wider text-accent uppercase">
-                    Performance Insight
-                  </span>
-                  <span className="text-[10px] print:text-[8px] px-2 py-0.5 rounded bg-accent/10 font-bold text-accent">
-                    {selectedBow}
-                  </span>
-                </div>
-                <p className="text-sm print:text-[9px] font-semibold text-slate-800 mt-1.5 print:mt-0.5 leading-relaxed print:leading-tight">
-                  {currentBowConfig.getCoachInsight(round1Total, tensDisplay, xsDisplay)}
-                </p>
-                <div className="mt-3 pt-3 print:mt-1.5 print:pt-1 border-t border-black/5 text-xs print:text-[8.5px] text-slate-500 flex items-center justify-between">
-                  <span>Accuracy consistency:</span>
-                  <span className="font-bold text-slate-700">
-                    {scorePercentage}% on target
-                  </span>
-                </div>
+              <span className="text-[11px] print:text-[8.5px] font-semibold text-slate-500">
+                Score Curve (50 – 300)
+              </span>
+            </div>
+
+            <div className="p-4 print:p-2">
+              {/* Responsive SVG Line Chart */}
+              <div className="relative w-full h-[140px] print:h-[95px]">
+                <svg viewBox="0 0 340 140" className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="scoreLineGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#f97316" />
+                      <stop offset="100%" stopColor="#ef4444" />
+                    </linearGradient>
+                    <linearGradient id="scoreAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ef4444" stopOpacity="0.18" />
+                      <stop offset="100%" stopColor="#ef4444" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Vertical grid lines & ticks: 50, 100, 150, 200, 250, 300 */}
+                  {[50, 100, 150, 200, 250, 300].map((tick) => {
+                    const x = 55 + ((tick - 50) / 250) * 265;
+                    return (
+                      <g key={tick}>
+                        <line x1={x} y1="12" x2={x} y2="114" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3,3" />
+                        <text x={x} y="128" fontSize="8" fill="#94a3b8" textAnchor="middle" fontWeight="500">
+                          {tick}
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  {/* Horizontal grid lines & Y-axis labels: Round 1 (bottom) to Round 6 (top) */}
+                  {[0, 1, 2, 3, 4, 5].map((idx) => {
+                    const y = 114 - (idx / 5) * 102;
+                    return (
+                      <g key={idx}>
+                        <line x1="55" y1={y} x2="320" y2={y} stroke="#f1f5f9" strokeWidth="1" />
+                        <text x="48" y={y + 3} fontSize="8.5" fill="#64748b" textAnchor="end" fontWeight="bold">
+                          Round {idx + 1}
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  {/* Baseline axes */}
+                  <line x1="55" y1="114" x2="320" y2="114" stroke="#e2e8f0" strokeWidth="1.2" />
+                  <line x1="55" y1="12" x2="55" y2="114" stroke="#e2e8f0" strokeWidth="1.2" />
+
+                  {/* Data Points calculation */}
+                  {(() => {
+                    const points = [0, 1, 2, 3, 4, 5].map((idx) => {
+                      const running = runningTotals[idx] ?? (endTotals.slice(0, idx + 1).reduce((a, b) => a + b, 0));
+                      const clamped = Math.max(50, Math.min(300, running));
+                      const x = 55 + ((clamped - 50) / 250) * 265;
+                      const y = 114 - (idx / 5) * 102;
+                      return { x, y, score: running, delta: endTotals[idx] ?? 0 };
+                    });
+
+                    const polylinePoints = points.map(p => `${p.x},${p.y}`).join(" ");
+                    const areaPoints = `55,114 ${polylinePoints} 55,${points[points.length - 1].y}`;
+
+                    return (
+                      <>
+                        {/* Area gradient under line */}
+                        <polygon points={areaPoints} fill="url(#scoreAreaGrad)" />
+
+                        {/* Connecting Line */}
+                        <polyline
+                          fill="none"
+                          stroke="url(#scoreLineGrad)"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          points={polylinePoints}
+                        />
+
+                        {/* Point Circles & Labels */}
+                        {points.map((pt, pIdx) => {
+                          const isNearRight = pt.x > 285;
+                          return (
+                            <g key={pIdx}>
+                              <circle cx={pt.x} cy={pt.y} r="5" fill="#fee2e2" />
+                              <circle cx={pt.x} cy={pt.y} r="3" fill="#ef4444" />
+                              <circle cx={pt.x} cy={pt.y} r="1.2" fill="#ffffff" />
+                              <text
+                                x={isNearRight ? pt.x - 7 : pt.x + 7}
+                                y={pt.y + 3}
+                                fontSize="8.5"
+                                fontWeight="bold"
+                                fill="#0f172a"
+                                textAnchor={isNearRight ? "end" : "start"}
+                              >
+                                {pt.score}
+                              </text>
+                            </g>
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
+                </svg>
+              </div>
+
+              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] print:text-[8px] text-slate-500">
+                <span>Cumulative progression: <strong className="text-slate-700">50 to 300 pts</strong></span>
+                <span className="font-bold text-emerald-600">
+                  Total: {round1Total} / {maxPossibleScore}
+                </span>
               </div>
             </div>
           </Card>
