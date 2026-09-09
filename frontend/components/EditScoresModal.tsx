@@ -22,6 +22,49 @@ const getArrowPoints = (val: string): number => {
   return isNaN(num) ? 0 : num;
 };
 
+const getArrowStyle = (val: string, isSelected: boolean) => {
+  let style = "";
+  if (val === "X" || val === "10" || val === "9") {
+    style = "bg-[#FEF08A] text-[#854D0E] border border-amber-400/80 hover:bg-[#FDE047]";
+  } else if (val === "8" || val === "7") {
+    style = "bg-[#FECACA] text-[#991B1B] border border-rose-300/80 hover:bg-[#FCA5A5]";
+  } else if (val === "6" || val === "5") {
+    style = "bg-[#BAE6FD] text-[#075985] border border-sky-300/80 hover:bg-[#7DD3FC]";
+  } else if (val === "4" || val === "3") {
+    style = "bg-[#334155] text-white border border-slate-700 hover:bg-[#1E293B]";
+  } else if (val === "2" || val === "1") {
+    style = "bg-white text-slate-900 border border-slate-300 hover:bg-slate-50";
+  } else {
+    // M or Miss / 0
+    style = "bg-slate-200 text-slate-600 border border-slate-300 hover:bg-slate-300";
+  }
+
+  if (isSelected) {
+    return `${style} ring-2 ring-amber-500 ring-offset-1 scale-105 shadow-md font-black z-10`;
+  }
+  return style;
+};
+
+const getKeypadStyle = (val: string) => {
+  if (val === "X" || val === "10" || val === "9") {
+    return "bg-[#FEF08A] hover:bg-[#FDE047] text-[#854D0E] border-amber-400";
+  }
+  if (val === "8" || val === "7") {
+    return "bg-[#FECACA] hover:bg-[#FCA5A5] text-[#991B1B] border-rose-300";
+  }
+  if (val === "6" || val === "5") {
+    return "bg-[#BAE6FD] hover:bg-[#7DD3FC] text-[#075985] border-sky-300";
+  }
+  if (val === "4" || val === "3") {
+    return "bg-[#334155] hover:bg-[#1E293B] text-white border-slate-700";
+  }
+  if (val === "2" || val === "1") {
+    return "bg-white hover:bg-slate-50 text-slate-900 border-slate-300";
+  }
+  // M (miss)
+  return "bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300";
+};
+
 export default function EditScoresModal({
   session,
   initialEnds,
@@ -179,17 +222,7 @@ export default function EditScoresModal({
                           <button
                             type="button"
                             onClick={() => setSelectedCell({ end: eIdx, arrow: aIdx })}
-                            className={`w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center mx-auto transition-all ${
-                              isSelected
-                                ? "bg-amber-500 text-white ring-2 ring-amber-400 ring-offset-1 scale-105"
-                                : val === "X" || val === "10"
-                                ? "bg-amber-100 text-amber-900 hover:bg-amber-200"
-                                : val === "9" || val === "8"
-                                ? "bg-red-50 text-red-900 hover:bg-red-100"
-                                : val === "7" || val === "6"
-                                ? "bg-sky-50 text-sky-900 hover:bg-sky-100"
-                                : "bg-slate-100 text-slate-800 hover:bg-slate-200"
-                            }`}
+                            className={`w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center mx-auto transition-all ${getArrowStyle(val, isSelected)}`}
                           >
                             {val}
                           </button>
@@ -220,19 +253,7 @@ export default function EditScoresModal({
                   key={val}
                   type="button"
                   onClick={() => handleArrowChange(val)}
-                  className={`h-11 rounded-xl font-bold text-sm border transition-all active:scale-95 shadow-sm ${
-                    val === "X" || val === "10"
-                      ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300"
-                      : val === "9"
-                      ? "bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200"
-                      : val === "8" || val === "7"
-                      ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                      : val === "6" || val === "5"
-                      ? "bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200"
-                      : val === "4" || val === "3"
-                      ? "bg-slate-700 hover:bg-slate-800 text-white border-slate-700"
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
-                  }`}
+                  className={`h-11 rounded-xl font-bold text-sm border transition-all active:scale-95 shadow-sm ${getKeypadStyle(val)}`}
                 >
                   {val}
                 </button>

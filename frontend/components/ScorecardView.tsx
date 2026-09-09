@@ -127,22 +127,22 @@ const parseArrowPoints = (val: string): number => {
 
 // Target Face color badge styles matching ArcherX design tokens
 const getArrowBadgeClass = (score: string) => {
-  if (score === "X" || score === "10") {
-    return "bg-[#FFD700]/20 text-[#B45309] border border-[#FFD700]/50 font-bold";
-  }
-  if (score === "9") {
-    return "bg-[#FFD700]/15 text-[#B45309] border border-[#FFD700]/30 font-semibold";
+  if (score === "X" || score === "10" || score === "9") {
+    return "bg-[#FEF08A] text-[#854D0E] border border-amber-400 font-semibold";
   }
   if (score === "8" || score === "7") {
-    return "bg-[#E53935]/15 text-[#C62828] border border-[#E53935]/30 font-semibold";
+    return "bg-[#FECACA] text-[#991B1B] border border-rose-300 font-semibold";
   }
   if (score === "6" || score === "5") {
-    return "bg-[#4FC3F7]/20 text-[#0284C7] border border-[#4FC3F7]/30 font-semibold";
+    return "bg-[#BAE6FD] text-[#075985] border border-sky-300 font-semibold";
   }
   if (score === "4" || score === "3") {
-    return "bg-slate-800 text-white font-semibold";
+    return "bg-[#334155] text-white border border-slate-700 font-semibold";
   }
-  return "bg-slate-100 text-slate-700 border border-slate-200 font-semibold";
+  if (score === "2" || score === "1") {
+    return "bg-white text-slate-900 border border-slate-300 font-semibold";
+  }
+  return "bg-slate-200 text-slate-600 border border-slate-300 font-semibold";
 };
 
 export default function ScorecardView({

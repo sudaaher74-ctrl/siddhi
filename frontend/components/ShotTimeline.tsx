@@ -16,20 +16,32 @@ export default function ShotTimeline({ sessions }: ShotTimelineProps) {
     try {
       const endsData = JSON.parse(sessionWithArrows.arrowData);
       totalEnds = endsData.length;
-      endsData.forEach((end: Array<{ score: string }>) => {
+      endsData.forEach((end: Array<{ score: string } | string>) => {
         let endScore = 0;
-        end.forEach(a => {
-          const val = a.score;
-          const numVal = val === 'X' ? 10 : val === 'M' ? 0 : parseInt(val, 10);
-          endScore += numVal;
-          
-          let color = "#ef4444"; // red for <= 7
-          if (val === 'X' || numVal === 10) color = "#10b981"; // green
-          else if (numVal === 9) color = "#eab308"; // yellow
-          else if (numVal === 8) color = "#f97316"; // orange
-          
-          arrows.push({ v: val, c: color });
-        });
+        if (Array.isArray(end)) {
+          end.forEach(a => {
+            const val = typeof a === 'object' && a !== null && 'score' in a ? String((a as { score: unknown }).score) : String(a);
+            const numVal = val === 'X' ? 10 : val === 'M' ? 0 : parseInt(val, 10);
+            endScore += isNaN(numVal) ? 0 : numVal;
+            
+            let color = "#94a3b8"; // grey for miss / M
+            if (val === 'X' || numVal === 10 || numVal === 9) {
+              color = "#ca8a04"; // yellow
+            } else if (numVal === 8 || numVal === 7) {
+              color = "#ef4444"; // red
+            } else if (numVal === 6 || numVal === 5) {
+              color = "#0284c7"; // blue
+            } else if (numVal === 4 || numVal === 3) {
+              color = "#1e293b"; // black
+            } else if (numVal === 2 || numVal === 1) {
+              color = "#475569"; // white
+            } else {
+              color = "#94a3b8"; // grey for miss
+            }
+            
+            arrows.push({ v: val, c: color });
+          });
+        }
         if (endScore > bestEndScore) bestEndScore = endScore;
       });
     } catch (e) {
@@ -41,9 +53,9 @@ export default function ShotTimeline({ sessions }: ShotTimelineProps) {
   const displayArrows = arrows.slice(-36);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-[16px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+    <div className="bg-white border border-slate-200 rounded-[16px] p-4 sm:p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-baseline gap-3">
+        <div className="flex items-baseline gap-2 sm:gap-3">
           <h2 className="text-[16px] font-bold text-slate-900">Latest Timeline</h2>
           <div className="text-[12px] font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
             {displayArrows.length > 0 ? `Last ${displayArrows.length} arrows` : "No recent arrows"}
@@ -54,18 +66,18 @@ export default function ShotTimeline({ sessions }: ShotTimelineProps) {
         </button>
       </div>
       
-      <div className="flex gap-1.5 mt-2 flex-wrap min-h-[50px]">
+      <div className="grid grid-cols-6 sm:grid-cols-6 md:grid-cols-12 gap-1.5 sm:gap-2 mt-2 min-h-[50px]">
         {displayArrows.length > 0 ? displayArrows.map((a, i) => (
           <div
             key={i}
             title={`Arrow ${arrows.length - displayArrows.length + i + 1}`}
-            className="w-[32px] h-[40px] flex-none rounded-[8px] bg-slate-50 border border-slate-200 flex items-center justify-center font-mono font-bold text-[14px] cursor-pointer hover:bg-slate-100 transition-colors shadow-sm relative overflow-hidden group"
+            className="w-full h-[40px] sm:h-[42px] rounded-[8px] bg-slate-50 border border-slate-200 flex items-center justify-center font-mono font-bold text-[14px] sm:text-[15px] cursor-pointer hover:bg-slate-100 transition-colors shadow-sm relative overflow-hidden group"
           >
             <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: a.c }} />
             <span style={{ color: a.c }}>{a.v}</span>
           </div>
         )) : (
-          <div className="text-[13px] text-slate-400 italic">Log a session with arrows to see the timeline.</div>
+          <div className="col-span-full text-[13px] text-slate-400 italic py-2">Log a session with arrows to see the timeline.</div>
         )}
       </div>
       
