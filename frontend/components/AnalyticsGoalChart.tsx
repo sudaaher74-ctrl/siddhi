@@ -28,8 +28,10 @@ import {
   EyeOff,
   Flame,
   Activity,
+  Edit3,
+  Trash2,
 } from "lucide-react";
-import { apiFetch, apiPost } from "@/lib/api";
+import { apiFetch, apiPost, apiPut, apiDelete } from "@/lib/api";
 
 export interface Goal {
   _id?: string;
@@ -111,7 +113,9 @@ export default function AnalyticsGoalChart({
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     metricType: "avg" as MetricType,
@@ -389,13 +393,14 @@ export default function AnalyticsGoalChart({
     };
   }, [chartData, activeMetric, goalTargetValue, sessions]);
 
-  // Open modal with smart default based on current standing
+  // Open modal in Add mode with smart defaults based on current standing
   const handleOpenAddGoal = () => {
+    setEditingGoal(null);
     let defaultTarget = "9.80";
     if (activeMetric === "avg") {
-      defaultTarget = (stats.currentValue > 0 ? (stats.currentValue + 0.3).toFixed(2) : "9.80");
+      defaultTarget = stats.currentValue > 0 ? (stats.currentValue + 0.3).toFixed(2) : "9.80";
     } else if (activeMetric === "score") {
-      defaultTarget = (stats.currentValue > 0 ? Math.round(stats.currentValue * 1.1).toString() : "350");
+      defaultTarget = stats.currentValue > 0 ? Math.round(stats.currentValue * 1.1).toString() : "350";
     } else if (activeMetric === "tens") {
       defaultTarget = "75%";
     } else if (activeMetric === "arrows") {
@@ -413,6 +418,64 @@ export default function AnalyticsGoalChart({
     setIsModalOpen(true);
   };
 
+  // Open modal in Edit mode for an existing goal
+  const handleOpenEditGoal = (goal: Goal) => {
+    setEditingGoal(goal);
+
+    let mType: MetricType = goal.metricType || activeMetric;
+    if (!goal.metricType) {
+      const targetNum = parseFloat(goal.target.replace(/[^0-9.]/g, ""));
+      if (goal.target.includes("%") || (targetNum <= 100 && targetNum >= 10 && goal.title.toLowerCase().includes("10"))) {
+        mType = "tens";
+      } else if (targetNum <= 10.5 && targetNum >= 6) {
+        mType = "avg";
+      } else if (targetNum > 50 && targetNum <= 720) {
+        mType = "score";
+      } else if (targetNum > 100) {
+        mType = "arrows";
+      }
+    }
+
+    setFormData({
+      title: goal.title,
+      metricType: mType,
+      target: goal.target,
+      current: goal.current || "",
+      deadline: goal.deadline || "End of Month",
+      progress: goal.progress !== undefined ? String(goal.progress) : "0",
+    });
+    setIsModalOpen(true);
+  };
+
+  // Delete goal with confirmation
+  const handleDeleteGoal = async (goalId: string, goalTitle?: string) => {
+    if (!goalId) return;
+    const confirmMsg = goalTitle
+      ? `Are you sure you want to delete goal "${goalTitle}"?`
+      : "Are you sure you want to delete this goal?";
+    if (!confirm(confirmMsg)) return;
+
+    setIsDeleting(true);
+    try {
+      await apiDelete(`/api/goals/${goalId}`);
+      if (activeGoalId === goalId) {
+        setActiveGoalId(null);
+      }
+      setGoals((prev) => prev.filter((g) => (g._id || g.id) !== goalId));
+      if (isModalOpen && editingGoal && (editingGoal._id || editingGoal.id) === goalId) {
+        setIsModalOpen(false);
+        setEditingGoal(null);
+      }
+      await reloadGoals();
+    } catch (err) {
+      console.error("Failed to delete goal:", err);
+      alert(err instanceof Error ? err.message : "Failed to delete goal");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Create or Update Goal
   const handleSaveGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -429,14 +492,24 @@ export default function AnalyticsGoalChart({
         metricType: formData.metricType,
       };
 
-      const newGoal = await apiPost<Goal>("/api/goals", payload);
-      if (newGoal && (newGoal._id || newGoal.id)) {
-        setActiveGoalId(newGoal._id || newGoal.id || null);
+      if (editingGoal) {
+        const gid = editingGoal._id || editingGoal.id;
+        const updated = await apiPut<Goal>(`/api/goals/${gid}`, payload);
+        if (updated && (updated._id || updated.id)) {
+          setActiveGoalId(updated._id || updated.id || null);
+        }
+      } else {
+        const newGoal = await apiPost<Goal>("/api/goals", payload);
+        if (newGoal && (newGoal._id || newGoal.id)) {
+          setActiveGoalId(newGoal._id || newGoal.id || null);
+        }
       }
+
       setIsModalOpen(false);
+      setEditingGoal(null);
       await reloadGoals();
     } catch (err) {
-      console.error("Failed to add goal:", err);
+      console.error("Failed to save goal:", err);
       alert(err instanceof Error ? err.message : "Failed to save goal");
     } finally {
       setIsSaving(false);
@@ -687,18 +760,36 @@ interface CustomTooltipProps {
               Active Goal
             </span>
             {selectedGoal ? (
-              <button
-                type="button"
-                onClick={() => setShowGoalLine(!showGoalLine)}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
-                title={showGoalLine ? "Hide goal line" : "Show goal line"}
-              >
-                {showGoalLine ? (
-                  <Eye className="w-3.5 h-3.5 text-amber-600" />
-                ) : (
-                  <EyeOff className="w-3.5 h-3.5" />
-                )}
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setShowGoalLine(!showGoalLine)}
+                  className="p-1 rounded text-slate-400 hover:text-slate-600 cursor-pointer"
+                  title={showGoalLine ? "Hide goal line" : "Show goal line"}
+                >
+                  {showGoalLine ? (
+                    <Eye className="w-3.5 h-3.5 text-amber-600" />
+                  ) : (
+                    <EyeOff className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenEditGoal(selectedGoal)}
+                  className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
+                  title="Edit active goal"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteGoal(selectedGoal._id || selectedGoal.id || "", selectedGoal.title)}
+                  className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+                  title="Delete active goal"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ) : (
               <span className="text-[10px] font-mono text-slate-400 font-medium">None</span>
             )}
@@ -1049,40 +1140,70 @@ interface CustomTooltipProps {
               const gid = g._id || g.id || g.title;
               const isSelected = selectedGoal && (selectedGoal._id || selectedGoal.id) === gid;
               return (
-                <button
+                <div
                   key={gid}
-                  type="button"
-                  onClick={() => {
-                    setActiveGoalId(gid);
-                    setShowGoalLine(true);
-                    // Switch metric if needed
-                    const targetNum = parseFloat(g.target.replace(/[^0-9.]/g, ""));
-                    if (g.metricType) {
-                      setActiveMetric(g.metricType);
-                    } else if (targetNum <= 10.5 && targetNum >= 6) {
-                      setActiveMetric("avg");
-                    } else if (targetNum > 50) {
-                      setActiveMetric("score");
-                    } else if (g.target.includes("%")) {
-                      setActiveMetric("tens");
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-all cursor-pointer ${
+                  className={`group flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-lg border font-medium transition-all ${
                     isSelected
                       ? "bg-amber-500/10 border-amber-500/40 text-amber-800 font-bold shadow-xs"
                       : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                   }`}
                 >
-                  {g.completed ? (
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  ) : (
-                    <Target className="w-3 h-3 text-amber-500" />
-                  )}
-                  <span>{g.title}</span>
-                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200">
-                    {g.target}
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveGoalId(gid);
+                      setShowGoalLine(true);
+                      // Switch metric if needed
+                      const targetNum = parseFloat(g.target.replace(/[^0-9.]/g, ""));
+                      if (g.metricType) {
+                        setActiveMetric(g.metricType);
+                      } else if (targetNum <= 10.5 && targetNum >= 6) {
+                        setActiveMetric("avg");
+                      } else if (targetNum > 50) {
+                        setActiveMetric("score");
+                      } else if (g.target.includes("%")) {
+                        setActiveMetric("tens");
+                      }
+                    }}
+                    className="flex items-center gap-1.5 cursor-pointer text-left"
+                    title={`Click to benchmark on chart (${g.target})`}
+                  >
+                    {g.completed ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    ) : (
+                      <Target className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                    )}
+                    <span className="truncate max-w-[140px] sm:max-w-[200px]">{g.title}</span>
+                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200">
+                      {g.target}
+                    </span>
+                  </button>
+
+                  <div className="flex items-center gap-0.5 ml-1 border-l border-black/10 pl-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEditGoal(g);
+                      }}
+                      className="p-1 rounded hover:bg-black/10 text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
+                      title="Edit this goal"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteGoal(gid, g.title);
+                      }}
+                      className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                      title="Delete this goal"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
               );
             })
           )}
@@ -1117,8 +1238,14 @@ interface CustomTooltipProps {
                   <Target className="w-4 h-4" />
                 </span>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Add New Performance Goal</h3>
-                  <p className="text-xs text-slate-500">Benchmark your progress right on the analytics chart.</p>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {editingGoal ? "Edit Performance Goal" : "Add New Performance Goal"}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {editingGoal
+                      ? "Update your benchmark and target numbers."
+                      : "Benchmark your progress right on the analytics chart."}
+                  </p>
                 </div>
               </div>
               <button
@@ -1238,20 +1365,36 @@ interface CustomTooltipProps {
                 </div>
               </div>
 
-              <div className="pt-2 flex gap-2">
+              <div className="pt-2 flex items-center gap-2">
+                {editingGoal && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteGoal(editingGoal._id || editingGoal.id || "", editingGoal.title)}
+                    disabled={isDeleting}
+                    className="py-2.5 px-3.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-xs rounded-xl transition-colors flex items-center gap-1.5 border border-rose-200 cursor-pointer disabled:opacity-50"
+                    title="Delete this goal"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors"
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 py-2.5 bg-accent hover:bg-accent/90 text-white font-semibold text-xs rounded-xl shadow-md transition-all disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-accent hover:bg-accent/90 text-white font-semibold text-xs rounded-xl shadow-md transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {isSaving ? "Saving Goal..." : "Add to Chart"}
+                  {isSaving
+                    ? "Saving..."
+                    : editingGoal
+                    ? "Save Changes"
+                    : "Add to Chart"}
                 </button>
               </div>
             </form>
