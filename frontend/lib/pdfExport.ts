@@ -488,10 +488,37 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
 
   let y = 74;
 
-  // 2. Athlete Information Box
+  // 2. Athlete Information Box with Olympic Target Face
   doc.setFillColor(248, 250, 252); // slate-50
   doc.setDrawColor(226, 232, 240); // slate-200
+  doc.setLineWidth(0.8);
   doc.roundedRect(margin, y, contentWidth, 38, 4, 4, "FD");
+
+  // World Archery Official 5-Zone Concentric Target Graphic (Right of athlete box)
+  const targetX = margin + contentWidth - 25;
+  const targetY = y + 19;
+  // White Ring 1-2
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(148, 163, 184);
+  doc.setLineWidth(0.4);
+  doc.circle(targetX, targetY, 13, "FD");
+  // Black Ring 3-4
+  doc.setFillColor(30, 41, 59);
+  doc.circle(targetX, targetY, 10.4, "F");
+  // Blue Ring 5-6
+  doc.setFillColor(2, 132, 199);
+  doc.circle(targetX, targetY, 7.8, "F");
+  // Red Ring 7-8
+  doc.setFillColor(225, 29, 72);
+  doc.circle(targetX, targetY, 5.2, "F");
+  // Gold Ring 9-10
+  doc.setFillColor(250, 204, 21);
+  doc.circle(targetX, targetY, 2.6, "F");
+  // Inner X crosshair
+  doc.setDrawColor(161, 98, 7);
+  doc.setLineWidth(0.3);
+  doc.line(targetX - 1.2, targetY, targetX + 1.2, targetY);
+  doc.line(targetX, targetY - 1.2, targetX, targetY + 1.2);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -509,12 +536,12 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
 
   y += 46;
 
-  // 3. Four KPI Metric Cards (Compact single row)
+  // 3. Four KPI Metric Cards (With color-coded top accent stripes)
   const kpis = [
-    { label: "ROUND 1 SCORE", val: `${params.round1Total} / ${params.maxPossibleScore}`, sub: `(${params.scorePercentage}%)`, color: [15, 23, 42] },
-    { label: "ARROW AVERAGE", val: params.averagePerArrow, sub: "pts / arrow", color: [5, 150, 105] }, // emerald
-    { label: "10s COUNT", val: `${params.tensDisplay}`, sub: "Gold Hits", color: [217, 119, 6] }, // amber
-    { label: params.selectedBow === "Compound Bow" ? "COMPOUND X-RING" : "INNER-X (Xs)", val: `${params.xsDisplay}`, sub: "Bullseyes", color: [234, 88, 12] }, // orange
+    { label: "ROUND 1 SCORE", val: `${params.round1Total} / ${params.maxPossibleScore}`, sub: `(${params.scorePercentage}%)`, color: [15, 23, 42], accent: [229, 57, 53] },
+    { label: "ARROW AVERAGE", val: params.averagePerArrow, sub: "pts / arrow", color: [5, 150, 105], accent: [16, 185, 129] }, // emerald
+    { label: "10s COUNT", val: `${params.tensDisplay}`, sub: "Gold Hits", color: [217, 119, 6], accent: [245, 158, 11] }, // amber
+    { label: params.selectedBow === "Compound Bow" ? "COMPOUND X-RING" : "INNER-X (Xs)", val: `${params.xsDisplay}`, sub: "Bullseyes", color: [234, 88, 12], accent: [249, 115, 22] }, // orange
   ];
 
   const cardWidth = (contentWidth - 3 * 8) / 4;
@@ -522,25 +549,30 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
     const cardX = margin + idx * (cardWidth + 8);
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.8);
     doc.roundedRect(cardX, y, cardWidth, 42, 4, 4, "FD");
+
+    // Top Color Stripe
+    doc.setFillColor(kpi.accent[0], kpi.accent[1], kpi.accent[2]);
+    doc.rect(cardX + 4, y, cardWidth - 8, 2.5, "F");
 
     // Top Label
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text(kpi.label, cardX + cardWidth / 2, y + 12, { align: "center" });
+    doc.text(kpi.label, cardX + cardWidth / 2, y + 13, { align: "center" });
 
     // Value
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
     doc.setTextColor(kpi.color[0], kpi.color[1], kpi.color[2]);
-    doc.text(kpi.val, cardX + cardWidth / 2, y + 26, { align: "center" });
+    doc.text(kpi.val, cardX + cardWidth / 2, y + 27, { align: "center" });
 
     // Subtitle
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.5);
     doc.setTextColor(148, 163, 184);
-    doc.text(kpi.sub, cardX + cardWidth / 2, y + 36, { align: "center" });
+    doc.text(kpi.sub, cardX + cardWidth / 2, y + 37, { align: "center" });
   });
 
   y += 50;
@@ -623,25 +655,32 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
         const col = data.column.index;
         if (col >= 1 && col <= 6) {
           const val = String(data.cell.raw).toUpperCase().trim();
-          if (val === "X" || val === "10" || val === "9") {
-            data.cell.styles.fillColor = [254, 240, 138]; // gold-200
-            data.cell.styles.textColor = [113, 63, 18];
+          if (val === "X" || val === "10") {
+            data.cell.styles.fillColor = [254, 240, 138]; // Gold-200
+            data.cell.styles.textColor = [113, 63, 18]; // Gold-900
+            data.cell.styles.fontStyle = "bold";
+          } else if (val === "9") {
+            data.cell.styles.fillColor = [254, 249, 195]; // Gold-100
+            data.cell.styles.textColor = [133, 77, 14]; // Gold-800
             data.cell.styles.fontStyle = "bold";
           } else if (val === "8" || val === "7") {
-            data.cell.styles.fillColor = [254, 202, 202]; // red-200
+            data.cell.styles.fillColor = [254, 202, 202]; // Red-200
             data.cell.styles.textColor = [153, 27, 27];
             data.cell.styles.fontStyle = "bold";
           } else if (val === "6" || val === "5") {
-            data.cell.styles.fillColor = [186, 230, 253]; // blue-200
+            data.cell.styles.fillColor = [186, 230, 253]; // Blue-200
             data.cell.styles.textColor = [7, 89, 133];
             data.cell.styles.fontStyle = "bold";
           } else if (val === "4" || val === "3") {
-            data.cell.styles.fillColor = [51, 65, 85]; // dark
+            data.cell.styles.fillColor = [51, 65, 85]; // Dark Slate
             data.cell.styles.textColor = [255, 255, 255];
             data.cell.styles.fontStyle = "bold";
           } else if (val === "2" || val === "1") {
-            data.cell.styles.fillColor = [248, 250, 252]; // white
+            data.cell.styles.fillColor = [248, 250, 252]; // White
             data.cell.styles.textColor = [15, 23, 42];
+          } else if (val === "M" || val === "0") {
+            data.cell.styles.fillColor = [241, 245, 249]; // Muted Slate
+            data.cell.styles.textColor = [100, 116, 139];
           }
         }
       }
@@ -726,26 +765,48 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
 
   y += boxHeight + 14;
 
-  // 6. Official Signatures Block (WA Official Tournament format)
+  // 6. Official Signatures & Certified Seal Block (WA Official Tournament format)
   doc.setDrawColor(203, 213, 225); // slate-300
   doc.setLineWidth(0.8);
 
   // Archer Signature Line
-  const sigWidth = 140;
-  doc.line(margin + 10, y + 24, margin + 10 + sigWidth, y + 24);
+  const sigWidth = 125;
+  doc.line(margin + 6, y + 24, margin + 6 + sigWidth, y + 24);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(71, 85, 105);
-  doc.text("Archer's Signature", margin + 10, y + 35);
+  doc.text("Archer's Signature", margin + 6, y + 35);
 
-  // Scorer Signature Line
-  const sig2X = margin + (contentWidth - sigWidth) / 2;
+  // Scorer / Judge Signature Line
+  const sig2X = margin + 150;
   doc.line(sig2X, y + 24, sig2X + sigWidth, y + 24);
   doc.text("Scorer / Judge Signature", sig2X, y + 35);
 
+  // Official Verified Stamp (Round Double-Ring Seal) between Scorer and Date
+  const sealX = margin + 340;
+  const sealY = y + 20;
+  doc.setDrawColor(229, 57, 53); // target red
+  doc.setLineWidth(0.9);
+  doc.circle(sealX, sealY, 15, "S");
+  doc.setLineWidth(0.4);
+  doc.circle(sealX, sealY, 13, "S");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(4.5);
+  doc.setTextColor(229, 57, 53);
+  doc.text("ARCHERX", sealX, sealY - 5.5, { align: "center" });
+  doc.setFontSize(5.5);
+  doc.text("VERIFIED", sealX, sealY, { align: "center" });
+  doc.setFontSize(4);
+  doc.text("RECORD", sealX, sealY + 5.5, { align: "center" });
+
   // Date Line
-  const dateX = pageWidth - margin - 90;
+  const dateX = pageWidth - margin - 85;
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.8);
   doc.line(dateX, y + 24, pageWidth - margin, y + 24);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(71, 85, 105);
   doc.text("Verification Date", dateX, y + 35);
 
   // 7. Security / Verification Footer (Bottom of Page 1)

@@ -14,6 +14,7 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceLine,
+  ReferenceArea,
 } from "recharts";
 import {
   Target,
@@ -30,6 +31,7 @@ import {
   Activity,
   Edit3,
   Trash2,
+  Trophy,
 } from "lucide-react";
 import { apiFetch, apiPost, apiPut, apiDelete } from "@/lib/api";
 
@@ -610,6 +612,53 @@ interface CustomTooltipProps {
     );
   };
 
+  // Custom dot rendering: highlights Personal Best (Peak) with a gold trophy/crown dot and Latest session with active focus ring
+  const renderCustomDot = (dotProps: {
+    cx?: number;
+    cy?: number;
+    payload?: { value: number; date: string };
+    index?: number;
+  }): React.ReactElement => {
+    const { cx, cy, payload, index } = dotProps;
+    if (cx === undefined || cy === undefined || !payload) {
+      return <g key={`dot-empty-${index ?? 0}`} />;
+    }
+
+    const isPeak = payload.value === stats.bestValue && stats.bestValue > 0;
+    const isLatest = index === chartData.length - 1;
+
+    if (isPeak) {
+      return (
+        <g key={`dot-peak-${index}`} className="cursor-pointer">
+          <circle cx={cx} cy={cy} r={11} fill="#FEF3C7" stroke="#F59E0B" strokeWidth={1.5} opacity={0.8} />
+          <circle cx={cx} cy={cy} r={6} fill="#F59E0B" stroke="#FFFFFF" strokeWidth={1.5} />
+          <circle cx={cx} cy={cy} r={2} fill="#FFFFFF" />
+        </g>
+      );
+    }
+
+    if (isLatest) {
+      return (
+        <g key={`dot-latest-${index}`} className="cursor-pointer">
+          <circle cx={cx} cy={cy} r={9} fill="#FEE2E2" stroke="#E53935" strokeWidth={1.5} />
+          <circle cx={cx} cy={cy} r={5} fill="#E53935" stroke="#FFFFFF" strokeWidth={1.5} />
+        </g>
+      );
+    }
+
+    return (
+      <circle
+        key={`dot-${index}`}
+        cx={cx}
+        cy={cy}
+        r={4}
+        fill="#FFFFFF"
+        stroke="#E53935"
+        strokeWidth={2}
+      />
+    );
+  };
+
   return (
     <Card className="p-5 sm:p-7 relative overflow-hidden">
       {/* Decorative subtle background accents */}
@@ -720,9 +769,10 @@ interface CustomTooltipProps {
       {/* "Where We Are Now" HUD Stat Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-5 relative z-10">
         {/* Card 1: Where We Are Now (Current Standing) */}
-        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden group">
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition-all">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-rose-400" />
           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <Crosshair className="w-3.5 h-3.5 text-accent" />
               Where You Stand
             </span>
@@ -730,7 +780,7 @@ interface CustomTooltipProps {
               LATEST
             </span>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
+          <div className="mt-2.5 flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight">
               {stats.currentValue > 0 ? stats.currentValue : "--"}
             </span>
@@ -753,9 +803,10 @@ interface CustomTooltipProps {
         </div>
 
         {/* Card 2: Active Goal Benchmark */}
-        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden group">
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-amber-300 transition-all">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-amber-500" />
           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-            <span className="flex items-center gap-1 text-slate-700">
+            <span className="flex items-center gap-1.5 text-slate-700">
               <Target className="w-3.5 h-3.5 text-amber-500" />
               Active Goal
             </span>
@@ -764,7 +815,7 @@ interface CustomTooltipProps {
                 <button
                   type="button"
                   onClick={() => setShowGoalLine(!showGoalLine)}
-                  className="p-1 rounded text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="p-1 rounded text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
                   title={showGoalLine ? "Hide goal line" : "Show goal line"}
                 >
                   {showGoalLine ? (
@@ -794,7 +845,7 @@ interface CustomTooltipProps {
               <span className="text-[10px] font-mono text-slate-400 font-medium">None</span>
             )}
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
+          <div className="mt-2.5 flex items-baseline gap-2">
             {selectedGoal ? (
               <>
                 <span className="text-2xl sm:text-3xl font-black text-amber-600 font-mono tracking-tight">
@@ -825,10 +876,17 @@ interface CustomTooltipProps {
           </div>
         </div>
 
-        {/* Card 3: Gap to Target / Achievement */}
-        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+        {/* Card 3: Gap to Target / Achievement with SVG Circular Ring */}
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-emerald-300 transition-all">
+          <div
+            className={`absolute top-0 left-0 right-0 h-1 ${
+              stats.goalPercent >= 100
+                ? "bg-gradient-to-r from-emerald-400 to-teal-500"
+                : "bg-gradient-to-r from-amber-400 to-accent"
+            }`}
+          />
           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-emerald-500" />
               Goal Status
             </span>
@@ -846,26 +904,62 @@ interface CustomTooltipProps {
               <span className="text-[10px] font-mono text-slate-400">PENDING</span>
             )}
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            {selectedGoal && stats.gapToGoal !== null ? (
-              <>
-                <span
-                  className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${
-                    stats.gapToGoal >= 0 ? "text-emerald-600" : "text-amber-600"
-                  }`}
-                >
-                  {stats.gapToGoal > 0 ? `+${stats.gapToGoal}` : stats.gapToGoal}
+          <div className="mt-2 flex items-center justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2">
+                {selectedGoal && stats.gapToGoal !== null ? (
+                  <>
+                    <span
+                      className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${
+                        stats.gapToGoal >= 0 ? "text-emerald-600" : "text-amber-600"
+                      }`}
+                    >
+                      {stats.gapToGoal > 0 ? `+${stats.gapToGoal}` : stats.gapToGoal}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-400">
+                      {stats.gapToGoal >= 0 ? "above target" : "to reach goal"}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xl font-bold text-slate-400">--</span>
+                )}
+              </div>
+              <div className="mt-1 text-[11px] text-slate-500 font-medium truncate">
+                {selectedGoal
+                  ? `${stats.goalPercent}% benchmark achieved`
+                  : "Select a goal to track"}
+              </div>
+            </div>
+
+            {/* Circular Progress Gauge */}
+            {selectedGoal && (
+              <div className="relative w-11 h-11 flex-shrink-0 flex items-center justify-center ml-2">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-slate-100"
+                    strokeWidth="3.5"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className={stats.goalPercent >= 100 ? "text-emerald-500" : "text-amber-500"}
+                    strokeDasharray={`${Math.min(100, Math.max(0, stats.goalPercent))}, 100`}
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <span className="absolute font-mono text-[9.5px] font-black text-slate-700">
+                  {stats.goalPercent}%
                 </span>
-                <span className="text-xs font-semibold text-slate-400">
-                  {stats.gapToGoal >= 0 ? "above target" : "to reach goal"}
-                </span>
-              </>
-            ) : (
-              <span className="text-xl font-bold text-slate-400">--</span>
+              </div>
             )}
           </div>
           {/* Mini progress bar */}
-          <div className="mt-2 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+          <div className="mt-2.5 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-700 ${
                 stats.goalPercent >= 100
@@ -878,9 +972,10 @@ interface CustomTooltipProps {
         </div>
 
         {/* Card 4: All-Over Best & Career Average */}
-        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-purple-300 transition-all">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-indigo-500" />
           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5 text-purple-500" />
               All-Time Career
             </span>
@@ -888,7 +983,7 @@ interface CustomTooltipProps {
               {stats.sessionsCount} sessions
             </span>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
+          <div className="mt-2.5 flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight">
               {stats.bestValue > 0 ? stats.bestValue : "--"}
             </span>
@@ -953,6 +1048,19 @@ interface CustomTooltipProps {
                   unit={activeMetric === "tens" ? "%" : ""}
                 />
 
+                {/* Target Zone Shading Band */}
+                {showGoalLine && goalTargetValue !== null && (
+                  <ReferenceArea
+                    y1={goalTargetValue}
+                    y2={typeof yDomain[1] === "number" ? yDomain[1] : goalTargetValue * 1.08}
+                    fill="#FEF3C7"
+                    fillOpacity={0.2}
+                    stroke="#FDE68A"
+                    strokeDasharray="2 2"
+                    strokeOpacity={0.4}
+                  />
+                )}
+
                 {/* Goal Target Benchmark Line */}
                 {showGoalLine && goalTargetValue !== null && (
                   <ReferenceLine
@@ -989,19 +1097,14 @@ interface CustomTooltipProps {
 
                 <Tooltip content={renderTooltip} />
 
-                {/* Main Progression Line with clear crisp dots */}
+                {/* Main Progression Line with custom peak & latest session dots */}
                 <Line
                   type="monotone"
                   dataKey="value"
                   name={currentMetricCfg.label}
                   stroke="#E53935"
                   strokeWidth={3.5}
-                  dot={{
-                    r: 5.5,
-                    fill: "#FFFFFF",
-                    stroke: "#E53935",
-                    strokeWidth: 2.5,
-                  }}
+                  dot={renderCustomDot}
                   activeDot={{
                     r: 8.5,
                     fill: "#E53935",
@@ -1057,6 +1160,19 @@ interface CustomTooltipProps {
                   unit={activeMetric === "tens" ? "%" : ""}
                 />
 
+                {/* Target Zone Shading Band */}
+                {showGoalLine && goalTargetValue !== null && (
+                  <ReferenceArea
+                    y1={goalTargetValue}
+                    y2={typeof yDomain[1] === "number" ? yDomain[1] : goalTargetValue * 1.08}
+                    fill="#FEF3C7"
+                    fillOpacity={0.2}
+                    stroke="#FDE68A"
+                    strokeDasharray="2 2"
+                    strokeOpacity={0.4}
+                  />
+                )}
+
                 {/* Goal Target Benchmark Line */}
                 {showGoalLine && goalTargetValue !== null && (
                   <ReferenceLine
@@ -1093,7 +1209,7 @@ interface CustomTooltipProps {
 
                 <Tooltip content={renderTooltip} />
 
-                {/* Main Area Plot with Accent Curve */}
+                {/* Main Area Plot with Accent Curve and Peak Dots */}
                 <Area
                   type="monotone"
                   dataKey="value"
@@ -1103,12 +1219,7 @@ interface CustomTooltipProps {
                   fill="url(#analyticsGradient)"
                   animationDuration={800}
                   animationEasing="ease-out"
-                  dot={{
-                    r: 4.5,
-                    fill: "#FFFFFF",
-                    stroke: "#E53935",
-                    strokeWidth: 2,
-                  }}
+                  dot={renderCustomDot}
                   activeDot={{
                     r: 8,
                     fill: "#FFFFFF",
@@ -1142,10 +1253,10 @@ interface CustomTooltipProps {
               return (
                 <div
                   key={gid}
-                  className={`group flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-lg border font-medium transition-all ${
+                  className={`group flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-xl border font-medium transition-all ${
                     isSelected
-                      ? "bg-amber-500/10 border-amber-500/40 text-amber-800 font-bold shadow-xs"
-                      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                      ? "bg-amber-500/10 border-amber-500/50 text-amber-900 font-bold shadow-xs ring-2 ring-amber-400/20"
+                      : "bg-slate-50/80 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300"
                   }`}
                 >
                   <button
@@ -1173,10 +1284,15 @@ interface CustomTooltipProps {
                     ) : (
                       <Target className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                     )}
-                    <span className="truncate max-w-[140px] sm:max-w-[200px]">{g.title}</span>
-                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200">
+                    <span className="truncate max-w-[130px] sm:max-w-[190px]">{g.title}</span>
+                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 font-bold">
                       {g.target}
                     </span>
+                    {g.progress !== undefined && (
+                      <span className="font-mono text-[9px] px-1 py-0.5 rounded bg-slate-200/70 text-slate-700 font-semibold">
+                        {g.progress}%
+                      </span>
+                    )}
                   </button>
 
                   <div className="flex items-center gap-0.5 ml-1 border-l border-black/10 pl-1">
@@ -1209,21 +1325,31 @@ interface CustomTooltipProps {
           )}
         </div>
 
-        {/* Legend toggles */}
-        <div className="flex items-center gap-4 text-[11px] text-slate-500 self-end md:self-auto">
+        {/* Legend toggles & indicators */}
+        <div className="flex items-center gap-3.5 text-[11px] text-slate-500 self-end md:self-auto flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <Trophy className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+            <span className="text-slate-600 font-medium">Peak (PB)</span>
+          </div>
+          {showGoalLine && goalTargetValue !== null && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-2 bg-amber-200/60 border border-amber-400/80 rounded inline-block" />
+              <span className="text-amber-800 font-semibold">Target Zone</span>
+            </div>
+          )}
           <button
             onClick={() => setShowAvgLine(!showAvgLine)}
-            className="flex items-center gap-1.5 hover:text-slate-800 cursor-pointer"
+            className="flex items-center gap-1.5 hover:text-slate-800 cursor-pointer transition-colors"
           >
             <span className="w-3 h-0.5 bg-slate-400 inline-block border-t border-dashed" />
-            <span>{showAvgLine ? "Hide All-Time Avg" : "Show All-Time Avg"}</span>
+            <span>{showAvgLine ? "Hide Avg" : "Show Avg"}</span>
           </button>
           <button
             onClick={() => setShowGoalLine(!showGoalLine)}
-            className="flex items-center gap-1.5 hover:text-slate-800 cursor-pointer text-amber-600 font-semibold"
+            className="flex items-center gap-1.5 hover:text-slate-800 cursor-pointer text-amber-600 font-semibold transition-colors"
           >
             <span className="w-3 h-0.5 bg-amber-500 inline-block border-t border-dashed" />
-            <span>{showGoalLine ? "Active Target Line" : "Hidden Target Line"}</span>
+            <span>{showGoalLine ? "Target Line" : "Hidden Target"}</span>
           </button>
         </div>
       </div>
