@@ -30,3 +30,36 @@
     @apply m-0 bg-background text-text font-sans antialiased;
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 6mm 8mm;
+  }
+
+  html, body {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    font-size: 11px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  header, nav, aside, .print\:hidden {
+    display: none !important;
+  }
+
+  * {
+    box-shadow: none !important;
+  }
+
+  table, tr, td, th, div {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+

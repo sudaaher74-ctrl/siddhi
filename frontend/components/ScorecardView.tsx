@@ -7,6 +7,7 @@ import {
   Edit3,
   Share2,
   Printer,
+  Download,
   Copy,
   Check,
   Award,
@@ -22,6 +23,7 @@ import { Session } from "@/lib/data";
 import { useUser } from "@/hooks/useUser";
 import EditScoresModal from "./EditScoresModal";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { exportScorecardPDF } from "@/lib/pdfExport";
 import Card from "./ui/Card";
 import { BOW_OPTIONS, BOW_DISTANCES, BowOption } from "./SessionSetup";
 
@@ -379,6 +381,32 @@ export default function ScorecardView({
     window.print();
   };
 
+  const handleDownloadPDF = () => {
+    exportScorecardPDF({
+      athleteName,
+      selectedBow,
+      distance: eventDistance,
+      formattedDate,
+      eventName,
+      venueName,
+      standardName: currentBowConfig.standardName,
+      round1Total,
+      maxPossibleScore,
+      scorePercentage,
+      averagePerArrow,
+      tensDisplay,
+      xsDisplay,
+      ninesDisplay,
+      totalArrowsCount,
+      ends,
+      endTotals,
+      runningTotals,
+      coachInsight: currentBowConfig.getCoachInsight(round1Total, tensDisplay, xsDisplay),
+      sessionNote: session?.note,
+      session: session || undefined,
+    });
+  };
+
   const handleShare = async () => {
     if (!session) return;
     const shareText = `🎯 ArcherX Scorecard - ${athleteName} (${eventName})\nBow: ${selectedBow}\nDistance: ${eventDistance}\nDate: ${formattedDate}\nScore: ${round1Total} / ${maxPossibleScore}\nXs: ${xsDisplay} | 10s: ${tensDisplay} | 9s: ${ninesDisplay}\nStandard: ${currentBowConfig.standardName}`;
@@ -598,7 +626,7 @@ export default function ScorecardView({
   }
 
   return (
-    <div ref={printRef} className="w-full flex flex-col gap-5 print:p-0">
+    <div ref={printRef} className="w-full flex flex-col gap-5 print:gap-2 print:p-0 print:m-0">
       {/* 0. BOW & DISTANCE SELECTION CONTROL */}
       <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 print:hidden">
         {/* Bow Selector Tabs */}
@@ -704,40 +732,40 @@ export default function ScorecardView({
           )}
 
           {/* 1. ATHLETE & SESSION HERO CARD */}
-          <Card className="p-5 sm:p-6 relative overflow-hidden bg-white border border-slate-200/80 shadow-xs print:border-none print:shadow-none">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <Card className="p-5 sm:p-6 relative overflow-hidden bg-white border border-slate-200/80 shadow-xs print:border print:border-slate-200 print:shadow-none print:p-2.5 print:mb-0">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 print:gap-2">
               {/* Athlete Info */}
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent to-red-600 flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
+              <div className="flex items-center gap-4 print:gap-2.5">
+                <div className="w-14 h-14 print:w-9 print:h-9 rounded-2xl print:rounded-lg bg-gradient-to-br from-accent to-red-600 flex items-center justify-center text-white font-bold text-lg print:text-xs shadow-md flex-shrink-0">
                   {userInitials}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                  <div className="flex items-center gap-2.5 print:gap-1.5 flex-wrap">
+                    <h2 className="text-xl sm:text-2xl print:text-base font-bold text-slate-900 tracking-tight">
                       {athleteName}
                     </h2>
-                    <span className="px-2.5 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase tracking-wider">
+                    <span className="px-2.5 py-0.5 rounded-full bg-accent/10 text-accent text-xs print:text-[9.5px] font-bold uppercase tracking-wider">
                       Official Scorecard
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-white text-xs font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-white text-xs print:text-[9.5px] font-bold">
                       {selectedBow}
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs print:text-[9.5px] font-semibold">
                       {session.type || "Scoring"}
                     </span>
                     {isRealSavedSession ? (
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200/60">
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs print:text-[9.5px] font-semibold border border-emerald-200/60">
                         Saved Round
                       </span>
                     ) : (
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold border border-amber-300">
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs print:text-[9.5px] font-bold border border-amber-300">
                         Live Draft • Unsaved
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-500 mt-1 flex-wrap font-medium">
+                  <div className="flex items-center gap-3 print:gap-2 text-xs sm:text-sm print:text-[10px] text-slate-500 mt-1 print:mt-0.5 flex-wrap font-medium">
                     <span className="flex items-center gap-1 text-slate-700 font-semibold">
-                      <Target className="w-3.5 h-3.5 text-accent" />
+                      <Target className="w-3.5 h-3.5 print:w-3 print:h-3 text-accent" />
                       {eventName}
                     </span>
                     <span>•</span>
@@ -785,6 +813,16 @@ export default function ScorecardView({
 
             <button
               type="button"
+              onClick={handleDownloadPDF}
+              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              title="Download 1-page Official PDF Scorecard"
+            >
+              <Download className="w-3.5 h-3.5 text-accent" />
+              <span>Download PDF</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handlePrint}
               className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
@@ -816,83 +854,83 @@ export default function ScorecardView({
         </div>
 
         {/* Technical Specs Bar dependent on Bow */}
-        <div className="mt-4 pt-3.5 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div className="mt-4 pt-3.5 print:mt-1.5 print:pt-1 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-3 print:gap-1 text-xs print:text-[9.5px]">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Standard:</span>
+            <span className="font-bold text-slate-400 uppercase text-[10px] print:text-[8.5px] tracking-wider">Standard:</span>
             <span className="font-semibold text-slate-800 truncate">{currentBowConfig.standardName}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Target Face:</span>
+            <span className="font-bold text-slate-400 uppercase text-[10px] print:text-[8.5px] tracking-wider">Target Face:</span>
             <span className="font-semibold text-slate-800 truncate">{currentBowConfig.targetFace}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Equipment:</span>
+            <span className="font-bold text-slate-400 uppercase text-[10px] print:text-[8.5px] tracking-wider">Equipment:</span>
             <span className="font-semibold text-slate-800 truncate">{currentBowConfig.equipmentSummary}</span>
           </div>
         </div>
       </Card>
 
       {/* 2. KPI SUMMARY METRICS (4 CARDS) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-4 print:grid-cols-4 gap-3.5 print:gap-1.5">
         {/* Total Score Card */}
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+        <Card className="p-4 print:p-1.5 bg-white border border-slate-200/80 shadow-xs print:shadow-none">
+          <div className="text-[11px] print:text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-1 print:mb-0 flex items-center justify-between">
             <span>Round 1 Score</span>
-            <span className="text-[10px] text-accent font-bold">{maxPossibleScore} Max</span>
+            <span className="text-[10px] print:text-[8px] text-accent font-bold">{maxPossibleScore} Max</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <span className="text-2xl sm:text-3xl print:text-lg font-black text-slate-900 tracking-tight">
               {round1Total}
             </span>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-xs print:text-[9px] text-slate-400 font-medium">
               ({scorePercentage}%)
             </span>
           </div>
         </Card>
 
         {/* Arrow Average Card */}
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+        <Card className="p-4 print:p-1.5 bg-white border border-slate-200/80 shadow-xs print:shadow-none">
+          <div className="text-[11px] print:text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-1 print:mb-0 flex items-center justify-between">
             <span>Average</span>
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+            <TrendingUp className="w-3.5 h-3.5 print:w-3 print:h-3 text-emerald-500" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">
+            <span className="text-2xl sm:text-3xl print:text-lg font-black text-emerald-600 tracking-tight">
               {averagePerArrow}
             </span>
-            <span className="text-xs text-slate-400 font-medium">pts / arrow</span>
+            <span className="text-xs print:text-[9px] text-slate-400 font-medium">pts / arrow</span>
           </div>
         </Card>
 
         {/* 10s Count Card */}
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+        <Card className="p-4 print:p-1.5 bg-white border border-slate-200/80 shadow-xs print:shadow-none">
+          <div className="text-[11px] print:text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-1 print:mb-0 flex items-center justify-between">
             <span>10s Count</span>
-            <Award className="w-3.5 h-3.5 text-amber-500" />
+            <Award className="w-3.5 h-3.5 print:w-3 print:h-3 text-amber-500" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight">
+            <span className="text-2xl sm:text-3xl print:text-lg font-black text-amber-600 tracking-tight">
               {tensDisplay}
             </span>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-xs print:text-[9px] text-slate-400 font-medium">
               ({totalArrowsCount > 0 ? ((tensDisplay / totalArrowsCount) * 100).toFixed(0) : 0}% gold)
             </span>
           </div>
         </Card>
 
         {/* Xs Count Card */}
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+        <Card className="p-4 print:p-1.5 bg-white border border-slate-200/80 shadow-xs print:shadow-none">
+          <div className="text-[11px] print:text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-1 print:mb-0 flex items-center justify-between">
             <span>
               {selectedBow === "Compound Bow" ? "Compound X-Ring" : "Inner-X (Xs)"}
             </span>
-            <Flame className="w-3.5 h-3.5 text-orange-500" />
+            <Flame className="w-3.5 h-3.5 print:w-3 print:h-3 text-orange-500" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-orange-600 tracking-tight">
+            <span className="text-2xl sm:text-3xl print:text-lg font-black text-orange-600 tracking-tight">
               {xsDisplay}
             </span>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-xs print:text-[9px] text-slate-400 font-medium">
               {selectedBow === "Compound Bow" ? "inner-10s" : "bullseyes"}
             </span>
           </div>
@@ -900,17 +938,17 @@ export default function ScorecardView({
       </div>
 
       {/* 3. DETAILED SCORES TABLE CARD */}
-      <Card noPadding className="bg-white border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 flex-wrap gap-2">
+      <Card noPadding className="bg-white border border-slate-200/80 shadow-xs overflow-hidden print:border print:border-slate-300 print:shadow-none">
+        <div className="p-4 sm:p-5 print:py-1.5 print:px-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 flex-wrap gap-2">
           <div>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900">
+            <h3 className="text-sm sm:text-base print:text-xs font-bold text-slate-900">
               Detailed Scores – Round 1 ({currentBowConfig.shortName})
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs print:text-[9.5px] text-slate-500 mt-0.5 print:mt-0">
               Individual arrow records, end subtotals, and progressive running score
             </p>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-bold">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 print:py-0.5 print:px-2 rounded-full bg-accent/10 text-accent text-xs print:text-[9.5px] font-bold">
             <span>{eventDistance}</span>
             <span>•</span>
             <span>{currentBowConfig.shortName}</span>
@@ -920,35 +958,35 @@ export default function ScorecardView({
         </div>
 
         {ends.length > 0 ? (
-          <div className="overflow-x-auto p-3 sm:p-5">
-            <table className="w-full text-center border-collapse border border-slate-300 min-w-[640px] shadow-2xs rounded-xl overflow-hidden">
+          <div className="overflow-x-auto p-3 sm:p-5 print:p-1.5">
+            <table className="w-full text-center border-collapse border border-slate-300 min-w-[640px] print:min-w-0 shadow-2xs rounded-xl overflow-hidden print:text-xs">
               <thead>
-                <tr className="border-b-2 border-slate-300 text-slate-700 font-bold text-xs bg-slate-100/90">
-                  <th className="py-3 px-3 text-center border-r border-slate-300 w-16 uppercase tracking-wider bg-slate-200/50">
+                <tr className="border-b-2 border-slate-300 text-slate-700 font-bold text-xs print:text-[10px] bg-slate-100/90">
+                  <th className="py-3 px-3 print:py-1.5 print:px-1 text-center border-r border-slate-300 w-16 uppercase tracking-wider bg-slate-200/50">
                     End
                   </th>
-                  <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  <th className="py-3 px-2 print:py-1.5 print:px-1 text-center border-r border-slate-300 uppercase tracking-wider">
                     Arrow 1
                   </th>
-                  <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  <th className="py-3 px-2 print:py-1.5 print:px-1 text-center border-r border-slate-300 uppercase tracking-wider">
                     Arrow 2
                   </th>
-                  <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  <th className="py-3 px-2 print:py-1.5 print:px-1 text-center border-r border-slate-300 uppercase tracking-wider">
                     Arrow 3
                   </th>
-                  <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  <th className="py-3 px-2 print:py-1.5 print:px-1 text-center border-r border-slate-300 uppercase tracking-wider">
                     Arrow 4
                   </th>
-                  <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  <th className="py-3 px-2 print:py-1.5 print:px-1 text-center border-r border-slate-300 uppercase tracking-wider">
                     Arrow 5
                   </th>
-                  <th className="py-3 px-2 text-center border-r border-slate-300 uppercase tracking-wider">
+                  <th className="py-3 px-2 print:py-1.5 print:px-1 text-center border-r border-slate-300 uppercase tracking-wider">
                     Arrow 6
                   </th>
-                  <th className="py-3 px-3 text-center font-black text-slate-900 border-r border-slate-300 bg-slate-200/80 w-24 uppercase tracking-wider">
+                  <th className="py-3 px-3 print:py-1.5 print:px-1 text-center font-black text-slate-900 border-r border-slate-300 bg-slate-200/80 w-24 uppercase tracking-wider">
                     End Total
                   </th>
-                  <th className="py-3 px-3 text-center font-black text-slate-900 bg-slate-200/80 w-28 uppercase tracking-wider">
+                  <th className="py-3 px-3 print:py-1.5 print:px-1 text-center font-black text-slate-900 bg-slate-200/80 w-28 uppercase tracking-wider">
                     Running Total
                   </th>
                 </tr>
@@ -957,19 +995,19 @@ export default function ScorecardView({
                 {ends.slice(0, 6).map((row, idx) => (
                   <tr
                     key={idx}
-                    className="border-b border-slate-200 hover:bg-slate-50/70 transition-colors h-14"
+                    className="border-b border-slate-200 hover:bg-slate-50/70 transition-colors h-14 print:h-6"
                   >
-                    <td className="py-2.5 px-3 font-extrabold text-slate-800 border-r border-slate-300 bg-slate-50 text-center">
+                    <td className="py-2.5 px-3 print:py-0.5 print:px-1 font-extrabold text-slate-800 border-r border-slate-300 bg-slate-50 text-center">
                       {idx + 1}
                     </td>
                     {row.map((arrowVal, arrowIdx) => (
                       <td
                         key={arrowIdx}
-                        className="py-2.5 px-2 border-r border-slate-200 text-center"
+                        className="py-2.5 px-2 print:py-0.5 print:px-1 border-r border-slate-200 text-center"
                       >
                         <div className="flex items-center justify-center">
                           <span
-                            className={`inline-flex items-center justify-center min-w-[34px] h-8 px-2 rounded-md text-xs font-bold transition-all shadow-2xs ${getArrowBadgeClass(
+                            className={`inline-flex items-center justify-center min-w-[34px] print:min-w-[22px] h-8 print:h-5 px-2 print:px-1 rounded-md text-xs print:text-[10px] font-bold transition-all shadow-2xs ${getArrowBadgeClass(
                               arrowVal
                             )}`}
                           >
@@ -978,11 +1016,11 @@ export default function ScorecardView({
                         </div>
                       </td>
                     ))}
-                    <td className="py-2.5 px-3 font-black text-slate-900 border-r border-slate-300 bg-slate-50/70 text-sm text-center">
+                    <td className="py-2.5 px-3 print:py-0.5 print:px-1 font-black text-slate-900 border-r border-slate-300 bg-slate-50/70 text-sm print:text-xs text-center">
                       {endTotals[idx] || 0}
                     </td>
-                    <td className="py-2.5 px-3 font-black text-slate-900 bg-slate-50/70 text-sm text-center">
-                      <span className="inline-block px-2.5 py-0.5 rounded bg-slate-200/80 font-mono font-bold text-slate-900">
+                    <td className="py-2.5 px-3 print:py-0.5 print:px-1 font-black text-slate-900 bg-slate-50/70 text-sm print:text-xs text-center">
+                      <span className="inline-block px-2.5 py-0.5 print:px-1.5 print:py-0 rounded bg-slate-200/80 font-mono font-bold text-slate-900">
                         {runningTotals[idx] || 0}
                       </span>
                     </td>
@@ -993,14 +1031,14 @@ export default function ScorecardView({
                 <tr className="bg-amber-50/90 border-t-2 border-amber-300 font-bold text-slate-900">
                   <td
                     colSpan={7}
-                    className="py-3.5 px-5 text-left text-sm font-extrabold text-slate-900 border-r border-amber-200/90"
+                    className="py-3.5 px-5 print:py-1 print:px-2 text-left text-sm print:text-xs font-extrabold text-slate-900 border-r border-amber-200/90"
                   >
                     Round 1 Total
                   </td>
-                  <td className="py-3.5 px-3 font-black text-slate-900 border-r border-amber-200/90 bg-amber-100/70 text-base text-center">
+                  <td className="py-3.5 px-3 print:py-1 print:px-1 font-black text-slate-900 border-r border-amber-200/90 bg-amber-100/70 text-base print:text-xs text-center">
                     {round1Total}
                   </td>
-                  <td className="py-3.5 px-3 font-black text-slate-900 bg-amber-100/70 text-base text-center">
+                  <td className="py-3.5 px-3 print:py-1 print:px-1 font-black text-slate-900 bg-amber-100/70 text-base print:text-xs text-center">
                     {round1Total}
                   </td>
                 </tr>
@@ -1020,46 +1058,46 @@ export default function ScorecardView({
       </Card>
 
       {/* 4. ROUND SUMMARY TABLE & COACH INSIGHT GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] print:grid-cols-2 gap-5 print:gap-2">
         {/* Round Summary Card */}
-        <Card noPadding className="bg-white border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <h3 className="text-sm font-bold text-slate-900">Round Summary</h3>
-            <span className="text-[11px] font-semibold text-slate-500">Official WA Record</span>
+        <Card noPadding className="bg-white border border-slate-200/80 shadow-xs overflow-hidden print:border print:border-slate-300 print:shadow-none">
+          <div className="p-4 print:py-1.5 print:px-2.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h3 className="text-sm print:text-xs font-bold text-slate-900">Round Summary</h3>
+            <span className="text-[11px] print:text-[8.5px] font-semibold text-slate-500">Official WA Record</span>
           </div>
-          <div className="overflow-x-auto p-4">
-            <table className="w-full text-center border-collapse border border-slate-300 text-xs shadow-2xs rounded-xl overflow-hidden">
+          <div className="overflow-x-auto p-4 print:p-1.5">
+            <table className="w-full text-center border-collapse border border-slate-300 text-xs print:text-[9px] shadow-2xs rounded-xl overflow-hidden">
               <thead>
                 <tr className="border-b-2 border-slate-300 text-slate-700 font-bold bg-slate-100/90">
-                  <th className="py-2.5 px-3 text-left border-r border-slate-300">Round</th>
-                  <th className="py-2.5 px-2 text-center border-r border-slate-300">Distance</th>
-                  <th className="py-2.5 px-2 text-center font-black text-slate-900 border-r border-slate-300">Score</th>
-                  <th className="py-2.5 px-2 text-center border-r border-slate-300">Max Score</th>
-                  <th className="py-2.5 px-2 text-center border-r border-slate-300">Xs</th>
-                  <th className="py-2.5 px-2 text-center border-r border-slate-300">10s</th>
-                  <th className="py-2.5 px-2 text-center">9s</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1 text-left border-r border-slate-300">Round</th>
+                  <th className="py-2.5 px-2 print:py-1 print:px-1 text-center border-r border-slate-300">Distance</th>
+                  <th className="py-2.5 px-2 print:py-1 print:px-1 text-center font-black text-slate-900 border-r border-slate-300">Score</th>
+                  <th className="py-2.5 px-2 print:py-1 print:px-1 text-center border-r border-slate-300">Max Score</th>
+                  <th className="py-2.5 px-2 print:py-1 print:px-1 text-center border-r border-slate-300">Xs</th>
+                  <th className="py-2.5 px-2 print:py-1 print:px-1 text-center border-r border-slate-300">10s</th>
+                  <th className="py-2.5 px-2 print:py-1 print:px-1 text-center">9s</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
                 <tr className="border-b border-slate-200 hover:bg-slate-50/50">
-                  <td className="py-3 px-3 text-left font-bold text-slate-900 border-r border-slate-300 bg-slate-50/50">Round 1</td>
-                  <td className="py-3 px-2 text-slate-700 font-semibold border-r border-slate-200">{eventDistance}</td>
-                  <td className="py-3 px-2 font-black text-slate-900 text-sm border-r border-slate-200">{round1Total}</td>
-                  <td className="py-3 px-2 text-slate-500 border-r border-slate-200">{maxPossibleScore}</td>
-                  <td className="py-3 px-2 font-bold text-slate-700 border-r border-slate-200">{xsDisplay}</td>
-                  <td className="py-3 px-2 font-bold text-slate-700 border-r border-slate-200">{tensDisplay}</td>
-                  <td className="py-3 px-2 font-bold text-slate-700">{ninesDisplay}</td>
+                  <td className="py-3 px-3 print:py-0.5 print:px-1 text-left font-bold text-slate-900 border-r border-slate-300 bg-slate-50/50">Round 1</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 text-slate-700 font-semibold border-r border-slate-200">{eventDistance}</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 font-black text-slate-900 text-sm print:text-xs border-r border-slate-200">{round1Total}</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 text-slate-500 border-r border-slate-200">{maxPossibleScore}</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 font-bold text-slate-700 border-r border-slate-200">{xsDisplay}</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 font-bold text-slate-700 border-r border-slate-200">{tensDisplay}</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 font-bold text-slate-700">{ninesDisplay}</td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr className="bg-slate-100/80 font-bold text-slate-900 border-t-2 border-slate-300">
-                  <td className="py-3 px-3 text-left font-extrabold text-slate-900 border-r border-slate-300">Total</td>
-                  <td className="py-3 px-2 border-r border-slate-200"></td>
-                  <td className="py-3 px-2 font-black text-slate-900 text-sm border-r border-slate-200">{round1Total}</td>
-                  <td className="py-3 px-2 text-slate-700 font-bold border-r border-slate-200">{maxPossibleScore}</td>
-                  <td className="py-3 px-2 font-black text-slate-900 border-r border-slate-200">{xsDisplay}</td>
-                  <td className="py-3 px-2 font-black text-slate-900 border-r border-slate-200">{tensDisplay}</td>
-                  <td className="py-3 px-2 font-black text-slate-900">{ninesDisplay}</td>
+                  <td className="py-3 px-3 print:py-0.5 print:px-1 text-left font-extrabold text-slate-900 border-r border-slate-300">Total</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 border-r border-slate-200"></td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 font-black text-slate-900 text-sm print:text-xs border-r border-slate-200">{round1Total}</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 text-slate-700 font-bold border-r border-slate-200">{maxPossibleScore}</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 font-black text-slate-900 border-r border-slate-200">{xsDisplay}</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 font-black text-slate-900 border-r border-slate-200">{tensDisplay}</td>
+                  <td className="py-3 px-2 print:py-0.5 print:px-1 font-black text-slate-900">{ninesDisplay}</td>
                 </tr>
               </tfoot>
             </table>
@@ -1067,25 +1105,25 @@ export default function ScorecardView({
         </Card>
 
         {/* Coach Insight & Session Notes */}
-        <div className="flex flex-col gap-4">
-          <Card className="p-5 bg-gradient-to-br from-accent/5 via-panel to-amber-500/5 border border-accent/15 shadow-xs">
-            <div className="flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-accent/10 text-accent flex-shrink-0 mt-0.5">
-                <Flame className="w-5 h-5 stroke-[2.5]" />
+        <div className="flex flex-col gap-4 print:gap-1.5">
+          <Card className="p-5 print:p-2 bg-gradient-to-br from-accent/5 via-panel to-amber-500/5 border border-accent/15 shadow-xs print:shadow-none">
+            <div className="flex items-start gap-3.5 print:gap-2">
+              <div className="p-2.5 print:p-1 rounded-xl bg-accent/10 text-accent flex-shrink-0 mt-0.5">
+                <Flame className="w-5 h-5 print:w-3.5 print:h-3.5 stroke-[2.5]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-extrabold tracking-wider text-accent uppercase">
+                  <span className="text-[11px] print:text-[9px] font-extrabold tracking-wider text-accent uppercase">
                     Performance Insight
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-accent/10 font-bold text-accent">
+                  <span className="text-[10px] print:text-[8px] px-2 py-0.5 rounded bg-accent/10 font-bold text-accent">
                     {selectedBow}
                   </span>
                 </div>
-                <p className="text-sm font-semibold text-slate-800 mt-1.5 leading-relaxed">
+                <p className="text-sm print:text-[9px] font-semibold text-slate-800 mt-1.5 print:mt-0.5 leading-relaxed print:leading-tight">
                   {currentBowConfig.getCoachInsight(round1Total, tensDisplay, xsDisplay)}
                 </p>
-                <div className="mt-3 pt-3 border-t border-black/5 text-xs text-slate-500 flex items-center justify-between">
+                <div className="mt-3 pt-3 print:mt-1.5 print:pt-1 border-t border-black/5 text-xs print:text-[8.5px] text-slate-500 flex items-center justify-between">
                   <span>Accuracy consistency:</span>
                   <span className="font-bold text-slate-700">
                     {scorePercentage}% on target
@@ -1096,18 +1134,25 @@ export default function ScorecardView({
           </Card>
 
           {/* Quick Session Notes */}
-          <Card className="p-4 bg-white border border-slate-200/80 shadow-xs flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-slate-100 text-slate-600 flex-shrink-0">
-              <Target className="w-4 h-4" />
+          <Card className="p-4 print:p-1.5 bg-white border border-slate-200/80 shadow-xs print:shadow-none flex items-start gap-3 print:gap-2">
+            <div className="p-2 print:p-1 rounded-lg bg-slate-100 text-slate-600 flex-shrink-0">
+              <Target className="w-4 h-4 print:w-3 print:h-3" />
             </div>
             <div>
-              <span className="text-xs font-bold text-slate-900">Session Notes</span>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <span className="text-xs print:text-[9px] font-bold text-slate-900">Session Notes</span>
+              <p className="text-xs print:text-[8.5px] text-slate-500 mt-0.5 print:mt-0">
                 {session.note || `${currentBowConfig.standardName} session`}
               </p>
             </div>
           </Card>
         </div>
+      </div>
+
+      {/* Official WA Scorecard Signatures (Print Only) */}
+      <div className="hidden print:flex items-center justify-between pt-2 px-3 text-[9px] text-slate-600 font-semibold border-t border-slate-300 mt-0.5">
+        <div>Archer Signature: _______________________</div>
+        <div>Scorer / Judge Signature: _______________________</div>
+        <div>Date: _________________</div>
       </div>
     </>
   )}

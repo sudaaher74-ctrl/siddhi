@@ -24,7 +24,7 @@ export default function TopBar({ title = "Dashboard", subtitle }: TopBarProps) {
     : "";
 
   return (
-    <header className="flex flex-col md:flex-row md:items-center gap-4 md:gap-[12px] sticky top-0 z-50 bg-white/80 backdrop-blur-md pb-4 pt-2 -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-transparent">
+    <header className="flex flex-col md:flex-row md:items-center gap-4 md:gap-[12px] sticky top-0 z-50 bg-white/80 backdrop-blur-md pb-4 pt-2 -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-transparent print:hidden">
       <div className="flex justify-between items-start w-full md:w-auto">
         <div>
           <h1 className="text-[24px] font-bold text-slate-900 tracking-tight">{title}</h1>

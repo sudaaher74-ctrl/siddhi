@@ -422,3 +422,345 @@ function generatePDFReport({
   // Trigger browser download
   doc.save(filename);
 }
+
+export interface ExportScorecardParams {
+  athleteName: string;
+  selectedBow: string;
+  distance: string;
+  formattedDate: string;
+  eventName: string;
+  venueName?: string;
+  standardName?: string;
+  round1Total: number;
+  maxPossibleScore: number;
+  scorePercentage: string;
+  averagePerArrow: string;
+  tensDisplay: number;
+  xsDisplay: number;
+  ninesDisplay: number;
+  totalArrowsCount: number;
+  ends: string[][];
+  endTotals: number[];
+  runningTotals: number[];
+  coachInsight?: string;
+  sessionNote?: string;
+  session?: Session;
+}
+
+/**
+ * Generates and downloads an Official Archery Scorecard guaranteed to fit on EXACTLY ONE A4 PAGE.
+ */
+export function exportScorecardPDF(params: ExportScorecardParams) {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
+    format: "a4",
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 32;
+  const contentWidth = pageWidth - margin * 2;
+
+  // 1. Top Header Banner (slate-900 with red/gold accents)
+  doc.setFillColor(15, 23, 42); // slate-900
+  doc.rect(0, 0, pageWidth, 58, "F");
+
+  // Accent Line (Target Red)
+  doc.setFillColor(229, 57, 53); // target-red
+  doc.rect(0, 58, pageWidth, 3.5, "F");
+
+  // Title
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text("ARCHERX AI  |  OFFICIAL SCORECARD", margin, 26);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(203, 213, 225); // slate-300
+  doc.text("WORLD ARCHERY RECOGNIZED ROUND RECORD", margin, 42);
+
+  // Top Right Info
+  doc.setFontSize(8.5);
+  doc.text(`Date: ${params.formattedDate}`, pageWidth - margin, 26, { align: "right" });
+  doc.text(`${params.selectedBow} • ${params.distance}`, pageWidth - margin, 42, { align: "right" });
+
+  let y = 74;
+
+  // 2. Athlete Information Box
+  doc.setFillColor(248, 250, 252); // slate-50
+  doc.setDrawColor(226, 232, 240); // slate-200
+  doc.roundedRect(margin, y, contentWidth, 38, 4, 4, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(15, 23, 42);
+  doc.text(params.athleteName, margin + 12, y + 18);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text(
+    `Event: ${params.eventName}   |   Standard: ${params.standardName || "World Archery Target"}   |   Venue: ${params.venueName || "Outdoor Range"}`,
+    margin + 12,
+    y + 30
+  );
+
+  y += 46;
+
+  // 3. Four KPI Metric Cards (Compact single row)
+  const kpis = [
+    { label: "ROUND 1 SCORE", val: `${params.round1Total} / ${params.maxPossibleScore}`, sub: `(${params.scorePercentage}%)`, color: [15, 23, 42] },
+    { label: "ARROW AVERAGE", val: params.averagePerArrow, sub: "pts / arrow", color: [5, 150, 105] }, // emerald
+    { label: "10s COUNT", val: `${params.tensDisplay}`, sub: "Gold Hits", color: [217, 119, 6] }, // amber
+    { label: params.selectedBow === "Compound Bow" ? "COMPOUND X-RING" : "INNER-X (Xs)", val: `${params.xsDisplay}`, sub: "Bullseyes", color: [234, 88, 12] }, // orange
+  ];
+
+  const cardWidth = (contentWidth - 3 * 8) / 4;
+  kpis.forEach((kpi, idx) => {
+    const cardX = margin + idx * (cardWidth + 8);
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(cardX, y, cardWidth, 42, 4, 4, "FD");
+
+    // Top Label
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text(kpi.label, cardX + cardWidth / 2, y + 12, { align: "center" });
+
+    // Value
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(kpi.color[0], kpi.color[1], kpi.color[2]);
+    doc.text(kpi.val, cardX + cardWidth / 2, y + 26, { align: "center" });
+
+    // Subtitle
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text(kpi.sub, cardX + cardWidth / 2, y + 36, { align: "center" });
+  });
+
+  y += 50;
+
+  // 4. Detailed Scores Table (autoTable)
+  const tableHeaders = [
+    ["End", "Arrow 1", "Arrow 2", "Arrow 3", "Arrow 4", "Arrow 5", "Arrow 6", "End Total", "Running Total"]
+  ];
+
+  const tableRows: (string | number)[][] = [];
+  const safeEnds = params.ends.slice(0, 6);
+
+  safeEnds.forEach((endRow, endIdx) => {
+    const row: (string | number)[] = [endIdx + 1];
+    for (let a = 0; a < 6; a++) {
+      row.push(endRow[a] || "-");
+    }
+    row.push(params.endTotals[endIdx] || 0);
+    row.push(params.runningTotals[endIdx] || 0);
+    tableRows.push(row);
+  });
+
+  // Total footer row
+  tableRows.push([
+    "Total",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    params.round1Total,
+    params.round1Total,
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: tableHeaders,
+    body: tableRows,
+    theme: "grid",
+    headStyles: {
+      fillColor: [30, 41, 59], // slate-800
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 8,
+      halign: "center",
+      cellPadding: 3.5,
+    },
+    bodyStyles: {
+      fontSize: 8.5,
+      cellPadding: 3.2,
+      halign: "center",
+      textColor: [15, 23, 42],
+    },
+    columnStyles: {
+      0: { cellWidth: 36, fontStyle: "bold", halign: "center", fillColor: [248, 250, 252] },
+      1: { cellWidth: 46 },
+      2: { cellWidth: 46 },
+      3: { cellWidth: 46 },
+      4: { cellWidth: 46 },
+      5: { cellWidth: 46 },
+      6: { cellWidth: 46 },
+      7: { cellWidth: 54, fontStyle: "bold", halign: "center", fillColor: [241, 245, 249] },
+      8: { cellWidth: 65, fontStyle: "bold", halign: "center", fillColor: [241, 245, 249] },
+    },
+    didParseCell: (data) => {
+      // Color arrow cells based on archery zones
+      if (data.section === "body") {
+        const isFooterRow = data.row.index === tableRows.length - 1;
+        if (isFooterRow) {
+          data.cell.styles.fillColor = [254, 243, 199]; // amber-100
+          data.cell.styles.textColor = [146, 64, 14]; // amber-800
+          data.cell.styles.fontStyle = "bold";
+          if (data.column.index === 0) {
+            data.cell.styles.halign = "left";
+          }
+          return;
+        }
+
+        const col = data.column.index;
+        if (col >= 1 && col <= 6) {
+          const val = String(data.cell.raw).toUpperCase().trim();
+          if (val === "X" || val === "10" || val === "9") {
+            data.cell.styles.fillColor = [254, 240, 138]; // gold-200
+            data.cell.styles.textColor = [113, 63, 18];
+            data.cell.styles.fontStyle = "bold";
+          } else if (val === "8" || val === "7") {
+            data.cell.styles.fillColor = [254, 202, 202]; // red-200
+            data.cell.styles.textColor = [153, 27, 27];
+            data.cell.styles.fontStyle = "bold";
+          } else if (val === "6" || val === "5") {
+            data.cell.styles.fillColor = [186, 230, 253]; // blue-200
+            data.cell.styles.textColor = [7, 89, 133];
+            data.cell.styles.fontStyle = "bold";
+          } else if (val === "4" || val === "3") {
+            data.cell.styles.fillColor = [51, 65, 85]; // dark
+            data.cell.styles.textColor = [255, 255, 255];
+            data.cell.styles.fontStyle = "bold";
+          } else if (val === "2" || val === "1") {
+            data.cell.styles.fillColor = [248, 250, 252]; // white
+            data.cell.styles.textColor = [15, 23, 42];
+          }
+        }
+      }
+    },
+    margin: { left: margin, right: margin },
+  });
+
+  const finalTableY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 360;
+  y = finalTableY + 12;
+
+  // 5. Bottom Section: Round Summary (Left) + Performance Insight (Right)
+  const leftColWidth = 270;
+  const rightColWidth = contentWidth - leftColWidth - 12;
+  const rightColX = margin + leftColWidth + 12;
+
+  // Left Column: Round Summary Table
+  autoTable(doc, {
+    startY: y,
+    head: [["Round", "Distance", "Score", "Max", "Xs", "10s", "9s"]],
+    body: [
+      ["Round 1", params.distance, params.round1Total, params.maxPossibleScore, params.xsDisplay, params.tensDisplay, params.ninesDisplay],
+      ["Total", "", params.round1Total, params.maxPossibleScore, params.xsDisplay, params.tensDisplay, params.ninesDisplay],
+    ],
+    theme: "grid",
+    tableWidth: leftColWidth,
+    headStyles: {
+      fillColor: [51, 65, 85],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 7.5,
+      halign: "center",
+      cellPadding: 3,
+    },
+    bodyStyles: {
+      fontSize: 7.5,
+      cellPadding: 2.8,
+      halign: "center",
+      textColor: [15, 23, 42],
+    },
+    columnStyles: {
+      0: { cellWidth: 44, fontStyle: "bold", halign: "left" },
+      1: { cellWidth: 42 },
+      2: { cellWidth: 38, fontStyle: "bold" },
+      3: { cellWidth: 38 },
+      4: { cellWidth: 34 },
+      5: { cellWidth: 34 },
+      6: { cellWidth: 34 },
+    },
+    didParseCell: (data) => {
+      if (data.section === "body" && data.row.index === 1) {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.fillColor = [241, 245, 249];
+      }
+    },
+    margin: { left: margin },
+  });
+
+  // Right Column: Performance Insight Box
+  const boxHeight = 65;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(rightColX, y, rightColWidth, boxHeight, 4, 4, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(229, 57, 53);
+  doc.text("PERFORMANCE INSIGHT", rightColX + 10, y + 14);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(51, 65, 85);
+  const insightLines = doc.splitTextToSize(
+    params.coachInsight || "Consistent arrow grouping observed across round ends.",
+    rightColWidth - 20
+  );
+  doc.text(insightLines.slice(0, 3), rightColX + 10, y + 27);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Consistency: ${params.scorePercentage}% on target`, rightColX + 10, y + boxHeight - 8);
+
+  y += boxHeight + 14;
+
+  // 6. Official Signatures Block (WA Official Tournament format)
+  doc.setDrawColor(203, 213, 225); // slate-300
+  doc.setLineWidth(0.8);
+
+  // Archer Signature Line
+  const sigWidth = 140;
+  doc.line(margin + 10, y + 24, margin + 10 + sigWidth, y + 24);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Archer's Signature", margin + 10, y + 35);
+
+  // Scorer Signature Line
+  const sig2X = margin + (contentWidth - sigWidth) / 2;
+  doc.line(sig2X, y + 24, sig2X + sigWidth, y + 24);
+  doc.text("Scorer / Judge Signature", sig2X, y + 35);
+
+  // Date Line
+  const dateX = pageWidth - margin - 90;
+  doc.line(dateX, y + 24, pageWidth - margin, y + 24);
+  doc.text("Verification Date", dateX, y + 35);
+
+  // 7. Security / Verification Footer (Bottom of Page 1)
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text(
+    `Page 1 of 1  •  ArcherX AI Certified Scorecard  •  World Archery Standard  •  ID: ${params.session?._id || params.session?.id || "ARCHERX"}`,
+    pageWidth / 2,
+    pageHeight - 14,
+    { align: "center" }
+  );
+
+  // Trigger download
+  const cleanName = params.athleteName.trim().replace(/[^a-zA-Z0-9_-]/g, "_") || "Athlete";
+  const filename = `Scorecard_${cleanName}_${params.round1Total}pts.pdf`;
+  doc.save(filename);
+}
