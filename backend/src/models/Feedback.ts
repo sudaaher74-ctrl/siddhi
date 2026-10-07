@@ -130,4 +130,15 @@ FeedbackConstructor.findByIdAndDelete = async function (id: string) {
   return item;
 };
 
+FeedbackConstructor.deleteMany = async function (query: { user?: any } = {}) {
+  let sql = 'DELETE FROM feedback';
+  const args: any[] = [];
+  if (query.user) {
+    sql += ' WHERE user_id = ?';
+    args.push(String(query.user));
+  }
+  const res = await db.execute({ sql, args });
+  return { deletedCount: res.rowsAffected };
+};
+
 export default FeedbackConstructor;

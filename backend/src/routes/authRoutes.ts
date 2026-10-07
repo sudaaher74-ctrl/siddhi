@@ -2,6 +2,10 @@ import express, { Response } from 'express';
 import jwt from 'jsonwebtoken';
 import type { SignOptions } from 'jsonwebtoken';
 import User from '../models/User';
+import Session from '../models/Session';
+import Equipment from '../models/Equipment';
+import Goal from '../models/Goal';
+import Feedback from '../models/Feedback';
 import { protect, AuthedRequest, requireUser } from '../middleware/authMiddleware';
 import { validateBody } from '../middleware/validate';
 import { loginSchema, registerSchema } from '../schemas';
@@ -204,6 +208,34 @@ router.put('/profile', protect, async (req: AuthedRequest, res) => {
   } catch (error) {
     console.error('Update profile failed:', error);
     res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
+// DELETE /api/auth/me - Delete current user account and all personal data
+router.delete('/me', protect, async (req: AuthedRequest, res) => {
+  try {
+    const user = requireUser(req);
+    const userId = user._id;
+
+    // Cascade delete user data
+    await Session.deleteMany({ user: userId });
+    await Equipment.deleteMany({ user: userId });
+    await Goal.deleteMany({ user: userId });
+    await Feedback.deleteMany({ user: userId });
+
+    await user.deleteOne();
+
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: env.cookieSecure,
+      sameSite: env.cookieSameSite,
+      path: '/',
+    });
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account failed:', error);
+    res.status(500).json({ message: 'Failed to delete account' });
   }
 });
 

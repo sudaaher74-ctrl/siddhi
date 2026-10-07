@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { OAuth2Client } from 'google-auth-library';
 import { app, authed, createUserAndLogin, ORIGIN } from './helpers';
 import User from '../src/models/User';
+import Session from '../src/models/Session';
 
 describe('authentication', () => {
   it('registers a user and sets an httpOnly cookie', async () => {
@@ -90,6 +91,42 @@ describe('authentication', () => {
     const me = await authed(request(app).get('/api/auth/me'), token);
     expect(me.body.name).toBe('Updated Archer Name');
     expect(me.body.phone).toBe('+91 9876543210');
+  });
+
+  it('allows authenticated user to self-delete their account and cascade-delete sessions', async () => {
+    const { token, user } = await createUserAndLogin();
+
+    // Create a session for this user
+    await Session.create({
+      user: user._id,
+      name: 'User Session to be deleted',
+      type: 'Practice',
+      arrows: 36,
+      score: 300,
+      avg: 8.33,
+      tens: 12,
+    });
+
+    const deleteRes = await authed(request(app).delete('/api/auth/me'), token);
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.message).toMatch(/deleted/i);
+
+    // Verify user is gone
+    const fetchedUser = await User.findById(user._id);
+    expect(fetchedUser).toBeNull();
+
+    // Verify user's session is cascade-deleted
+    const sessions = await Session.find({ user: user._id });
+    expect(sessions.length).toBe(0);
+
+    // Verify token no longer works
+    const meRes = await authed(request(app).get('/api/auth/me'), token);
+    expect(meRes.status).toBe(401);
+  });
+
+  it('rejects self-delete for unauthenticated request', async () => {
+    const res = await request(app).delete('/api/auth/me').set('Origin', ORIGIN);
+    expect(res.status).toBe(401);
   });
 
   it('returns 401 (not 500) for a valid token whose user was deleted', async () => {

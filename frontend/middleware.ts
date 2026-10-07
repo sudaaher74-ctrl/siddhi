@@ -8,11 +8,8 @@ export function middleware(request: NextRequest) {
   // Check if the user is on the login page
   const isLoginPage = request.nextUrl.pathname.startsWith('/login');
 
-  // Allow access to admin dashboard without token for now
-  const isAdminPage = request.nextUrl.pathname.startsWith('/admin');
-  
-  if (isLoginPage || isAdminPage) {
-    if (isLoginPage && token) {
+  if (isLoginPage) {
+    if (token) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     return NextResponse.next();

@@ -167,4 +167,15 @@ GoalConstructor.findOneAndDelete = async function (query: { _id?: string; id?: s
 };
 
 
+GoalConstructor.deleteMany = async function (query: { user?: any } = {}) {
+  let sql = 'DELETE FROM goals';
+  const args: any[] = [];
+  if (query.user) {
+    sql += ' WHERE user_id = ?';
+    args.push(String(query.user));
+  }
+  const res = await db.execute({ sql, args });
+  return { deletedCount: res.rowsAffected };
+};
+
 export default GoalConstructor;
