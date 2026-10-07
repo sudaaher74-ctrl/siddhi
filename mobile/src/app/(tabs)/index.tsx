@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import ArrowPlot from '@/components/ArrowPlot';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/services/api';
 
@@ -30,15 +31,24 @@ export default function DashboardScreen() {
   const renderSession = ({ item }: { item: any }) => (
     <ThemedView style={styles.sessionCard}>
       <ThemedText style={styles.sessionDate}>
-        {new Date(item.date).toLocaleDateString()}
+        {new Date(item.date || item.createdAt).toLocaleDateString()}
       </ThemedText>
       <ThemedText style={styles.sessionDetails}>
-        Arrows: {item.arrowCount || 0} | Score: {item.totalScore || 0}
+        Type: {item.type} | Arrows: {item.arrows || 0} | Score: {item.score || 0}
       </ThemedText>
-      {item.notes ? (
-        <ThemedText style={styles.sessionNotes}>{item.notes}</ThemedText>
+      {item.note ? (
+        <ThemedText style={styles.sessionNotes}>{item.note}</ThemedText>
       ) : null}
     </ThemedView>
+  );
+
+  const renderHeader = () => (
+    <>
+      {sessions.length > 0 && (
+        <ArrowPlot sessions={sessions} bowType={sessions[0]?.bow || 'Recurve'} />
+      )}
+      <ThemedText type="subtitle" style={styles.sectionTitle}>Recent Sessions</ThemedText>
+    </>
   );
 
   return (
@@ -51,8 +61,6 @@ export default function DashboardScreen() {
       </ThemedView>
 
       <ThemedView style={styles.content}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>Recent Sessions</ThemedText>
-        
         {loading ? (
           <ActivityIndicator size="large" color="#0a7ea4" style={styles.loader} />
         ) : sessions.length === 0 ? (
@@ -60,9 +68,11 @@ export default function DashboardScreen() {
         ) : (
           <FlatList
             data={sessions}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id || item._id}
             renderItem={renderSession}
+            ListHeaderComponent={renderHeader}
             contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
           />
         )}
       </ThemedView>
