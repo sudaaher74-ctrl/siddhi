@@ -18,11 +18,15 @@ export function useUser() {
 
   const fetchUser = async () => {
     try {
-      // The auth cookie is httpOnly, so we can't check it here — just ask
-      // the API. `apiFetch` redirects to /login on a 401.
-      const data = await apiFetch<UserProfile>('/api/auth/me');
-      setUser(data);
-      return data;
+      // Login system removed for local dev
+      const mockUser = {
+        _id: 'mock-user-id',
+        name: 'Local Dev User',
+        email: 'dev@localhost.com',
+        role: 'admin',
+      };
+      setUser(mockUser);
+      return mockUser;
     } catch (error) {
       console.error('Failed to fetch user', error);
       return null;

@@ -2,23 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Get the token from cookies
-  const token = request.cookies.get('token')?.value;
-
-  // Check if the user is on the login page
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login');
-
-  if (isLoginPage) {
-    if (token) {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
-    return NextResponse.next();
-  }
-
-  if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
+  // Login system removed for local dev
   return NextResponse.next();
 }
 
