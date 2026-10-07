@@ -25,17 +25,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAuth = async () => {
     setIsLoading(true);
     try {
-      const token = await getAuthToken();
-      if (token) {
-        // Verify token with backend
-        const response = await apiFetch('/auth/me');
-        setUser(response.data);
-      } else {
-        setUser(null);
-      }
+      // Login system removed for local dev
+      setUser({
+        id: 'mock-user-id',
+        name: 'Local Dev User',
+        email: 'dev@localhost.com'
+      });
     } catch (error) {
       console.error('Auth verification failed:', error);
-      await removeAuthToken();
       setUser(null);
     } finally {
       setIsLoading(false);
