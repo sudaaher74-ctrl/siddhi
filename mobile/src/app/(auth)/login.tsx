@@ -72,6 +72,14 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity 
+          style={[styles.button, styles.googleButton]} 
+          onPress={() => Alert.alert('Google Login', 'Google authentication flow will open here')}
+          disabled={isLoading}
+        >
+          <ThemedText style={styles.googleButtonText}>Sign in with Google</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
           style={styles.linkButton} 
           onPress={() => router.push('/(auth)/signup')}
         >
@@ -114,6 +122,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  googleButton: {
+    backgroundColor: '#db4437', // Google Red
+    marginTop: 15,
+  },
+  googleButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
