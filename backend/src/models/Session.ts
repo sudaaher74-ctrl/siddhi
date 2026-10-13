@@ -39,10 +39,13 @@ const mapSessionRow = (row: any): ISession => ({
   updatedAt: row.updated_at,
   async save() {
     const now = new Date().toISOString();
+    const createdAt = this.createdAt
+      ? new Date(this.createdAt).toISOString()
+      : now;
     await db.execute({
       sql: `
         UPDATE sessions
-        SET name = ?, type = ?, arrows = ?, score = ?, avg = ?, tens = ?, note = ?, distance = ?, bow = ?, arrow_data = ?, updated_at = ?
+        SET name = ?, type = ?, arrows = ?, score = ?, avg = ?, tens = ?, note = ?, distance = ?, bow = ?, arrow_data = ?, created_at = ?, updated_at = ?
         WHERE id = ?
       `,
       args: [
@@ -56,6 +59,7 @@ const mapSessionRow = (row: any): ISession => ({
         this.distance || '',
         this.bow || '',
         this.arrowData || null,
+        createdAt,
         now,
         this.id,
       ],
@@ -189,6 +193,7 @@ SessionConstructor.findOneAndUpdate = async function (
   if (updateData.tens !== undefined) current.tens = Number(updateData.tens);
   if (updateData.note !== undefined) current.note = updateData.note;
   if (updateData.arrowData !== undefined) current.arrowData = updateData.arrowData;
+  if (updateData.createdAt !== undefined) current.createdAt = updateData.createdAt;
 
   await current.save();
   return current;

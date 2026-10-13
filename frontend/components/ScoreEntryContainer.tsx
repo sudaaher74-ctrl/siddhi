@@ -3,12 +3,18 @@
 import React, { useState, useEffect } from "react";
 import { apiPost } from "@/lib/api";
 import { Session } from "@/lib/data";
-import { Award, Check, Undo2, ChevronRight, Target, Hash, Clock } from "lucide-react";
+import { Award, Check, Undo2, ChevronRight, Target, Hash, Clock, Calendar, Download } from "lucide-react";
 import ScorePad from "./ScorePad";
 import ArrowPlot from "./ArrowPlot";
 import ArcheryTimer from "./ArcheryTimer";
-import SessionSetup, { SessionSetupValues } from "./SessionSetup";
+import SessionSetup, {
+  SessionSetupValues,
+  formatReadableDateTime,
+  getTodayDateStr,
+  getCurrentTimeStr,
+} from "./SessionSetup";
 import ScorecardModal from "./ScorecardModal";
+import { exportScorecardPDF } from "@/lib/pdfExport";
 
 export type ScoreValue = "X" | "10" | "9" | "8" | "7" | "6" | "5" | "4" | "3" | "2" | "1" | "M";
 
@@ -25,7 +31,19 @@ export default function ScoreEntryContainer() {
   const [isSaving, setIsSaving] = useState(false);
   // Null until the archer has picked a distance — scoring is blocked before that
   const [setup, setSetup] = useState<SessionSetupValues | null>(null);
+  const [previousSetup, setPreviousSetup] = useState<SessionSetupValues | null>(null);
   const [showScorecardPreview, setShowScorecardPreview] = useState(false);
+
+  const getSessionDateTime = (setupVals: SessionSetupValues | null): Date => {
+    if (!setupVals?.date) return new Date();
+    try {
+      const [year, month, day] = setupVals.date.split("-").map(Number);
+      const [hours, minutes] = (setupVals.time || "12:00").split(":").map(Number);
+      return new Date(year, (month || 1) - 1, day || 1, hours || 0, minutes || 0, 0);
+    } catch {
+      return new Date();
+    }
+  };
 
   // Restore draft on mount
   useEffect(() => {
@@ -34,7 +52,15 @@ export default function ScoreEntryContainer() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && Array.isArray(parsed.ends) && parsed.ends.length > 0) {
-          if (parsed.setup) setSetup(parsed.setup);
+          if (parsed.setup) {
+            const restoredSetup: SessionSetupValues = {
+              ...parsed.setup,
+              date: parsed.setup.date || parsed.date || getTodayDateStr(),
+              time: parsed.setup.time || parsed.time || getCurrentTimeStr(),
+            };
+            setSetup(restoredSetup);
+            setPreviousSetup(restoredSetup);
+          }
           setEnds(parsed.ends);
           if (typeof parsed.currentEndIndex === "number") {
             setCurrentEndIndex(parsed.currentEndIndex);
@@ -73,7 +99,8 @@ export default function ScoreEntryContainer() {
             arrows: allArrowsCount,
             distance: setup.distance,
             bow: setup.bow,
-            date: new Date().toLocaleDateString(),
+            date: setup.date || getTodayDateStr(),
+            time: setup.time || getCurrentTimeStr(),
           })
         );
       }
@@ -137,10 +164,18 @@ export default function ScoreEntryContainer() {
       const calculatedTotal = allArrows.reduce((sum, a) => sum + calculateValue(a.score), 0);
       const average = (calculatedTotal / allArrows.length).toFixed(2);
       
+      const sessionDate = getSessionDateTime(setup);
+      const sessionIsoString = sessionDate.toISOString();
+      const formattedDateForName = sessionDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+
       const distance = setup?.distance || "70m";
       const bow = setup?.bow || "Recurve Bow";
       const payload = {
-        name: `${bow ? `${bow} ` : ""}${distance ? `${distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
+        name: `${bow ? `${bow} ` : ""}${distance ? `${distance} ` : ""}${setup?.type || "Practice"} - ${formattedDateForName}`,
         type: setup?.type || "Practice",
         distance,
         bow,
@@ -149,7 +184,8 @@ export default function ScoreEntryContainer() {
         avg: Number(average),
         tens: tensCount,
         note: `Logged via Interactive Score Pad (${bow} at ${distance})`,
-        arrowData: JSON.stringify(savedEnds)
+        arrowData: JSON.stringify(savedEnds),
+        createdAt: sessionIsoString,
       };
 
       const saved = await apiPost<Session>("/api/sessions", payload);
@@ -171,14 +207,79 @@ export default function ScoreEntryContainer() {
     }
   };
 
+  const handleDownloadPDFDirect = () => {
+    const sessionDate = getSessionDateTime(setup);
+    const formattedDate = sessionDate.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const formattedTime = sessionDate.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    const safeEnds = ends.slice(0, 6);
+    const endTotals = safeEnds.map(end => end.reduce((sum, a) => sum + calculateValue(a.score), 0));
+    const runningTotals: number[] = [];
+    let rSum = 0;
+    endTotals.forEach(t => {
+      rSum += t;
+      runningTotals.push(rSum);
+    });
+
+    const flatArrows = ends.flat();
+    const tensCount = flatArrows.filter(a => a.score === "10" || a.score === "X").length;
+    const xsCount = flatArrows.filter(a => a.score === "X").length;
+    const ninesCount = flatArrows.filter(a => a.score === "9").length;
+    const totalArrowsCount = flatArrows.length > 0 ? flatArrows.length : 36;
+    const maxScore = totalArrowsCount * 10;
+
+    exportScorecardPDF({
+      athleteName: "Athlete",
+      selectedBow: setup?.bow || "Recurve Bow",
+      distance: setup?.distance || "70m",
+      formattedDate,
+      formattedTime,
+      eventName: `${setup?.distance || "70m"} ${setup?.bow || "Recurve"}`,
+      venueName: `Score Entry Round (${setup?.bow} at ${setup?.distance})`,
+      standardName: "World Archery Recognized Standard",
+      round1Total: totalScore,
+      maxPossibleScore: maxScore,
+      scorePercentage: maxScore > 0 ? ((totalScore / maxScore) * 100).toFixed(1) : "0.0",
+      averagePerArrow: flatArrows.length > 0 ? (totalScore / flatArrows.length).toFixed(2) : "0.00",
+      tensDisplay: tensCount,
+      xsDisplay: xsCount,
+      ninesDisplay: ninesCount,
+      totalArrowsCount,
+      ends: safeEnds.map(end => end.map(a => a.score)),
+      endTotals,
+      runningTotals,
+      sessionNote: `Logged via Score Entry with custom time: ${formattedDate} at ${formattedTime}`,
+      session: liveSessionPreview,
+    });
+  };
+
   const [mobileMode, setMobileMode] = useState<"target" | "keypad" | "timer">("target");
 
   if (!setup) {
-    return <SessionSetup onStart={setSetup} />;
+    return (
+      <SessionSetup
+        onStart={(values) => {
+          setSetup(values);
+          setPreviousSetup(values);
+        }}
+        initialValues={previousSetup || undefined}
+      />
+    );
   }
 
+  const sessionDate = getSessionDateTime(setup);
+  const sessionIsoString = sessionDate.toISOString();
+
   const liveSessionPreview: Session = {
-    name: `${setup?.bow ? `${setup.bow} ` : ""}${setup?.distance ? `${setup.distance} ` : ""}${setup?.type || "Practice"} - ${new Date().toLocaleDateString()}`,
+    name: `${setup?.bow ? `${setup.bow} ` : ""}${setup?.distance ? `${setup.distance} ` : ""}${setup?.type || "Practice"} - ${sessionDate.toLocaleDateString()}`,
     type: setup?.type || "Practice",
     distance: setup?.distance || "70m",
     bow: setup?.bow,
@@ -188,6 +289,7 @@ export default function ScoreEntryContainer() {
     tens: ends.flat().filter(a => a.score === "10" || a.score === "X").length,
     note: `Logged via Interactive Score Pad${setup?.bow ? ` (${setup.bow})` : ""}${setup?.distance ? ` at ${setup.distance}` : ""}`,
     arrowData: JSON.stringify(ends.filter(e => Array.isArray(e) && e.length > 0)),
+    createdAt: sessionIsoString,
   };
 
   // Helper for arrow zone styling in Mobile HUD
@@ -214,6 +316,12 @@ export default function ScoreEntryContainer() {
       </span>
       <span className="text-[11px] sm:text-[13px] text-text-dim font-medium">{setup.type}</span>
       
+      {/* Session Date & Time Tag */}
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] sm:text-[13px] font-medium border border-slate-200">
+        <Calendar className="w-3 h-3 text-slate-400" />
+        <span>{formatReadableDateTime(setup.date, setup.time)}</span>
+      </span>
+      
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2 flex-wrap">
         {ends.flat().length > 0 && (
           <button
@@ -229,6 +337,15 @@ export default function ScoreEntryContainer() {
         )}
         <button
           type="button"
+          onClick={handleDownloadPDFDirect}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] sm:text-[12px] font-bold shadow-xs border border-slate-200 transition-all cursor-pointer"
+          title="Download PDF Scorecard with chosen date and timing"
+        >
+          <Download className="w-3.5 h-3.5 text-accent" />
+          <span className="hidden xs:inline">PDF</span>
+        </button>
+        <button
+          type="button"
           onClick={() => setShowScorecardPreview(true)}
           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0c1e38] text-white text-[11px] sm:text-[12px] font-bold shadow-xs hover:bg-[#152e50] transition-all cursor-pointer"
         >
@@ -242,6 +359,7 @@ export default function ScoreEntryContainer() {
             try { localStorage.removeItem("archerx_live_draft"); } catch {}
             setEnds(Array(6).fill([]));
             setCurrentEndIndex(0);
+            setPreviousSetup(setup);
             setSetup(null);
           }}
           className="text-[11px] sm:text-[12px] text-text-dim underline hover:text-text cursor-pointer"
@@ -250,6 +368,47 @@ export default function ScoreEntryContainer() {
         </button>
       </div>
     </div>
+
+    {/* Round Complete Banner */}
+    {isSessionComplete && (
+      <div className="mt-3 p-3.5 sm:p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold flex-shrink-0">
+            <Award className="w-5 h-5 text-amber-300" />
+          </div>
+          <div>
+            <div className="text-sm font-bold text-emerald-950">
+              Session Completed! (6 Ends • {totalScore} pts)
+            </div>
+            <div className="text-xs text-emerald-700 flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <Calendar className="w-3 h-3 text-emerald-600" />
+              <span>{formatReadableDateTime(setup.date, setup.time)}</span>
+              <span>•</span>
+              <span>{setup.bow} at {setup.distance}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={handleDownloadPDFDirect}
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0c1e38] hover:bg-[#152e50] text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-400" />
+            <span>Download PDF</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleSaveSession}
+            disabled={isSaving}
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>{isSaving ? "Saving..." : "Save Session"}</span>
+          </button>
+        </div>
+      </div>
+    )}
 
     {/* MOBILE-ONLY: Sticky Live Scoring HUD & Mode Tabs */}
     <div className="lg:hidden flex flex-col gap-2 mt-2">

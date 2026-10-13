@@ -428,6 +428,7 @@ export interface ExportScorecardParams {
   selectedBow: string;
   distance: string;
   formattedDate: string;
+  formattedTime?: string;
   eventName: string;
   venueName?: string;
   standardName?: string;
@@ -579,6 +580,32 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
 
   if (totalArrows === 0) totalArrows = params.totalArrowsCount || 36;
 
+  // Resolve formatted date and timing safely
+  let formattedDate = params.formattedDate;
+  let formattedTime = params.formattedTime;
+
+  if (params.session?.createdAt) {
+    try {
+      const d = new Date(params.session.createdAt);
+      if (!isNaN(d.getTime())) {
+        if (!formattedDate) {
+          formattedDate = d.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+        }
+        if (!formattedTime) {
+          formattedTime = d.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+        }
+      }
+    } catch {}
+  }
+
   // 1. Top Header Banner (slate-900 with red/gold accents)
   doc.setFillColor(15, 23, 42); // slate-900
   doc.rect(0, 0, pageWidth, 66, "F");
@@ -598,11 +625,14 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
   doc.setTextColor(203, 213, 225); // slate-300
   doc.text("WORLD ARCHERY RECOGNIZED ROUND RECORD & CERTIFICATION", margin, 47);
 
-  // Top Right Info
+  // Top Right Info with Date & Timing
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(255, 255, 255);
-  doc.text(`DATE: ${params.formattedDate.toUpperCase()}`, pageWidth - margin, 28, { align: "right" });
+  const headerDateText = formattedTime
+    ? `DATE: ${formattedDate.toUpperCase()}   |   TIME: ${formattedTime.toUpperCase()}`
+    : `DATE: ${formattedDate.toUpperCase()}`;
+  doc.text(headerDateText, pageWidth - margin, 28, { align: "right" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
@@ -632,7 +662,8 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(51, 65, 85);
-  const detailsLine = `Event: ${params.eventName}    |    Standard: ${params.standardName || "World Archery Target"}    |    Venue: ${params.venueName || "Outdoor Range"}`;
+  const timeInfo = formattedTime ? ` at ${formattedTime}` : "";
+  const detailsLine = `Session: ${formattedDate}${timeInfo}   |   Event: ${params.eventName}   |   Venue: ${params.venueName || "Outdoor Range"}`;
   doc.text(detailsLine, margin + 14, y + 50);
 
   // World Archery Official 5-Zone Concentric Target Graphic
@@ -973,7 +1004,8 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
   doc.text(`Discipline: Target Archery   •   Total Ends: 6   •   Arrows: ${totalArrows}`, margin + 2, subSummaryY);
-  doc.text(`Timing: 30s Lead-In • World Archery Recognized Standard`, margin + 2, subSummaryY + 12);
+  const specTiming = formattedTime ? `Session Timing: ${formattedDate} at ${formattedTime}` : `Session Timing: ${formattedDate}`;
+  doc.text(`${specTiming}   •   World Archery Standard`, margin + 2, subSummaryY + 12);
   if (params.sessionNote && params.sessionNote.trim()) {
     doc.setFont("helvetica", "italic");
     doc.text(`Note: "${params.sessionNote.trim().slice(0, 48)}"`, margin + 2, subSummaryY + 24);
@@ -1331,8 +1363,9 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(148, 163, 184); // slate-400
+  const footerTiming = formattedTime ? ` at ${formattedTime}` : "";
   doc.text(
-    `Page 1 of 1  •  ArcherX AI Certified Scorecard  •  World Archery Standard  •  Session: ${params.session?._id || params.session?.id || "ARCHERX"}  •  Generated: ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+    `Page 1 of 1  •  ArcherX AI Certified Scorecard  •  Session Date: ${formattedDate}${footerTiming}  •  Session ID: ${params.session?._id || params.session?.id || "ARCHERX"}  •  Generated: ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
     pageWidth / 2,
     pageHeight - 12,
     { align: "center" }

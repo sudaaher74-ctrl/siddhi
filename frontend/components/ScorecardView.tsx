@@ -18,6 +18,8 @@ import {
   Flame,
   Plus,
   AlertCircle,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import { Session } from "@/lib/data";
 import { useUser } from "@/hooks/useUser";
@@ -359,6 +361,11 @@ export default function ScorecardView({
     month: "short",
     year: "numeric",
   });
+  const formattedTime = sessionDate.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 
   const venueName = session?.note || currentBowConfig.standardName;
 
@@ -387,6 +394,7 @@ export default function ScorecardView({
       selectedBow,
       distance: eventDistance,
       formattedDate,
+      formattedTime,
       eventName,
       venueName,
       standardName: currentBowConfig.standardName,
@@ -409,7 +417,7 @@ export default function ScorecardView({
 
   const handleShare = async () => {
     if (!session) return;
-    const shareText = `🎯 ArcherX Scorecard - ${athleteName} (${eventName})\nBow: ${selectedBow}\nDistance: ${eventDistance}\nDate: ${formattedDate}\nScore: ${round1Total} / ${maxPossibleScore}\nXs: ${xsDisplay} | 10s: ${tensDisplay} | 9s: ${ninesDisplay}\nStandard: ${currentBowConfig.standardName}`;
+    const shareText = `🎯 ArcherX Scorecard - ${athleteName} (${eventName})\nBow: ${selectedBow}\nDistance: ${eventDistance}\nDate & Time: ${formattedDate} at ${formattedTime}\nScore: ${round1Total} / ${maxPossibleScore}\nXs: ${xsDisplay} | 10s: ${tensDisplay} | 9s: ${ninesDisplay}\nStandard: ${currentBowConfig.standardName}`;
     const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
     if (navigator.share) {
@@ -427,7 +435,7 @@ export default function ScorecardView({
 
   const handleCopyLink = () => {
     if (!session) return;
-    const shareText = `🎯 ArcherX Scorecard - ${athleteName} (${eventName})\nBow: ${selectedBow}\nDistance: ${eventDistance}\nDate: ${formattedDate}\nScore: ${round1Total} / ${maxPossibleScore}\nXs: ${xsDisplay} | 10s: ${tensDisplay} | 9s: ${ninesDisplay}\n${typeof window !== "undefined" ? window.location.href : ""}`;
+    const shareText = `🎯 ArcherX Scorecard - ${athleteName} (${eventName})\nBow: ${selectedBow}\nDistance: ${eventDistance}\nDate & Time: ${formattedDate} at ${formattedTime}\nScore: ${round1Total} / ${maxPossibleScore}\nXs: ${xsDisplay} | 10s: ${tensDisplay} | 9s: ${ninesDisplay}\n${typeof window !== "undefined" ? window.location.href : ""}`;
     navigator.clipboard.writeText(shareText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -763,13 +771,21 @@ export default function ScorecardView({
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 print:gap-2 text-xs sm:text-sm print:text-[10px] text-slate-500 mt-1 print:mt-0.5 flex-wrap font-medium">
+                  <div className="flex items-center gap-2.5 print:gap-2 text-xs sm:text-sm print:text-[10px] text-slate-500 mt-1 print:mt-0.5 flex-wrap font-medium">
                     <span className="flex items-center gap-1 text-slate-700 font-semibold">
                       <Target className="w-3.5 h-3.5 print:w-3 print:h-3 text-accent" />
                       {eventName}
                     </span>
                     <span>•</span>
-                    <span>{formattedDate}</span>
+                    <span className="flex items-center gap-1 text-slate-700 font-medium">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      {formattedDate}
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1 text-slate-700 font-medium">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      {formattedTime}
+                    </span>
                     <span>•</span>
                     <span className="text-slate-500 truncate max-w-[280px]" title={venueName}>
                       {venueName}
