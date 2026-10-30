@@ -25,16 +25,16 @@ export const MODE_BOW_DISTANCES: Record<ModeOption, Record<BowOption, string[]>>
     "Indian Bow": ["20m", "30m", "40m", "50m"],
   },
   Indoor: {
-    "Recurve Bow": ["18m", "25m", "30m"],
-    "Compound Bow": ["18m", "25m"],
-    "Indian Bow": ["18m", "20m", "25m"],
+    "Recurve Bow": ["12m", "15m", "18m"],
+    "Compound Bow": ["12m", "15m", "18m"],
+    "Indian Bow": ["12m", "15m", "18m"],
   },
 };
 
 // Default fallback for outdoor (backwards compatibility)
 export const BOW_DISTANCES: Record<BowOption, string[]> = MODE_BOW_DISTANCES.Outdoor;
 
-export const DISTANCE_OPTIONS = ["18m", "20m", "25m", "30m", "40m", "50m", "60m", "70m"];
+export const DISTANCE_OPTIONS = ["12m", "15m", "18m", "20m", "25m", "30m", "40m", "50m", "60m", "70m"];
 export const SESSION_TYPES = ["Practice", "Match"];
 
 export const getDefaultDistance = (selectedMode: ModeOption, selectedBow: BowOption): string => {
@@ -214,7 +214,7 @@ export default function SessionSetup({ onStart, initialValues }: SessionSetupPro
                 Mode
               </label>
               <span className="text-[11px] text-text-dim font-medium">
-                {mode === "Outdoor" ? "Outdoor Field (World Archery)" : "Indoor Hall (18m / 25m WA)"}
+                {mode === "Outdoor" ? "Outdoor Field (World Archery)" : "Indoor Hall (12m / 15m / 18m)"}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2">

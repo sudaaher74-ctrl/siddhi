@@ -2,7 +2,18 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Card from "@/components/ui/Card";
-import { Play, Pause, RotateCcw, Volume2, BellOff, Bell, AlarmClock } from "lucide-react";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Volume2,
+  Bell,
+  AlarmClock,
+  ShieldAlert,
+  HelpCircle,
+  X,
+  VolumeX,
+} from "lucide-react";
 
 interface ArcheryTimerProps {
   resetCount: number;
@@ -10,27 +21,31 @@ interface ArcheryTimerProps {
 
 type WakeLock = { release: () => Promise<void> };
 
-type LeadInStep = "1" | "2" | "3" | "START" | null;
+type TimerMode = "wa" | "direct"; // "wa": Official World Archery 10s line prep; "direct": Instant start
+type TimerPhase = "idle" | "prep" | "shooting" | "warning" | "ended" | "emergency" | "paused";
 
 export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
-  const [totalSeconds, setTotalSeconds] = useState(180); // 180 sec (3 min) standard end
+  // Configurable presets: 120s (3 arr indoor/match), 180s (3 arr standard), 240s (6 arr qualification)
+  const [totalSeconds, setTotalSeconds] = useState(180);
   const [timeLeft, setTimeLeft] = useState(180);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isAlarming, setIsAlarming] = useState(false);
-  const [leadInStep, setLeadInStep] = useState<LeadInStep>(null);
-  const [voiceLeadInEnabled, setVoiceLeadInEnabled] = useState(true);
+  const [prepTimeLeft, setPrepTimeLeft] = useState(10);
+  const [timerMode, setTimerMode] = useState<TimerMode>("wa");
+  const [timerPhase, setTimerPhase] = useState<TimerPhase>("idle");
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showRulesModal, setShowRulesModal] = useState(false);
 
-  // Track if we already started alarming for this countdown
-  const hasBuzzedRef = useRef(false);
-  const hasSpoken30sRef = useRef(false);
-  const hasSpoken10sRef = useRef(false);
+  // References for timing, audio context, and screen lock
   const audioCtxRef = useRef<AudioContext | null>(null);
   const wakeLockRef = useRef<WakeLock | null>(null);
   const endsAtRef = useRef<number | null>(null);
+  const prepEndsAtRef = useRef<number | null>(null);
   const lastTickRef = useRef(180);
-  const leadInTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
-  const alarmIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasSpoken30sRef = useRef(false);
+  const hasSpoken10sRef = useRef(false);
+  const phaseBeforePauseRef = useRef<TimerPhase>("shooting");
 
+  // Get or initialize AudioContext
   const getAudioCtx = useCallback((): AudioContext | null => {
     try {
       if (!audioCtxRef.current) {
@@ -50,118 +65,175 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
     }
   }, []);
 
-  // Web Speech API synthesis
-  const speak = useCallback((text: string) => {
-    try {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.05;
-        utterance.pitch = 1.1;
-        utterance.volume = 1.0;
-        window.speechSynthesis.speak(utterance);
+  // Web Speech API Voice synthesis helper
+  const speak = useCallback(
+    (text: string) => {
+      if (!voiceEnabled) return;
+      try {
+        if (typeof window !== "undefined" && "speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 1.05;
+          utterance.pitch = 1.05;
+          utterance.volume = 1.0;
+          window.speechSynthesis.speak(utterance);
+        }
+      } catch (err) {
+        console.warn("SpeechSynthesis error:", err);
       }
-    } catch (err) {
-      console.warn("SpeechSynthesis error:", err);
-    }
-  }, []);
+    },
+    [voiceEnabled]
+  );
 
-  // Play a single audio tone with AudioContext
-  const playTone = useCallback((freq: number, duration: number, type: OscillatorType = "sine", gainVal = 0.3) => {
+  // ---------------------------------------------------------------------------
+  // TOURNAMENT WHISTLE SYNTHESIS (Fox 40 Classic Dual-Resonance Emulation)
+  // ---------------------------------------------------------------------------
+  // A competition whistle produces two harmonically interacting resonant peaks:
+  // F1 ~2650 Hz, F2 ~2980 Hz, causing a ~330 Hz acoustic heterodyne trill.
+  // We add an LFO at ~35 Hz and bandpass-filtered noise for realistic forced air.
+  // ---------------------------------------------------------------------------
+  const playSingleWhistle = useCallback(
+    (ctx: AudioContext, startTime: number, duration: number, isEmergency = false) => {
+      const f1 = isEmergency ? 2850 : 2650;
+      const f2 = isEmergency ? 3200 : 2980;
+
+      const masterGain = ctx.createGain();
+      masterGain.connect(ctx.destination);
+
+      const t0 = startTime;
+      const tEnd = t0 + duration;
+
+      // Realistic sharp whistle attack and smooth decay
+      masterGain.gain.setValueAtTime(0.0001, t0);
+      masterGain.gain.linearRampToValueAtTime(0.65, t0 + 0.015);
+      masterGain.gain.setValueAtTime(0.65, tEnd - 0.025);
+      masterGain.gain.exponentialRampToValueAtTime(0.0001, tEnd);
+
+      // Turbulence LFO (vibrato/air pea rattle)
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.frequency.setValueAtTime(isEmergency ? 42 : 34, t0);
+      lfoGain.gain.setValueAtTime(35, t0);
+      lfo.connect(lfoGain);
+
+      // Primary High Tone
+      const osc1 = ctx.createOscillator();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(f1, t0);
+      lfoGain.connect(osc1.frequency);
+      osc1.connect(masterGain);
+
+      // Secondary High Tone (creates acoustic beat frequency)
+      const osc2 = ctx.createOscillator();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(f2, t0);
+      lfoGain.connect(osc2.frequency);
+      osc2.connect(masterGain);
+
+      // Bandpass Breath Noise (authentic air rush)
+      const bufferSize = Math.max(256, Math.floor(ctx.sampleRate * duration));
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const whiteNoise = ctx.createBufferSource();
+      whiteNoise.buffer = noiseBuffer;
+
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = "bandpass";
+      bandpass.frequency.setValueAtTime(f1, t0);
+      bandpass.Q.setValueAtTime(3.5, t0);
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.12, t0);
+
+      whiteNoise.connect(bandpass);
+      bandpass.connect(noiseGain);
+      noiseGain.connect(masterGain);
+
+      // Start & Stop
+      lfo.start(t0);
+      osc1.start(t0);
+      osc2.start(t0);
+      whiteNoise.start(t0);
+
+      lfo.stop(tEnd);
+      osc1.stop(tEnd);
+      osc2.stop(tEnd);
+      whiteNoise.stop(tEnd);
+    },
+    []
+  );
+
+  /**
+   * Play official World Archery whistle sequences:
+   * 1 whistle: Commence shooting (duration ~0.42s)
+   * 2 whistles: Look to line / approach (2x ~0.35s blasts)
+   * 3 whistles: End of shooting / retrieve arrows (3x ~0.35s blasts)
+   * 5 whistles: Emergency cease fire (5x rapid ~0.16s blasts)
+   */
+  const playWhistleSignal = useCallback(
+    (signal: 1 | 2 | 3 | 5) => {
+      if (!soundEnabled) return;
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+
+      if (signal === 1) {
+        // 1 Whistle (Shoot)
+        playSingleWhistle(ctx, now, 0.45);
+      } else if (signal === 2) {
+        // 2 Whistles (Line preparation)
+        playSingleWhistle(ctx, now, 0.35);
+        playSingleWhistle(ctx, now + 0.5, 0.35);
+      } else if (signal === 3) {
+        // 3 Whistles (Retrieve & score)
+        playSingleWhistle(ctx, now, 0.35);
+        playSingleWhistle(ctx, now + 0.48, 0.35);
+        playSingleWhistle(ctx, now + 0.96, 0.4);
+      } else if (signal === 5) {
+        // 5 Rapid Whistles (Emergency cease fire)
+        const blastLen = 0.16;
+        const gap = 0.22;
+        for (let i = 0; i < 5; i++) {
+          playSingleWhistle(ctx, now + i * gap, blastLen, true);
+        }
+      }
+
+      // Haptic vibration feedback for mobile devices
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        if (signal === 1) navigator.vibrate(250);
+        else if (signal === 2) navigator.vibrate([200, 150, 200]);
+        else if (signal === 3) navigator.vibrate([200, 150, 200, 150, 350]);
+        else if (signal === 5) navigator.vibrate([150, 80, 150, 80, 150, 80, 150, 80, 300]);
+      }
+    },
+    [getAudioCtx, playSingleWhistle, soundEnabled]
+  );
+
+  // Short warning beep at 30s
+  const playWarningBeep = useCallback(() => {
+    if (!soundEnabled) return;
     const ctx = getAudioCtx();
     if (!ctx) return;
     const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-
     osc.connect(gain);
     gain.connect(ctx.destination);
-
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t);
-
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(gainVal, t + 0.02);
-    gain.gain.setValueAtTime(gainVal, t + duration - 0.03);
-    gain.gain.linearRampToValueAtTime(0, t + duration);
-
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, t); // A5 note
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
     osc.start(t);
-    osc.stop(t + duration);
-  }, [getAudioCtx]);
+    osc.stop(t + 0.25);
+  }, [getAudioCtx, soundEnabled]);
 
-  // Lead-in tones: 600Hz for 1-2-3, double chime for START
-  const playLeadInBeep = useCallback(() => {
-    playTone(600, 0.2, "sine", 0.35);
-  }, [playTone]);
-
-  const playStartChime = useCallback(() => {
-    const ctx = getAudioCtx();
-    if (!ctx) return;
-    const t = ctx.currentTime;
-
-    const osc1 = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc1.connect(gain);
-    osc2.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc1.type = "sine";
-    osc2.type = "sine";
-    osc1.frequency.setValueAtTime(880, t);
-    osc2.frequency.setValueAtTime(1174, t); // D6
-
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.03);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-
-    osc1.start(t);
-    osc2.start(t);
-    osc1.stop(t + 0.5);
-    osc2.stop(t + 0.5);
-  }, [getAudioCtx]);
-
-  // Play harsh buzzer blast for time-up alarm
-  const blast = useCallback((ctx: AudioContext, offset: number, duration: number) => {
-    const t = ctx.currentTime + offset;
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-
-    oscillator.type = "sawtooth";
-    oscillator.frequency.setValueAtTime(440, t);
-
-    gainNode.gain.setValueAtTime(0, t);
-    gainNode.gain.linearRampToValueAtTime(0.7, t + 0.04);
-    gainNode.gain.setValueAtTime(0.7, t + duration - 0.04);
-    gainNode.gain.linearRampToValueAtTime(0, t + duration);
-
-    oscillator.start(t);
-    oscillator.stop(t + duration);
-  }, []);
-
-  // Alarm burst pattern (rings continuously like an alarm clock)
-  const playAlarmBurst = useCallback(() => {
-    const ctx = getAudioCtx();
-    if (ctx) {
-      blast(ctx, 0, 0.25);
-      blast(ctx, 0.35, 0.25);
-      blast(ctx, 0.7, 0.5);
-    }
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate([250, 100, 250, 100, 500]);
-    }
-  }, [blast, getAudioCtx]);
-
-  // Warning beeps at 30s and 10s
-  const warningBeep = useCallback(() => {
-    const ctx = getAudioCtx();
-    if (ctx) blast(ctx, 0, 0.15);
-  }, [blast, getAudioCtx]);
-
+  // Screen WakeLock management
   const releaseWakeLock = useCallback(() => {
     if (wakeLockRef.current) {
       void wakeLockRef.current.release().catch(() => {});
@@ -178,386 +250,604 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
         wakeLockRef.current = await wl.request("screen");
       }
     } catch {
-      // Screen lock isn't critical
+      // Screen lock isn't supported or permission denied
     }
   }, []);
 
-  // Clear all pending lead-in timers
-  const clearLeadIn = useCallback(() => {
-    leadInTimeoutsRef.current.forEach(clearTimeout);
-    leadInTimeoutsRef.current = [];
-    setLeadInStep(null);
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-  }, []);
-
-  // Clear continuous alarm loop
-  const stopAlarmLoop = useCallback(() => {
-    if (alarmIntervalRef.current) {
-      clearInterval(alarmIntervalRef.current);
-      alarmIntervalRef.current = null;
-    }
-    setIsAlarming(false);
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(0);
-    }
-  }, []);
-
-  // Start continuous alarm loop
-  const startAlarmLoop = useCallback(() => {
-    stopAlarmLoop();
-    setIsAlarming(true);
-    playAlarmBurst();
-    alarmIntervalRef.current = setInterval(playAlarmBurst, 2000);
-  }, [playAlarmBurst, stopAlarmLoop]);
-
-  // Reset timer when resetCount changes
+  // Reset timer on resetCount change
   useEffect(() => {
-    clearLeadIn();
-    stopAlarmLoop();
+    setTimerPhase("idle");
     setTimeLeft(totalSeconds);
-    setIsRunning(false);
-    hasBuzzedRef.current = false;
+    setPrepTimeLeft(10);
     hasSpoken30sRef.current = false;
     hasSpoken10sRef.current = false;
     endsAtRef.current = null;
+    prepEndsAtRef.current = null;
     lastTickRef.current = totalSeconds;
     releaseWakeLock();
-  }, [resetCount, clearLeadIn, stopAlarmLoop, releaseWakeLock, totalSeconds]);
+  }, [resetCount, totalSeconds, releaseWakeLock]);
 
-  // Cleanup on unmount
+  // Screen wake lock re-acquire on visibility change
   useEffect(() => {
-    return () => {
-      clearLeadIn();
-      stopAlarmLoop();
-      releaseWakeLock();
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && (timerPhase === "shooting" || timerPhase === "prep")) {
+        void requestWakeLock();
+      }
     };
-  }, [clearLeadIn, stopAlarmLoop, releaseWakeLock]);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [timerPhase, requestWakeLock]);
 
-  // Countdown timer loop
+  // ---------------------------------------------------------------------------
+  // 10-SECOND LINE PREPARATION COUNTDOWN LOOP (World Archery Mode)
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!isRunning) return;
+    if (timerPhase !== "prep") return;
+
+    if (prepEndsAtRef.current === null) {
+      prepEndsAtRef.current = Date.now() + prepTimeLeft * 1000;
+    }
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.round(((prepEndsAtRef.current ?? 0) - Date.now()) / 1000));
+      setPrepTimeLeft(remaining);
+
+      if (remaining === 0) {
+        clearInterval(interval);
+        prepEndsAtRef.current = null;
+        // 10s preparation complete -> Sound 1 WHISTLE and start shooting!
+        playWhistleSignal(1);
+        speak("Shoot!");
+        setTimerPhase("shooting");
+        endsAtRef.current = Date.now() + timeLeft * 1000;
+        lastTickRef.current = timeLeft;
+      }
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [timerPhase, prepTimeLeft, timeLeft, playWhistleSignal, speak]);
+
+  // ---------------------------------------------------------------------------
+  // MAIN SHOOTING COUNTDOWN LOOP
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (timerPhase !== "shooting") return;
 
     if (endsAtRef.current === null) {
       endsAtRef.current = Date.now() + timeLeft * 1000;
     }
 
-    const tick = () => {
+    const interval = setInterval(() => {
       const remaining = Math.max(0, Math.round(((endsAtRef.current ?? 0) - Date.now()) / 1000));
+
       if (remaining !== lastTickRef.current) {
-        // 30 seconds and 10 seconds warnings
+        // 30 seconds warning: Amber light switch + audio
         if (lastTickRef.current > 30 && remaining <= 30) {
-          warningBeep();
-          if (voiceLeadInEnabled && !hasSpoken30sRef.current) {
+          playWarningBeep();
+          if (!hasSpoken30sRef.current) {
             hasSpoken30sRef.current = true;
-            speak("30 seconds left");
+            speak("30 seconds remaining");
           }
-        } else if (lastTickRef.current > 10 && remaining <= 10) {
-          warningBeep();
-          if (voiceLeadInEnabled && !hasSpoken10sRef.current) {
+        }
+        // 10 seconds warning
+        else if (lastTickRef.current > 10 && remaining <= 10) {
+          playWarningBeep();
+          if (!hasSpoken10sRef.current) {
             hasSpoken10sRef.current = true;
             speak("10 seconds left");
           }
         }
+
         lastTickRef.current = remaining;
         setTimeLeft(remaining);
+
+        // When time expires: 3 WHISTLES (World Archery Book 3 Ch 13)
+        if (remaining === 0) {
+          clearInterval(interval);
+          endsAtRef.current = null;
+          setTimerPhase("ended");
+          playWhistleSignal(3);
+          speak("Time is up. Retrieve arrows and score.");
+          releaseWakeLock();
+        }
       }
-    };
+    }, 250);
 
-    const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRunning, warningBeep, speak, voiceLeadInEnabled]);
+  }, [timerPhase, timeLeft, playWarningBeep, playWhistleSignal, speak, releaseWakeLock]);
 
-  // Trigger continuous alarm when time reaches 0
-  useEffect(() => {
-    if (timeLeft === 0 && !hasBuzzedRef.current && !leadInStep) {
-      hasBuzzedRef.current = true;
-      setIsRunning(false);
-      endsAtRef.current = null;
-      releaseWakeLock();
-      startAlarmLoop();
-    }
-  }, [timeLeft, leadInStep, releaseWakeLock, startAlarmLoop]);
-
-  // Re-acquire screen lock on tab visibility change
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === "visible" && isRunning) void requestWakeLock();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [isRunning, requestWakeLock]);
-
-  // Start the 1-2-3-Start lead in sequence
-  const startLeadInCountdown = () => {
-    clearLeadIn();
-    stopAlarmLoop();
-    setIsRunning(false);
-
-    // Step 1: "1"
-    setLeadInStep("1");
-    speak("1");
-    playLeadInBeep();
-
-    // Step 2: "2" after 1s
-    const t1 = setTimeout(() => {
-      setLeadInStep("2");
-      speak("2");
-      playLeadInBeep();
-    }, 1000);
-
-    // Step 3: "3" after 2s
-    const t2 = setTimeout(() => {
-      setLeadInStep("3");
-      speak("3");
-      playLeadInBeep();
-    }, 2000);
-
-    // Step 4: "START!" after 3s
-    const t3 = setTimeout(() => {
-      setLeadInStep("START");
-      speak("Start!");
-      playStartChime();
-    }, 3000);
-
-    // Step 5: Start clock after brief display of START (3.7s total)
-    const t4 = setTimeout(() => {
-      setLeadInStep(null);
-      lastTickRef.current = timeLeft;
-      endsAtRef.current = Date.now() + timeLeft * 1000;
-      setIsRunning(true);
-      void requestWakeLock();
-    }, 3700);
-
-    leadInTimeoutsRef.current = [t1, t2, t3, t4];
-  };
-
+  // ---------------------------------------------------------------------------
+  // USER CONTROLS: START / PAUSE / RESUME / EMERGENCY
+  // ---------------------------------------------------------------------------
   const handleStartPause = () => {
     getAudioCtx();
 
-    // If currently counting down lead-in, cancel it
-    if (leadInStep !== null) {
-      clearLeadIn();
-      return;
-    }
-
-    if (isRunning) {
+    if (timerPhase === "prep" || timerPhase === "shooting") {
+      // Pause active timer
+      phaseBeforePauseRef.current = timerPhase;
       endsAtRef.current = null;
-      setIsRunning(false);
+      prepEndsAtRef.current = null;
+      setTimerPhase("paused");
       releaseWakeLock();
-    } else {
-      if (timeLeft === 0) return;
-      stopAlarmLoop();
-
-      // If starting fresh and voice lead-in is enabled, trigger 1-2-3-Start
-      if (voiceLeadInEnabled && timeLeft === totalSeconds) {
-        hasSpoken30sRef.current = false;
-        hasSpoken10sRef.current = false;
-        startLeadInCountdown();
+    } else if (timerPhase === "paused") {
+      // Resume from pause
+      const targetPhase = phaseBeforePauseRef.current || "shooting";
+      if (targetPhase === "prep") {
+        prepEndsAtRef.current = Date.now() + prepTimeLeft * 1000;
+        setTimerPhase("prep");
       } else {
-        if (timeLeft > 30) hasSpoken30sRef.current = false;
-        if (timeLeft > 10) hasSpoken10sRef.current = false;
-        lastTickRef.current = timeLeft;
         endsAtRef.current = Date.now() + timeLeft * 1000;
-        setIsRunning(true);
-        void requestWakeLock();
+        setTimerPhase("shooting");
+      }
+      void requestWakeLock();
+    } else {
+      // Start fresh
+      if (timeLeft === 0) return;
+      void requestWakeLock();
+
+      if (timerMode === "wa") {
+        // WA Tournament Mode: 2 Whistles -> 10s line preparation -> 1 Whistle -> Shoot
+        setTimerPhase("prep");
+        setPrepTimeLeft(10);
+        prepEndsAtRef.current = Date.now() + 10 * 1000;
+        playWhistleSignal(2);
+        speak("Look to the line. 10 seconds.");
+      } else {
+        // Quick Direct Mode: 1 Whistle -> Immediate shoot
+        setTimerPhase("shooting");
+        endsAtRef.current = Date.now() + timeLeft * 1000;
+        lastTickRef.current = timeLeft;
+        playWhistleSignal(1);
+        speak("Shoot!");
       }
     }
   };
 
   const handleReset = () => {
     getAudioCtx();
-    clearLeadIn();
-    stopAlarmLoop();
+    setTimerPhase("idle");
     setTimeLeft(totalSeconds);
-    setIsRunning(false);
-    hasBuzzedRef.current = false;
+    setPrepTimeLeft(10);
     hasSpoken30sRef.current = false;
     hasSpoken10sRef.current = false;
     endsAtRef.current = null;
+    prepEndsAtRef.current = null;
     lastTickRef.current = totalSeconds;
     releaseWakeLock();
   };
 
+  // Immediate Cease Fire / Emergency Stop (5 Rapid Whistles)
+  const handleEmergencyStop = () => {
+    getAudioCtx();
+    endsAtRef.current = null;
+    prepEndsAtRef.current = null;
+    setTimerPhase("emergency");
+    releaseWakeLock();
+    playWhistleSignal(5);
+    speak("Cease fire! Cease fire! All archers un-draw arrows.");
+  };
+
+  const handleClearEmergency = () => {
+    getAudioCtx();
+    setTimerPhase("paused");
+  };
+
   const handleSelectDuration = (sec: number) => {
     getAudioCtx();
-    clearLeadIn();
-    stopAlarmLoop();
+    setTimerPhase("idle");
     setTotalSeconds(sec);
     setTimeLeft(sec);
-    setIsRunning(false);
-    hasBuzzedRef.current = false;
+    setPrepTimeLeft(10);
     hasSpoken30sRef.current = false;
     hasSpoken10sRef.current = false;
     endsAtRef.current = null;
+    prepEndsAtRef.current = null;
     lastTickRef.current = sec;
     releaseWakeLock();
   };
 
-  // Alarm Snooze (+30 seconds like an alarm clock)
-  const handleSnooze = (snoozeSeconds = 30) => {
+  // Snooze (+30s or +60s for practice)
+  const handleSnooze = (seconds: number) => {
     getAudioCtx();
-    clearLeadIn();
-    stopAlarmLoop();
-    hasBuzzedRef.current = false;
-    hasSpoken30sRef.current = snoozeSeconds <= 30;
+    hasSpoken30sRef.current = seconds <= 30;
     hasSpoken10sRef.current = false;
-
-    // Reset clock to snooze duration and immediately resume countdown
-    setTimeLeft(snoozeSeconds);
-    lastTickRef.current = snoozeSeconds;
-    endsAtRef.current = Date.now() + snoozeSeconds * 1000;
-    setIsRunning(true);
+    setTimeLeft(seconds);
+    lastTickRef.current = seconds;
+    endsAtRef.current = Date.now() + seconds * 1000;
+    setTimerPhase("shooting");
     void requestWakeLock();
-    speak(`Snoozed ${snoozeSeconds} seconds`);
+    speak(`Resumed ${seconds} seconds extra practice.`);
   };
 
-  const handleStopAlarm = () => {
-    stopAlarmLoop();
-  };
-
-  const handleTestSound = () => {
-    playAlarmBurst();
-  };
+  // ---------------------------------------------------------------------------
+  // TOURNAMENT TRAFFIC LIGHT DETERMINATION
+  // ---------------------------------------------------------------------------
+  // Red Light: Line prep (10s), Time Expired, Idle/Stopped, or Emergency
+  // Amber Light: <= 30s remaining during shooting
+  // Green Light: Active shooting (> 30s, or countdown running)
+  // ---------------------------------------------------------------------------
+  const isEmergency = timerPhase === "emergency";
+  const isRedActive =
+    timerPhase === "idle" ||
+    timerPhase === "prep" ||
+    timerPhase === "ended" ||
+    timerPhase === "paused" ||
+    isEmergency;
+  const isAmberActive =
+    (timerPhase === "shooting" || timerPhase === "paused") && timeLeft <= 30 && timeLeft > 0;
+  const isGreenActive =
+    timerPhase === "shooting" && timeLeft > 30;
 
   const progressPercentage = (timeLeft / totalSeconds) * 100;
 
-  // Change ring color based on time left
-  let circleColor = "text-accent";
-  if (timeLeft <= 30) circleColor = "text-amber-500";
-  if (timeLeft <= 10) circleColor = "text-[#E53935]";
-
   return (
-    <Card>
-      <div className={`flex flex-col items-center justify-center p-2 transition-colors ${
-        isAlarming ? "bg-red-50/50 rounded-xl" : ""
-      }`}>
-        <div className="w-full flex items-center justify-between mb-2 px-1">
-          <h2 className="text-[12px] font-semibold text-text-dim uppercase tracking-wider flex items-center gap-1.5">
-            <AlarmClock className="w-3.5 h-3.5 text-accent" />
-            End Timer
-          </h2>
+    <Card className="overflow-hidden border border-slate-200/90 shadow-xs">
+      <div
+        className={`flex flex-col items-center justify-center p-3 transition-colors ${
+          isEmergency
+            ? "bg-rose-50/70"
+            : timerPhase === "ended"
+            ? "bg-amber-50/40"
+            : timerPhase === "prep"
+            ? "bg-red-50/40"
+            : ""
+        }`}
+      >
+        {/* Top Header Bar: Mode & Audio Controls */}
+        <div className="w-full flex items-center justify-between mb-3 px-1">
+          <div className="flex items-center gap-1.5">
+            <AlarmClock className="w-4 h-4 text-accent" />
+            <span className="text-[12px] font-bold text-slate-800 uppercase tracking-wider">
+              End Timer
+            </span>
+            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-900 text-white tracking-widest">
+              WA Official
+            </span>
+          </div>
 
-          {/* Voice toggle */}
-          <button
-            type="button"
-            onClick={() => setVoiceLeadInEnabled(!voiceLeadInEnabled)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-              voiceLeadInEnabled
-                ? "bg-accent/10 text-accent border border-accent/20"
-                : "bg-black/5 text-text-dim hover:text-text border border-transparent"
-            }`}
-            title="When active, timer speaks '1, 2, 3, Start!' and announces '30 seconds left'"
-          >
-            <span>VOICE: {voiceLeadInEnabled ? "ON (Start & 30s)" : "OFF"}</span>
-          </button>
-        </div>
-
-        {/* Quick Seconds Duration Presets */}
-        <div className="flex items-center justify-center gap-1.5 mb-3.5 bg-slate-100/90 p-1 rounded-xl">
-          {[
-            { label: "120 sec", value: 120 },
-            { label: "180 sec", value: 180 },
-            { label: "240 sec", value: 240 },
-          ].map((preset) => (
+          <div className="flex items-center gap-1.5">
+            {/* Rules Info Modal Trigger */}
             <button
-              key={preset.value}
               type="button"
-              onClick={() => handleSelectDuration(preset.value)}
-              className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                totalSeconds === preset.value
-                  ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
+              onClick={() => setShowRulesModal(true)}
+              className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-black/5 transition-colors cursor-pointer"
+              title="Official World Archery Whistle Signal Rules"
+              aria-label="Whistle rules guide"
             >
-              {preset.label}
+              <HelpCircle className="w-4 h-4" />
             </button>
-          ))}
+
+            {/* Sound Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                getAudioCtx();
+                setSoundEnabled(!soundEnabled);
+              }}
+              className={`p-1 rounded-md transition-colors cursor-pointer ${
+                soundEnabled
+                  ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                  : "text-slate-400 hover:text-slate-600 hover:bg-black/5"
+              }`}
+              title={soundEnabled ? "Tournament Whistles: ON" : "Tournament Whistles: MUTED"}
+              aria-label="Toggle Whistle Sound"
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+
+            {/* Voice Toggle */}
+            <button
+              type="button"
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                voiceEnabled
+                  ? "bg-accent/10 text-accent border border-accent/20"
+                  : "bg-slate-100 text-slate-400 border border-transparent"
+              }`}
+              title="Announce 'Look to the line', 'Shoot', '30s remaining'"
+            >
+              VOICE {voiceEnabled ? "ON" : "OFF"}
+            </button>
+          </div>
         </div>
 
-        {/* Circular Progress Timer */}
-        <div className={`relative w-32 h-32 flex items-center justify-center mb-5 ${
-          isAlarming ? "animate-pulse" : ""
-        }`}>
+        {/* WORLD ARCHERY TOURNAMENT TRAFFIC LIGHTS */}
+        <div className="w-full bg-slate-950 rounded-xl p-2.5 mb-3.5 shadow-inner border border-slate-800">
+          <div className="flex items-center justify-around gap-2 max-w-[280px] mx-auto">
+            {/* RED LIGHT */}
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <div
+                className={`w-9 h-9 rounded-full transition-all duration-300 flex items-center justify-center ${
+                  isEmergency
+                    ? "bg-rose-500 shadow-[0_0_16px_rgba(244,63,94,0.9)] animate-ping"
+                    : isRedActive && !isAmberActive
+                    ? "bg-rose-600 shadow-[0_0_18px_rgba(225,29,72,0.85)] ring-2 ring-rose-400 ring-offset-2 ring-offset-slate-950"
+                    : "bg-rose-950/40 border border-rose-900/40 opacity-40"
+                }`}
+              >
+                <div
+                  className={`w-3.5 h-3.5 rounded-full ${
+                    isRedActive ? "bg-rose-200/80 blur-[0.5px]" : "bg-transparent"
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-[9px] font-black tracking-wider uppercase ${
+                  isRedActive ? "text-rose-400" : "text-slate-600"
+                }`}
+              >
+                STOP
+              </span>
+            </div>
+
+            {/* AMBER / YELLOW LIGHT */}
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <div
+                className={`w-9 h-9 rounded-full transition-all duration-300 flex items-center justify-center ${
+                  isAmberActive
+                    ? "bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.9)] ring-2 ring-amber-300 ring-offset-2 ring-offset-slate-950 animate-pulse"
+                    : "bg-amber-950/40 border border-amber-900/40 opacity-40"
+                }`}
+              >
+                <div
+                  className={`w-3.5 h-3.5 rounded-full ${
+                    isAmberActive ? "bg-amber-100 blur-[0.5px]" : "bg-transparent"
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-[9px] font-black tracking-wider uppercase ${
+                  isAmberActive ? "text-amber-300" : "text-slate-600"
+                }`}
+              >
+                30 SEC
+              </span>
+            </div>
+
+            {/* GREEN LIGHT */}
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <div
+                className={`w-9 h-9 rounded-full transition-all duration-300 flex items-center justify-center ${
+                  isGreenActive
+                    ? "bg-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.9)] ring-2 ring-emerald-300 ring-offset-2 ring-offset-slate-950"
+                    : "bg-emerald-950/40 border border-emerald-900/40 opacity-40"
+                }`}
+              >
+                <div
+                  className={`w-3.5 h-3.5 rounded-full ${
+                    isGreenActive ? "bg-emerald-200/90 blur-[0.5px]" : "bg-transparent"
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-[9px] font-black tracking-wider uppercase ${
+                  isGreenActive ? "text-emerald-400" : "text-slate-600"
+                }`}
+              >
+                SHOOT
+              </span>
+            </div>
+          </div>
+
+          {/* Current Official Phase Status Banner */}
+          <div className="mt-2 pt-1.5 border-t border-slate-800/80 text-center">
+            {isEmergency ? (
+              <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 animate-pulse flex items-center justify-center gap-1">
+                <ShieldAlert className="w-3.5 h-3.5" />
+                🚨 EMERGENCY CEASE FIRE — UN-DRAW ARROWS
+              </span>
+            ) : timerPhase === "prep" ? (
+              <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 animate-pulse">
+                🔴 2 WHISTLES: LOOK TO THE LINE (10s PREP)
+              </span>
+            ) : timerPhase === "shooting" ? (
+              timeLeft <= 30 ? (
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-300 animate-pulse">
+                  🟡 30 SECONDS REMAINING!
+                </span>
+              ) : (
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400">
+                  🟢 1 WHISTLE: ACTIVE SHOOTING
+                </span>
+              )
+            ) : timerPhase === "ended" ? (
+              <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 animate-pulse">
+                🔴 3 WHISTLES: RETRIEVE ARROWS & SCORE
+              </span>
+            ) : timerPhase === "paused" ? (
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-300">
+                ⏸️ TIMING PAUSED
+              </span>
+            ) : (
+              <span className="text-[10.5px] font-semibold text-slate-400">
+                {timerMode === "wa"
+                  ? "WA Official Mode: 2 Whistles (10s Prep) ➔ 1 Whistle (Shoot)"
+                  : "Direct Mode: 1 Whistle (Shoot immediately)"}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Mode Selector Tabs (WA Official vs Direct) & Preset Durations */}
+        <div className="w-full flex flex-col gap-2 mb-3">
+          {/* Mode Switcher */}
+          <div className="flex items-center justify-center bg-slate-100 p-0.5 rounded-lg text-[10.5px] font-bold">
+            <button
+              type="button"
+              onClick={() => {
+                if (timerPhase === "idle" || timerPhase === "paused") setTimerMode("wa");
+              }}
+              className={`flex-1 py-1 rounded-md transition-all cursor-pointer ${
+                timerMode === "wa"
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+              title="Includes official 10-second line preparation period (2 whistles)"
+            >
+              WA Tournament (10s Prep)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (timerPhase === "idle" || timerPhase === "paused") setTimerMode("direct");
+              }}
+              className={`flex-1 py-1 rounded-md transition-all cursor-pointer ${
+                timerMode === "direct"
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+              title="Starts shooting immediately on 1 whistle"
+            >
+              Direct Shooting
+            </button>
+          </div>
+
+          {/* Quick End Presets */}
+          <div className="flex items-center justify-center gap-1.5 bg-slate-100/90 p-1 rounded-xl">
+            {[
+              { label: "120s (3 Arr)", value: 120, desc: "Indoor / Match" },
+              { label: "180s (3 Arr)", value: 180, desc: "Standard Practice" },
+              { label: "240s (6 Arr)", value: 240, desc: "WA 70m/50m" },
+            ].map((preset) => (
+              <button
+                key={preset.value}
+                type="button"
+                disabled={timerPhase === "prep" || timerPhase === "shooting"}
+                onClick={() => handleSelectDuration(preset.value)}
+                className={`flex-1 py-1 px-1.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                  totalSeconds === preset.value
+                    ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
+                    : "text-slate-500 hover:text-slate-900 disabled:opacity-50"
+                }`}
+                title={preset.desc}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Circular Display & Countdown Counter */}
+        <div className="relative w-36 h-36 flex items-center justify-center mb-3">
           <svg className="w-full h-full transform -rotate-90">
             <circle
-              cx="64"
-              cy="64"
-              r="60"
+              cx="72"
+              cy="72"
+              r="66"
               fill="transparent"
               stroke="currentColor"
-              strokeWidth="6"
+              strokeWidth="7"
               className="text-black/5"
             />
-            <circle
-              cx="64"
-              cy="64"
-              r="60"
-              fill="transparent"
-              stroke="currentColor"
-              strokeWidth="6"
-              strokeDasharray={377}
-              strokeDashoffset={377 - (377 * progressPercentage) / 100}
-              className={`transition-all duration-300 ease-linear ${circleColor}`}
-            />
+            {timerPhase === "prep" ? (
+              // Prep circular progress
+              <circle
+                cx="72"
+                cy="72"
+                r="66"
+                fill="transparent"
+                stroke="currentColor"
+                strokeWidth="7"
+                strokeDasharray={414}
+                strokeDashoffset={414 - (414 * ((10 - prepTimeLeft) / 10))}
+                className="text-rose-500 transition-all duration-300 ease-linear"
+              />
+            ) : (
+              // Main shooting circular progress
+              <circle
+                cx="72"
+                cy="72"
+                r="66"
+                fill="transparent"
+                stroke="currentColor"
+                strokeWidth="7"
+                strokeDasharray={414}
+                strokeDashoffset={414 - (414 * progressPercentage) / 100}
+                className={`transition-all duration-300 ease-linear ${
+                  timeLeft <= 10
+                    ? "text-rose-600"
+                    : timeLeft <= 30
+                    ? "text-amber-500"
+                    : "text-emerald-500"
+                }`}
+              />
+            )}
           </svg>
 
-          {/* Center text: either Lead-in step ("1", "2", "3", "START!") or time remaining in seconds */}
+          {/* Central Counter Display */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
-            {leadInStep !== null ? (
-              <div className="animate-bounce">
-                <span className={`font-mono font-extrabold ${
-                  leadInStep === "START" 
-                    ? "text-2xl text-accent" 
-                    : "text-4xl text-black"
-                }`}>
-                  {leadInStep}
+            {timerPhase === "prep" ? (
+              <div className="animate-pulse">
+                <span className="text-4xl font-mono font-black text-rose-600 leading-none">
+                  {prepTimeLeft}
                 </span>
-                <span className="block text-[9px] uppercase font-bold tracking-wider text-text-dim">
-                  {leadInStep === "START" ? "SHOOT!" : "READY"}
+                <span className="block text-[9px] uppercase font-black tracking-widest text-rose-500 mt-1">
+                  LINE PREP
+                </span>
+                <span className="text-[8px] font-bold text-slate-400">2 WHISTLES</span>
+              </div>
+            ) : isEmergency ? (
+              <div>
+                <span className="text-3xl font-mono font-black text-rose-600 leading-none">
+                  STOP
+                </span>
+                <span className="block text-[9px] uppercase font-black tracking-widest text-rose-600 mt-1 animate-pulse">
+                  5 WHISTLES
                 </span>
               </div>
-            ) : isAlarming ? (
+            ) : timerPhase === "ended" ? (
               <div>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-3xl font-mono font-bold text-[#E53935]">
-                    0
-                  </span>
-                  <span className="text-xs font-bold uppercase text-[#E53935]">
-                    sec
-                  </span>
+                <div className="flex items-baseline justify-center gap-0.5">
+                  <span className="text-4xl font-mono font-black text-rose-600">0</span>
+                  <span className="text-xs font-bold uppercase text-rose-600">sec</span>
                 </div>
-                <span className="block text-[9px] font-bold text-accent uppercase tracking-wider animate-pulse">
-                  TIME UP!
+                <span className="block text-[9px] font-black text-rose-600 uppercase tracking-widest animate-pulse mt-0.5">
+                  3 WHISTLES
                 </span>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center">
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className={`text-4xl font-mono font-bold tracking-tight transition-colors ${
-                    timeLeft <= 10 ? "text-[#E53935]" : timeLeft <= 30 ? "text-amber-600" : "text-black"
-                  }`}>
+                <div className="flex items-baseline justify-center gap-0.5">
+                  <span
+                    className={`text-4xl font-mono font-black tracking-tight transition-colors ${
+                      timeLeft <= 10
+                        ? "text-rose-600"
+                        : timeLeft <= 30
+                        ? "text-amber-600"
+                        : "text-slate-900"
+                    }`}
+                  >
                     {timeLeft}
                   </span>
-                  <span className={`text-sm font-bold uppercase transition-colors ${
-                    timeLeft <= 10 ? "text-[#E53935]" : timeLeft <= 30 ? "text-amber-600" : "text-slate-400"
-                  }`}>
+                  <span
+                    className={`text-xs font-bold uppercase ${
+                      timeLeft <= 10
+                        ? "text-rose-600"
+                        : timeLeft <= 30
+                        ? "text-amber-600"
+                        : "text-slate-400"
+                    }`}
+                  >
                     sec
                   </span>
                 </div>
-                {timeLeft <= 30 && timeLeft > 0 && isRunning && (
-                  <span className={`text-[9.5px] font-black uppercase tracking-wider animate-pulse px-2 py-0.5 rounded-full mt-0.5 ${
-                    timeLeft <= 10
-                      ? "bg-rose-100 text-rose-700 border border-rose-300"
-                      : "bg-amber-100 text-amber-800 border border-amber-300"
-                  }`}>
-                    {timeLeft <= 10 ? "10s Alert!" : "30s Left"}
+
+                {timerPhase === "shooting" && (
+                  <span
+                    className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mt-1 ${
+                      timeLeft <= 10
+                        ? "bg-rose-100 text-rose-700 animate-pulse"
+                        : timeLeft <= 30
+                        ? "bg-amber-100 text-amber-800 animate-pulse"
+                        : "bg-emerald-50 text-emerald-700 font-extrabold"
+                    }`}
+                  >
+                    {timeLeft <= 10 ? "10s ALERT!" : timeLeft <= 30 ? "30s WARNING" : "SHOOTING"}
                   </span>
                 )}
-                {!isRunning && timeLeft < totalSeconds && timeLeft > 0 && (
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 mt-0.5">
+
+                {timerPhase === "paused" && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 mt-1">
                     PAUSED
                   </span>
                 )}
@@ -566,91 +856,259 @@ export default function ArcheryTimer({ resetCount }: ArcheryTimerProps) {
           </div>
         </div>
 
-        {/* Alarm Active Controls (Continuous Alarm & Snooze) */}
-        {isAlarming ? (
-          <div className="w-full max-w-[260px] flex flex-col gap-2 animate-fadeIn">
+        {/* Emergency Stop / Cease Fire Button (World Archery Rule 13.1.3: 5+ Whistles) */}
+        {isEmergency ? (
+          <div className="w-full max-w-[280px] flex flex-col gap-2 mb-2 animate-fadeIn">
+            <button
+              type="button"
+              onClick={handleClearEmergency}
+              className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[12px] font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>Resume / Clear Emergency</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="w-full py-1.5 text-slate-500 hover:text-slate-800 text-[11px] font-medium"
+            >
+              Reset to Start
+            </button>
+          </div>
+        ) : timerPhase === "ended" ? (
+          /* Time Expired / Retrieve Arrows Controls */
+          <div className="w-full max-w-[280px] flex flex-col gap-2 mb-2 animate-fadeIn">
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => handleSnooze(30)}
-                className="flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[12px] font-bold shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 transition-transform active:scale-95"
+                className="flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[12px] font-bold shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
               >
                 <Bell className="w-4 h-4" />
-                <span>Snooze (+30s)</span>
+                <span>Practice (+30s)</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSnooze(60)}
-                className="py-2.5 px-3 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 rounded-xl text-[12px] font-bold transition-colors"
-                title="Snooze for 60 seconds"
+                className="py-2.5 px-3 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 rounded-xl text-[12px] font-bold transition-colors cursor-pointer"
+                title="Extra 60 seconds practice"
               >
                 +60s
               </button>
             </div>
-
             <button
               type="button"
-              onClick={handleStopAlarm}
-              className="w-full py-2 bg-black/10 hover:bg-black/15 text-text rounded-xl text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5"
+              onClick={handleReset}
+              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <BellOff className="w-4 h-4 text-text-dim" />
-              <span>Dismiss Alarm</span>
+              <RotateCcw className="w-4 h-4 text-slate-500" />
+              <span>Next End (Reset)</span>
             </button>
           </div>
         ) : (
           /* Normal Controls */
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={handleStartPause}
-              aria-label={isRunning || leadInStep !== null ? "Pause timer" : "Start timer"}
-              className={`w-12 h-12 flex items-center justify-center rounded-full transition-all ${
-                isRunning || leadInStep !== null
-                  ? "bg-accent/15 text-accent hover:bg-accent/25"
-                  : "bg-black/5 hover:bg-black/10 text-black"
-              }`}
-            >
-              {isRunning || leadInStep !== null ? (
-                <Pause className="w-5 h-5 text-accent" />
-              ) : (
-                <Play className="w-5 h-5 text-black ml-0.5" />
-              )}
-            </button>
+          <div className="w-full max-w-[290px] flex flex-col items-center gap-3">
+            <div className="flex items-center justify-center gap-3 w-full">
+              {/* Play / Pause */}
+              <button
+                type="button"
+                onClick={handleStartPause}
+                aria-label={
+                  timerPhase === "prep" || timerPhase === "shooting" ? "Pause timer" : "Start timer"
+                }
+                className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-[12px] flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
+                  timerPhase === "prep" || timerPhase === "shooting"
+                    ? "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20"
+                }`}
+              >
+                {timerPhase === "prep" || timerPhase === "shooting" ? (
+                  <>
+                    <Pause className="w-4 h-4 fill-current" />
+                    <span>Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-current ml-0.5" />
+                    <span>
+                      {timerPhase === "paused"
+                        ? "Resume"
+                        : timerMode === "wa"
+                        ? "Start WA End"
+                        : "Start Shooting"}
+                    </span>
+                  </>
+                )}
+              </button>
 
-            <button
-              type="button"
-              onClick={handleReset}
-              aria-label="Reset timer"
-              className="w-12 h-12 flex items-center justify-center bg-black/5 hover:bg-black/10 rounded-full transition-colors text-black"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
+              {/* Reset */}
+              <button
+                type="button"
+                onClick={handleReset}
+                aria-label="Reset timer"
+                className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                title="Reset timer"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
 
-            <button
-              type="button"
-              onClick={handleTestSound}
-              aria-label="Test buzzer sound"
-              className="w-12 h-12 flex items-center justify-center bg-black/5 hover:bg-black/10 rounded-full transition-colors text-black"
-              title="Test Buzzer Audio"
-            >
-              <Volume2 className="w-5 h-5" />
-            </button>
+              {/* Whistle Test sound button */}
+              <button
+                type="button"
+                onClick={() => playWhistleSignal(1)}
+                aria-label="Test whistle blast"
+                className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                title="Test Competition Whistle (1 blast)"
+              >
+                <Volume2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Prominent Emergency Cease Fire Button */}
+            {(timerPhase === "shooting" || timerPhase === "prep" || timerPhase === "paused") && (
+              <button
+                type="button"
+                onClick={handleEmergencyStop}
+                className="w-full py-1.5 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300/80 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                title="Immediately stop shooting and sound 5 emergency whistle blasts"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                <span>🚨 Emergency Cease Fire (5 Whistles)</span>
+              </button>
+            )}
           </div>
         )}
 
-        <p className="mt-3 text-[11px] text-text-dim text-center">
-          {leadInStep !== null
-            ? "Voice starting: 1... 2... 3... Start!"
-            : isAlarming
-            ? "🚨 Alarming! Tap Snooze for extra time or Dismiss to stop."
-            : timeLeft <= 30 && timeLeft > 0 && isRunning
-            ? "⚠️ 30 seconds left! Complete and release your arrows."
-            : voiceLeadInEnabled && timeLeft === totalSeconds
-            ? `Starting ${totalSeconds}s timer will speak '1, 2, 3, Start!' with 30s alert.`
-            : isRunning
-            ? `Counting down: ${timeLeft} sec remaining.`
-            : "Tap Play to begin timer."}
+        {/* Footer Hint */}
+        <p className="mt-3 text-[10.5px] text-slate-400 text-center leading-relaxed">
+          {timerPhase === "prep"
+            ? "🔴 2 Whistles: Step to the shooting line. 10s preparation in progress."
+            : timerPhase === "shooting"
+            ? timeLeft <= 30
+              ? "🟡 30 seconds left: Complete and release remaining arrows."
+              : "🟢 1 Whistle: Clear to shoot. Timing active."
+            : timerPhase === "ended"
+            ? "🔴 3 Whistles: Shooting closed. Advance to targets to score and retrieve."
+            : isEmergency
+            ? "🚨 Cease Fire: All archers must un-draw and step behind the waiting line."
+            : timerMode === "wa"
+            ? "Tap Start to trigger official 2 whistles and 10s line preparation."
+            : "Tap Start to sound 1 whistle and commence countdown."}
         </p>
+
+        {/* Official World Archery Whistle Signals Modal */}
+        {showRulesModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 relative">
+              <button
+                type="button"
+                onClick={() => setShowRulesModal(false)}
+                className="absolute top-4 right-4 p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+                  WA
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    World Archery Whistle Codes
+                  </h3>
+                  <p className="text-[10px] text-slate-500">Official Rulebook Book 3, Chapter 13</p>
+                </div>
+              </div>
+
+              <div className="space-y-2.5 text-[11.5px] text-slate-700 my-4">
+                <div className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200/60 flex items-start gap-2.5">
+                  <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white font-mono font-bold text-[10px] shrink-0">
+                    2 Whistles
+                  </span>
+                  <div>
+                    <span className="font-bold text-rose-900 block">Look to the Line (Red)</span>
+                    <span className="text-rose-700 text-[10.5px]">
+                      Athletes may step onto the shooting line with their equipment. 10-second preparation period.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/60 flex items-start gap-2.5">
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-600 text-white font-mono font-bold text-[10px] shrink-0">
+                    1 Whistle
+                  </span>
+                  <div>
+                    <span className="font-bold text-emerald-900 block">Commence Shooting (Green)</span>
+                    <span className="text-emerald-700 text-[10.5px]">
+                      Shooting begins. Digital timer counts down (120s / 180s / 240s).
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/60 flex items-start gap-2.5">
+                  <span className="px-1.5 py-0.5 rounded bg-amber-600 text-white font-mono font-bold text-[10px] shrink-0">
+                    Amber Light
+                  </span>
+                  <div>
+                    <span className="font-bold text-amber-900 block">30 Seconds Remaining</span>
+                    <span className="text-amber-700 text-[10.5px]">
+                      Warning amber light turns on and warning tone alerts archers.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200/60 flex items-start gap-2.5">
+                  <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white font-mono font-bold text-[10px] shrink-0">
+                    3 Whistles
+                  </span>
+                  <div>
+                    <span className="font-bold text-rose-900 block">Retrieve & Score (Red)</span>
+                    <span className="text-rose-700 text-[10.5px]">
+                      Shooting time expired. Athletes advance to target to score and retrieve arrows.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-slate-900 text-white flex items-start gap-2.5">
+                  <span className="px-1.5 py-0.5 rounded bg-rose-500 text-white font-mono font-bold text-[10px] shrink-0">
+                    5+ Whistles
+                  </span>
+                  <div>
+                    <span className="font-bold text-rose-400 block">Emergency Cease Fire</span>
+                    <span className="text-slate-300 text-[10.5px]">
+                      Immediate stop! Un-draw arrows, return arrow to quiver, and step behind waiting line immediately.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => playWhistleSignal(2)}
+                  className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+                >
+                  🔊 Test 2 Whistles
+                </button>
+                <button
+                  type="button"
+                  onClick={() => playWhistleSignal(3)}
+                  className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+                >
+                  🔊 Test 3 Whistles
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowRulesModal(false)}
+                className="mt-3 w-full py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[12px] font-bold cursor-pointer"
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
