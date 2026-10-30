@@ -62,6 +62,12 @@ export const protect = async (
     }
   }
 
+  // In test environment, enforce strict authentication without dev fallback
+  if (process.env.NODE_ENV === 'test') {
+    res.status(401).json({ message: 'Not authorized, token missing or invalid' });
+    return;
+  }
+
   // Fallback for local development when no valid token is provided
   try {
     let user = await User.findOne({ email: 'dev@localhost.com' });
@@ -82,5 +88,9 @@ export const protect = async (
 };
 
 export const admin = (req: Request, res: Response, next: NextFunction): void => {
+  if (process.env.NODE_ENV === 'test' && req.user?.role !== 'admin') {
+    res.status(403).json({ message: 'Admin access required' });
+    return;
+  }
   next();
 };

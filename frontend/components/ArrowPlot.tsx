@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState, useEffect, useMemo, PointerEvent as ReactPointerEvent } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback, PointerEvent as ReactPointerEvent } from "react";
 import Card from "@/components/ui/Card";
 import { ScoreValue, ArrowShot } from "./ScoreEntryContainer";
 import { Session } from "@/lib/data";
-import { Plus, Minus, RotateCcw } from "lucide-react";
+import { Plus, Minus, RotateCcw, Crosshair, Hand } from "lucide-react";
 
 interface ArrowPlotProps {
   currentArrows?: ArrowShot[];
@@ -27,21 +27,35 @@ export default function ArrowPlot({
   mode = "overall",
   bowType = "Recurve Bow"
 }: ArrowPlotProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
   const [zoomScale, setZoomScale] = useState(1.0);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [pointerState, setPointerState] = useState<{ x: number; y: number; score: ScoreValue } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [interactionMode, setInteractionMode] = useState<"plot" | "pan">("plot");
+  const [isPointerActive, setIsPointerActive] = useState(false);
 
   const isCompound = bowType?.toLowerCase().includes("compound") ?? false;
 
-  // Multi-touch tracking for pinch-to-zoom on mobile
+  // Sync refs for high-frequency gesture calculations
+  const zoomScaleRef = useRef(zoomScale);
+  zoomScaleRef.current = zoomScale;
+  const panOffsetRef = useRef(panOffset);
+  panOffsetRef.current = panOffset;
+
+  // Multi-touch tracking for flexible pinch-to-zoom & two-finger pan
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
-  const pinchInitialDistRef = useRef<number | null>(null);
-  const pinchInitialScaleRef = useRef<number>(1.0);
-  const pinchInitialPanRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const pinchInitialCenterRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const pinchInitialRef = useRef<{
+    dist: number;
+    scale: number;
+    pan: { x: number; y: number };
+    center: { x: number; y: number };
+  } | null>(null);
+  const panStartRef = useRef<{ clientX: number; clientY: number; panX: number; panY: number } | null>(null);
+  const justPinchedRef = useRef(false);
+  const isAimingRef = useRef(false);
+  const isPanningRef = useRef(false);
 
   // Parse all arrows from sessions if in heatmap mode
   const allHistoricalArrows = useMemo(() => {
@@ -82,7 +96,7 @@ export default function ArrowPlot({
    * If the arrow touches or breaks the dividing line between two scoring zones,
    * it scores the higher value.
    */
-  const calculateScoreFromDistance = (d: number): ScoreValue => {
+  const calculateScoreFromDistance = useCallback((d: number): ScoreValue => {
     const buffer = 1.8;
 
     // WA Compound 80cm 6-ring Face (Rings 5 to 10 + X)
@@ -110,9 +124,9 @@ export default function ArrowPlot({
     if (d <= 99.0 + buffer) return "2";
     if (d <= 110.0 + buffer) return "1";
     return "M";
-  };
+  }, [isCompound]);
 
-  const getSVGPoint = (clientX: number, clientY: number) => {
+  const getSVGPoint = useCallback((clientX: number, clientY: number) => {
     if (!svgRef.current) return null;
     const svg = svgRef.current;
     const pt = svg.createSVGPoint();
@@ -120,9 +134,9 @@ export default function ArrowPlot({
     pt.y = clientY;
     const cursorPt = pt.matrixTransform(svg.getScreenCTM()?.inverse());
     return cursorPt;
-  };
+  }, []);
 
-  const updateAim = (clientX: number, clientY: number) => {
+  const updateAim = useCallback((clientX: number, clientY: number) => {
     const pt = getSVGPoint(clientX, clientY);
     if (!pt) return null;
 
@@ -134,20 +148,82 @@ export default function ArrowPlot({
     const nextState = { x: pt.x, y: pt.y, score };
     setPointerState(nextState);
     return nextState;
-  };
+  }, [getSVGPoint, calculateScoreFromDistance]);
 
-  // Zoom controls
+  /**
+   * Smooth focal-point zoom:
+   * Keeps the point under cursor/finger stationary while zooming in/out.
+   */
+  const zoomAtPoint = useCallback((clientX: number, clientY: number, factor: number) => {
+    const currentScale = zoomScaleRef.current;
+    const currentPan = panOffsetRef.current;
+    const targetScale = Math.max(1.0, Math.min(4.5, Math.round(currentScale * factor * 100) / 100));
+    if (Math.abs(targetScale - currentScale) < 0.001) return;
+
+    if (targetScale <= 1.01) {
+      setZoomScale(1.0);
+      setPanOffset({ x: 0, y: 0 });
+      return;
+    }
+
+    const pt = getSVGPoint(clientX, clientY);
+    const focalX = pt ? pt.x : 115;
+    const focalY = pt ? pt.y : 115;
+
+    const oldViewSize = 230 / currentScale;
+    const newViewSize = 230 / targetScale;
+    const oldMinX = 115 - oldViewSize / 2 + currentPan.x;
+    const oldMinY = 115 - oldViewSize / 2 + currentPan.y;
+
+    const fx = (focalX - oldMinX) / oldViewSize;
+    const fy = (focalY - oldMinY) / oldViewSize;
+
+    const targetMinX = focalX - fx * newViewSize;
+    const targetMinY = focalY - fy * newViewSize;
+
+    const newPanX = targetMinX - (115 - newViewSize / 2);
+    const newPanY = targetMinY - (115 - newViewSize / 2);
+
+    const maxPan = (230 - newViewSize) / 2;
+    const clampedPan = {
+      x: Math.max(-maxPan, Math.min(maxPan, newPanX)),
+      y: Math.max(-maxPan, Math.min(maxPan, newPanY))
+    };
+
+    setZoomScale(targetScale);
+    setPanOffset(clampedPan);
+  }, [getSVGPoint]);
+
+  // Non-passive wheel event listener for trackpad pinch & mouse wheel zoom
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      // Trackpad pinch produces e.ctrlKey=true, mouse wheel produces normal deltaY
+      const factor = e.ctrlKey
+        ? 1 - e.deltaY * 0.015
+        : e.deltaY < 0 ? 1.15 : 0.87;
+      zoomAtPoint(e.clientX, e.clientY, factor);
+    };
+
+    container.addEventListener("wheel", onWheel, { passive: false });
+    return () => container.removeEventListener("wheel", onWheel);
+  }, [zoomAtPoint]);
+
+  // Zoom button handlers
   const handleZoomIn = () => {
     setZoomScale(prev => {
-      const next = Math.min(3.5, Math.round((prev + 0.5) * 10) / 10);
+      const next = Math.min(4.5, Math.round((prev + 0.35) * 10) / 10);
       return next;
     });
   };
 
   const handleZoomOut = () => {
     setZoomScale(prev => {
-      const next = Math.max(1.0, Math.round((prev - 0.5) * 10) / 10);
-      if (next <= 1.0) setPanOffset({ x: 0, y: 0 });
+      const next = Math.max(1.0, Math.round((prev - 0.35) * 10) / 10);
+      if (next <= 1.05) setPanOffset({ x: 0, y: 0 });
       return next;
     });
   };
@@ -155,37 +231,100 @@ export default function ArrowPlot({
   const handleResetZoom = () => {
     setZoomScale(1.0);
     setPanOffset({ x: 0, y: 0 });
+    setInteractionMode("plot");
+  };
+
+  const handleMiniMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = (e.clientX - rect.left) / rect.width;
+    const clickY = (e.clientY - rect.top) / rect.height;
+
+    const targetSvgX = clickX * 230;
+    const targetSvgY = clickY * 230;
+
+    const currentScale = zoomScaleRef.current;
+    const currentViewSize = 230 / currentScale;
+    const maxP = (230 - currentViewSize) / 2;
+
+    const newPanX = targetSvgX - 115;
+    const newPanY = targetSvgY - 115;
+
+    setPanOffset({
+      x: Math.max(-maxP, Math.min(maxP, newPanX)),
+      y: Math.max(-maxP, Math.min(maxP, newPanY))
+    });
   };
 
   const setManualZoom = (scale: number) => {
     setZoomScale(scale);
-    if (scale <= 1.0) setPanOffset({ x: 0, y: 0 });
+    if (scale <= 1.05) {
+      setPanOffset({ x: 0, y: 0 });
+    } else {
+      // Clamp existing pan to new scale maxPan
+      const viewSize = 230 / scale;
+      const maxPan = (230 - viewSize) / 2;
+      setPanOffset(prev => ({
+        x: Math.max(-maxPan, Math.min(maxPan, prev.x)),
+        y: Math.max(-maxPan, Math.min(maxPan, prev.y))
+      }));
+    }
   };
 
-  // Pointer event handlers with multi-touch pinch-to-zoom support
+  // Double-click/double-tap to quick-zoom or reset
+  const handleDoubleClick = (e: ReactPointerEvent<SVGSVGElement>) => {
+    if (heatmapMode) return;
+    if (zoomScale > 1.25) {
+      handleResetZoom();
+    } else {
+      zoomAtPoint(e.clientX, e.clientY, 2.5);
+    }
+  };
+
+  // Pointer event handlers with multi-touch pinch & pan
   const handlePointerDown = (e: ReactPointerEvent<SVGSVGElement>) => {
+    try {
+      (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    } catch {}
+
     activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    setIsPointerActive(true);
 
     // Multi-touch pinch detected (2 or more fingers)
     if (activePointersRef.current.size >= 2) {
-      setIsDragging(false);
+      isAimingRef.current = false;
+      isPanningRef.current = false;
       setPointerState(null);
 
       const pts = Array.from(activePointersRef.current.values());
       const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      pinchInitialDistRef.current = dist;
-      pinchInitialScaleRef.current = zoomScale;
-      pinchInitialPanRef.current = { ...panOffset };
-      pinchInitialCenterRef.current = {
-        x: (pts[0].x + pts[1].x) / 2,
-        y: (pts[0].y + pts[1].y) / 2,
+      pinchInitialRef.current = {
+        dist: Math.max(dist, 1),
+        scale: zoomScale,
+        pan: { ...panOffset },
+        center: { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 },
       };
       return;
     }
 
     if (heatmapMode) return;
+
+    // Check if middle click, right click, or in Pan mode -> Drag Pan
+    const isMiddleOrRight = e.button === 1 || e.button === 2;
+    if (interactionMode === "pan" || isMiddleOrRight) {
+      isPanningRef.current = true;
+      panStartRef.current = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        panX: panOffset.x,
+        panY: panOffset.y,
+      };
+      return;
+    }
+
+    // Otherwise, Plotting / Aiming mode
     if (isSessionComplete || currentArrows.length >= 6) return;
-    setIsDragging(true);
+    isAimingRef.current = true;
     updateAim(e.clientX, e.clientY);
   };
 
@@ -194,24 +333,28 @@ export default function ArrowPlot({
       activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     }
 
-    // Two-finger pinch gesture
-    if (activePointersRef.current.size >= 2 && pinchInitialDistRef.current) {
+    // Multi-touch 2-finger pinch & pan
+    if (activePointersRef.current.size >= 2 && pinchInitialRef.current) {
       const pts = Array.from(activePointersRef.current.values());
       const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      const scaleFactor = currentDist / pinchInitialDistRef.current;
-      const newScale = Math.max(1.0, Math.min(3.5, Math.round(pinchInitialScaleRef.current * scaleFactor * 20) / 20));
-      setZoomScale(newScale);
+      const scaleRatio = currentDist / pinchInitialRef.current.dist;
+      const nextScale = Math.max(1.0, Math.min(4.5, Math.round(pinchInitialRef.current.scale * scaleRatio * 100) / 100));
+      setZoomScale(nextScale);
 
-      if (newScale > 1.0) {
-        const currentCenterX = (pts[0].x + pts[1].x) / 2;
-        const currentCenterY = (pts[0].y + pts[1].y) / 2;
-        const deltaX = (currentCenterX - pinchInitialCenterRef.current.x) * (230 / (320 * newScale));
-        const deltaY = (currentCenterY - pinchInitialCenterRef.current.y) * (230 / (320 * newScale));
+      if (nextScale > 1.01) {
+        const currentCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+        const dxScreen = currentCenter.x - pinchInitialRef.current.center.x;
+        const dyScreen = currentCenter.y - pinchInitialRef.current.center.y;
+        const svgWidth = svgRef.current?.getBoundingClientRect().width || 320;
+        const svgUnitPerPx = 230 / (nextScale * svgWidth);
 
-        const maxPan = (230 - 230 / newScale) / 2;
+        const nextPanX = pinchInitialRef.current.pan.x - dxScreen * svgUnitPerPx;
+        const nextPanY = pinchInitialRef.current.pan.y - dyScreen * svgUnitPerPx;
+        const maxPan = (230 - 230 / nextScale) / 2;
+
         setPanOffset({
-          x: Math.max(-maxPan, Math.min(maxPan, pinchInitialPanRef.current.x - deltaX)),
-          y: Math.max(-maxPan, Math.min(maxPan, pinchInitialPanRef.current.y - deltaY)),
+          x: Math.max(-maxPan, Math.min(maxPan, nextPanX)),
+          y: Math.max(-maxPan, Math.min(maxPan, nextPanY)),
         });
       } else {
         setPanOffset({ x: 0, y: 0 });
@@ -219,49 +362,82 @@ export default function ArrowPlot({
       return;
     }
 
-    if (heatmapMode) return;
-    if (isSessionComplete || currentArrows.length >= 6) return;
-    if (isDragging) {
+    // Single-finger or mouse drag panning (in Pan mode or Middle/Right click)
+    if (isPanningRef.current && panStartRef.current) {
+      const dx = e.clientX - panStartRef.current.clientX;
+      const dy = e.clientY - panStartRef.current.clientY;
+      const svgWidth = svgRef.current?.getBoundingClientRect().width || 320;
+      const svgUnitPerPx = 230 / (zoomScale * svgWidth);
+
+      const nextPanX = panStartRef.current.panX - dx * svgUnitPerPx;
+      const nextPanY = panStartRef.current.panY - dy * svgUnitPerPx;
+      const maxPan = (230 - 230 / zoomScale) / 2;
+
+      setPanOffset({
+        x: Math.max(-maxPan, Math.min(maxPan, nextPanX)),
+        y: Math.max(-maxPan, Math.min(maxPan, nextPanY)),
+      });
+      return;
+    }
+
+    // Single-touch / mouse aiming in Plot mode
+    if (isAimingRef.current && !heatmapMode && !isSessionComplete && currentArrows.length < 6) {
       updateAim(e.clientX, e.clientY);
     }
   };
 
   const handlePointerUp = (e: ReactPointerEvent<SVGSVGElement>) => {
-    activePointersRef.current.delete(e.pointerId);
+    try {
+      if ((e.currentTarget as Element).hasPointerCapture(e.pointerId)) {
+        (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+      }
+    } catch {}
 
-    if (activePointersRef.current.size < 2) {
-      pinchInitialDistRef.current = null;
+    activePointersRef.current.delete(e.pointerId);
+    if (activePointersRef.current.size === 0) {
+      setIsPointerActive(false);
     }
 
-    // Commit shot if single-touch aiming was active
-    if (isDragging && activePointersRef.current.size === 0) {
-      if (!heatmapMode && !isSessionComplete && currentArrows.length < 6) {
-        const finalAim = updateAim(e.clientX, e.clientY) || pointerState;
-        if (finalAim && handleScoreInput) {
-          if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(14);
-          handleScoreInput(finalAim.score, finalAim.x, finalAim.y);
+    // If we just ended a multi-touch pinch gesture, activate cooldown to avoid accidental shot
+    if (activePointersRef.current.size < 2 && pinchInitialRef.current) {
+      pinchInitialRef.current = null;
+      justPinchedRef.current = true;
+      setTimeout(() => {
+        justPinchedRef.current = false;
+      }, 350);
+    }
+
+    if (isPanningRef.current) {
+      isPanningRef.current = false;
+      panStartRef.current = null;
+    }
+
+    if (isAimingRef.current) {
+      isAimingRef.current = false;
+
+      // Commit shot only if not in pinch cooldown and no other fingers touching
+      if (activePointersRef.current.size === 0 && !justPinchedRef.current) {
+        if (!heatmapMode && !isSessionComplete && currentArrows.length < 6) {
+          const finalAim = updateAim(e.clientX, e.clientY) || pointerState;
+          if (finalAim && handleScoreInput) {
+            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(14);
+            handleScoreInput(finalAim.score, finalAim.x, finalAim.y);
+          }
         }
       }
-      setIsDragging(false);
       setPointerState(null);
-    }
-  };
-
-  const handlePointerLeave = (e: ReactPointerEvent<SVGSVGElement>) => {
-    activePointersRef.current.delete(e.pointerId);
-    if (activePointersRef.current.size < 2) {
-      pinchInitialDistRef.current = null;
-    }
-    if (!isDragging || activePointersRef.current.size === 0) {
-      setPointerState(null);
-      setIsDragging(false);
     }
   };
 
   const handlePointerCancel = (e: ReactPointerEvent<SVGSVGElement>) => {
     activePointersRef.current.delete(e.pointerId);
-    pinchInitialDistRef.current = null;
-    setIsDragging(false);
+    if (activePointersRef.current.size === 0) {
+      setIsPointerActive(false);
+    }
+    pinchInitialRef.current = null;
+    isAimingRef.current = false;
+    isPanningRef.current = false;
+    panStartRef.current = null;
     setPointerState(null);
   };
 
@@ -275,7 +451,7 @@ export default function ArrowPlot({
     return { bg: "#64748B", text: "#FFFFFF" };
   };
 
-  // Dynamic ViewBox: scales smoothly from 1.0x to 3.5x
+  // Dynamic ViewBox: scales smoothly from 1.0x to 4.5x
   const viewSize = 230 / zoomScale;
   const maxPan = (230 - viewSize) / 2;
   const clampedPanX = Math.max(-maxPan, Math.min(maxPan, panOffset.x));
@@ -284,11 +460,11 @@ export default function ArrowPlot({
   const minY = 115 - viewSize / 2 + clampedPanY;
   const currentViewBox = `${minX} ${minY} ${viewSize} ${viewSize}`;
 
-  const isZoomed = zoomScale > 1.25;
+  const isZoomed = zoomScale > 1.15;
 
   return (
     <Card>
-      {/* Header with Title, Target Badge, Zoom Controls & Undo */}
+      {/* Header with Title, Target Badge, Mode Toggle & Undo */}
       <div className="flex items-center justify-between gap-2 flex-wrap mb-2 px-0.5">
         <div className="flex items-center gap-2 flex-wrap">
           <h2 className="text-[13px] font-semibold text-text-mid">
@@ -305,7 +481,7 @@ export default function ArrowPlot({
             </span>
           )}
 
-          {!heatmapMode && zoomScale > 1.05 && (
+          {!heatmapMode && isZoomed && (
             <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-accent/10 text-accent border border-accent/20">
               {zoomScale.toFixed(1)}x
             </span>
@@ -313,6 +489,39 @@ export default function ArrowPlot({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Plot vs Pan Mode Toggle when zoomed or on demand */}
+          {!heatmapMode && (
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10.5px]">
+              <button
+                type="button"
+                onClick={() => setInteractionMode("plot")}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-bold transition-all ${
+                  interactionMode === "plot"
+                    ? "bg-white text-accent shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Aim and plot arrows"
+              >
+                <Crosshair className="w-3 h-3" />
+                <span className="hidden xs:inline">Plot</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInteractionMode("pan")}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-bold transition-all ${
+                  interactionMode === "pan"
+                    ? "bg-white text-accent shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Pan/move the target face"
+              >
+                <Hand className="w-3 h-3" />
+                <span className="hidden xs:inline">Move</span>
+              </button>
+            </div>
+          )}
+
+          {/* Quick Zoom Buttons */}
           {!heatmapMode && (
             <div className="flex items-center bg-slate-100/90 rounded-lg p-0.5 border border-slate-200/70">
               <button
@@ -320,7 +529,7 @@ export default function ArrowPlot({
                 onClick={handleZoomOut}
                 disabled={zoomScale <= 1.0}
                 className="p-1 text-slate-600 hover:text-slate-900 disabled:opacity-30 transition-all rounded hover:bg-white"
-                title="Zoom Out (-0.5x)"
+                title="Zoom Out (-0.35x)"
                 aria-label="Zoom Out"
               >
                 <Minus className="w-3.5 h-3.5" />
@@ -329,18 +538,18 @@ export default function ArrowPlot({
               <button
                 type="button"
                 onClick={handleResetZoom}
-                className="px-2 py-0.5 text-[10.5px] font-mono font-bold text-slate-700 hover:text-accent transition-colors"
+                className="px-1.5 py-0.5 text-[10.5px] font-mono font-bold text-slate-700 hover:text-accent transition-colors"
                 title="Reset to 1.0x Full Target"
               >
-                {zoomScale > 1.05 ? `${zoomScale.toFixed(1)}x` : "1.0x"}
+                {isZoomed ? `${zoomScale.toFixed(1)}x` : "1.0x"}
               </button>
 
               <button
                 type="button"
                 onClick={handleZoomIn}
-                disabled={zoomScale >= 3.5}
+                disabled={zoomScale >= 4.5}
                 className="p-1 text-slate-600 hover:text-slate-900 disabled:opacity-30 transition-all rounded hover:bg-white"
-                title="Zoom In (+0.5x)"
+                title="Zoom In (+0.35x)"
                 aria-label="Zoom In"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -367,30 +576,30 @@ export default function ArrowPlot({
         </div>
       </div>
 
-      {/* Quick Manual Zoom Presets */}
+      {/* Flexible Zoom Controls & Presets Bar */}
       {!heatmapMode && (
-        <div className="flex items-center justify-between px-0.5 mb-2">
-          <div className="flex items-center gap-1 overflow-x-auto py-0.5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">
+        <div className="flex items-center justify-between gap-2 px-0.5 mb-2 flex-wrap">
+          <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-none">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-0.5 hidden sm:inline">
               Zoom:
             </span>
             {(isCompound ? [
               { label: "1x Full", scale: 1.0 },
               { label: "1.5x", scale: 1.5 },
               { label: "2.2x (7-10)", scale: 2.2 },
-              { label: "3x Gold", scale: 3.0 },
+              { label: "3.2x Gold", scale: 3.2 },
             ] : [
               { label: "1x Full", scale: 1.0 },
               { label: "1.5x", scale: 1.5 },
               { label: "2.2x Center", scale: 2.2 },
-              { label: "3x Gold", scale: 3.0 },
+              { label: "3.2x Gold", scale: 3.2 },
             ]).map((preset) => (
               <button
                 key={preset.scale}
                 type="button"
                 onClick={() => setManualZoom(preset.scale)}
                 className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  Math.abs(zoomScale - preset.scale) < 0.18
+                  Math.abs(zoomScale - preset.scale) < 0.2
                     ? "bg-slate-900 text-white shadow-xs"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
@@ -400,32 +609,97 @@ export default function ArrowPlot({
             ))}
           </div>
 
-          {zoomScale > 1.05 && (
-            <button
-              type="button"
-              onClick={handleResetZoom}
-              className="text-[10.5px] font-bold text-accent hover:underline flex items-center gap-0.5 ml-2 whitespace-nowrap"
-            >
-              <RotateCcw className="w-2.5 h-2.5" />
-              <span>Reset</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Interactive smooth zoom slider */}
+            <div className="hidden md:flex items-center gap-1.5 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+              <span className="text-[9.5px] font-mono text-slate-400">1x</span>
+              <input
+                type="range"
+                min="1.0"
+                max="4.0"
+                step="0.05"
+                value={zoomScale}
+                onChange={(e) => setManualZoom(parseFloat(e.target.value))}
+                className="w-16 lg:w-20 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-accent"
+                aria-label="Zoom scale slider"
+              />
+              <span className="text-[9.5px] font-mono text-slate-400">4x</span>
+            </div>
+
+            {isZoomed && (
+              <button
+                type="button"
+                onClick={handleResetZoom}
+                className="text-[10px] font-bold text-accent hover:underline flex items-center gap-0.5 whitespace-nowrap cursor-pointer"
+              >
+                <RotateCcw className="w-2.5 h-2.5" />
+                <span>Reset</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Target Face Canvas & Floating Controls */}
-      <div className="relative">
+      {/* Target Face Canvas & Interactive Controls */}
+      <div 
+        ref={containerRef}
+        className="relative overflow-hidden rounded-xl bg-slate-50/50 p-1"
+        style={{ touchAction: "none" }}
+      >
+        {/* Mini-map Viewport Indicator (visible when zoomed in > 1.25x) */}
+        {!heatmapMode && isZoomed && (
+          <div 
+            className="absolute top-2 left-2 z-20 w-11 h-11 rounded-lg bg-white/95 backdrop-blur-sm p-1 shadow-md border border-slate-200 flex items-center justify-center cursor-pointer group"
+            title="Click anywhere to pan here · Double-click to reset"
+            onClick={handleMiniMapClick}
+            onDoubleClick={handleResetZoom}
+          >
+            <div className="relative w-full h-full rounded-full border border-slate-300 overflow-hidden flex items-center justify-center bg-slate-100">
+              {/* Simplified ring colors */}
+              <div className="w-full h-full rounded-full bg-sky-500 flex items-center justify-center">
+                <div className="w-[66%] h-[66%] rounded-full bg-red-500 flex items-center justify-center">
+                  <div className="w-[45%] h-[45%] rounded-full bg-yellow-400" />
+                </div>
+              </div>
+              {/* Viewport frame box */}
+              <div 
+                className="absolute border border-red-600 bg-red-500/25 pointer-events-none transition-all"
+                style={{
+                  left: `${Math.max(0, Math.min(100, (minX / 230) * 100))}%`,
+                  top: `${Math.max(0, Math.min(100, (minY / 230) * 100))}%`,
+                  width: `${Math.min(100, (viewSize / 230) * 100)}%`,
+                  height: `${Math.min(100, (viewSize / 230) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Pan Mode Banner / Hint */}
+        {!heatmapMode && interactionMode === "pan" && (
+          <div className="absolute top-2 right-2 z-20 px-2 py-0.5 rounded-full bg-slate-900/85 backdrop-blur-sm text-white text-[9.5px] font-semibold flex items-center gap-1.5 shadow-sm">
+            <Hand className="w-2.5 h-2.5 text-accent animate-pulse" />
+            <span>Drag to move target · Tap Plot to aim</span>
+          </div>
+        )}
+
         <svg 
           ref={svgRef}
           viewBox={currentViewBox} 
-          className={`w-full max-w-[340px] mx-auto mt-[6px] touch-none select-none rounded-xl ${
-            heatmapMode ? '' : 'cursor-crosshair'
+          style={{ touchAction: "none" }}
+          className={`w-full max-w-[340px] mx-auto select-none rounded-xl transition-shadow ${
+            heatmapMode 
+              ? '' 
+              : interactionMode === "pan"
+                ? (isPointerActive ? 'cursor-grabbing' : 'cursor-grab')
+                : 'cursor-crosshair'
           }`}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerLeave}
+          onPointerLeave={handlePointerCancel}
           onPointerCancel={handlePointerCancel}
+          onDoubleClick={handleDoubleClick}
         >
           {isCompound ? (
             /* ========================================================================= */
@@ -596,22 +870,23 @@ export default function ArrowPlot({
           )}
         </svg>
 
-        {/* Floating on-target zoom controls (optimized for quick mobile tapping) */}
+        {/* Floating on-target zoom controls (for mobile and touch devices) */}
         {!heatmapMode && (
-          <div className="absolute right-2 bottom-3 flex flex-col items-center gap-1 bg-white/95 backdrop-blur-sm p-1 rounded-xl shadow-md border border-slate-200/80 z-10 sm:hidden">
+          <div className="absolute right-2 bottom-3 flex flex-col items-center gap-1 bg-white/95 backdrop-blur-sm p-1 rounded-xl shadow-md border border-slate-200/80 z-10">
             <button
               type="button"
               onClick={handleZoomIn}
-              disabled={zoomScale >= 3.5}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 disabled:opacity-30"
+              disabled={zoomScale >= 4.5}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 disabled:opacity-30 cursor-pointer"
               aria-label="Zoom in"
+              title="Zoom in"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={handleResetZoom}
-              className="text-[9.5px] font-mono font-bold text-slate-800 py-0.5"
+              className="text-[9.5px] font-mono font-bold text-slate-800 py-0.5 hover:text-accent cursor-pointer"
               title="Reset Zoom"
             >
               {zoomScale.toFixed(1)}x
@@ -620,17 +895,33 @@ export default function ArrowPlot({
               type="button"
               onClick={handleZoomOut}
               disabled={zoomScale <= 1.0}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 disabled:opacity-30"
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 active:bg-slate-200 text-slate-700 disabled:opacity-30 cursor-pointer"
               aria-label="Zoom out"
+              title="Zoom out"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
+            {isZoomed && (
+              <button
+                type="button"
+                onClick={() => setInteractionMode(prev => prev === "plot" ? "pan" : "plot")}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer mt-0.5 ${
+                  interactionMode === "pan"
+                    ? "bg-accent text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+                title={interactionMode === "pan" ? "Switch to Plotting" : "Switch to Moving target"}
+                aria-label="Toggle mode"
+              >
+                {interactionMode === "pan" ? <Hand className="w-3.5 h-3.5" /> : <Crosshair className="w-3.5 h-3.5" />}
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Footer Info */}
-      <div className="flex items-center justify-between mt-[10px] text-[10.5px] text-black/50 px-1">
+      {/* Footer Instructions & Status */}
+      <div className="flex items-center justify-between mt-[10px] text-[10.5px] text-black/50 px-1 flex-wrap gap-1">
         <span>
           {heatmapMode ? "Total Arrows Logged" : "Arrows"}:{" "}
           <span className="text-text-mid font-semibold">
@@ -640,9 +931,9 @@ export default function ArrowPlot({
 
         {!heatmapMode && (
           <span className="text-[10px] text-text-dim">
-            {isCompound
-              ? (zoomScale > 1.05 ? `Zoomed ${zoomScale.toFixed(1)}x (Compound 5–10)` : "Compound 50m Target · Rings 5–10")
-              : (zoomScale > 1.05 ? `Zoomed ${zoomScale.toFixed(1)}x` : "Tap or drag to aim · Pinch to zoom")}
+            {isZoomed 
+              ? `Zoomed ${zoomScale.toFixed(1)}x · Pinch, scroll wheel or drag to navigate` 
+              : "Pinch or scroll wheel to zoom · Double-tap to focus"}
           </span>
         )}
       </div>
