@@ -2,8 +2,6 @@ import TopBar from "@/components/TopBar";
 import HeroPerformanceCard from "@/components/HeroPerformanceCard";
 import HomeKpiGrid from "@/components/HomeKpiGrid";
 import ScoreTrend from "@/components/ScoreTrend";
-import HomeGoalsProgress from "@/components/HomeGoalsProgress";
-import EquipmentStatus from "@/components/EquipmentStatus";
 import RecentAchievements from "@/components/RecentAchievements";
 import QuickActions from "@/components/QuickActions";
 import MotivationCard from "@/components/MotivationCard";
@@ -82,13 +80,11 @@ export default async function DashboardPage() {
         {/* Left Column (2/3 width on large screens) */}
         <div className="xl:col-span-2 flex flex-col gap-[12px]">
           <ScoreTrend sessions={sessions} minimal={true} />
-          <HomeGoalsProgress />
           <QuickActions />
         </div>
 
         {/* Right Column (1/3 width on large screens) */}
         <div className="flex flex-col gap-[12px]">
-          <EquipmentStatus />
           <RecentAchievements sessions={sessions} />
         </div>
       </div>

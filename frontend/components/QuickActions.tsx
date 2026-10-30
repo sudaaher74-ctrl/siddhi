@@ -1,16 +1,14 @@
 "use client";
 
 import Card from "@/components/ui/Card";
-import { Target, Plus, BrainCircuit, LineChart, Wrench, Trophy } from "lucide-react";
+import { Target, Plus, LineChart, Trophy } from "lucide-react";
 import Link from "next/link";
 
 export default function QuickActions() {
   const actions = [
     { name: "Start Practice", href: "/practice", icon: Target, color: "text-accent", bg: "bg-accent/10" },
     { name: "Score Entry", href: "/score-entry", icon: Plus, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { name: "AI Coach", href: "/ai-coach", icon: BrainCircuit, color: "text-indigo-500", bg: "bg-indigo-500/10" },
     { name: "Analytics", href: "/analytics", icon: LineChart, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { name: "Equipment", href: "/equipment", icon: Wrench, color: "text-amber-500", bg: "bg-amber-500/10" },
     { name: "Goals", href: "/goals", icon: Trophy, color: "text-rose-500", bg: "bg-rose-500/10" },
   ];
 
@@ -18,7 +16,7 @@ export default function QuickActions() {
     <Card className="bg-surface border-border">
       <h2 className="text-[13px] font-semibold text-text-mid uppercase tracking-wider mb-4">Quick Actions</h2>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {actions.map((action, i) => {
           const Icon = action.icon;
           return (
