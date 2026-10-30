@@ -2,13 +2,75 @@
 
 import React, { useState } from "react";
 import Card from "@/components/ui/Card";
-import { Target, Calendar, Clock, Sun, Building2, Trophy, Trees } from "lucide-react";
+import { Target, Calendar, Clock, Sun, Building2, Trophy, Trees, Check } from "lucide-react";
 
 export const BOW_OPTIONS = ["Recurve Bow", "Compound Bow", "Indian Bow"] as const;
 export type BowOption = (typeof BOW_OPTIONS)[number];
 
 export const MODE_OPTIONS = ["Outdoor", "Indoor", "Field"] as const;
 export type ModeOption = (typeof MODE_OPTIONS)[number];
+
+export type TargetFaceType =
+  | "full-10"
+  | "compound-80"
+  | "triple-spot"
+  | "field-wa"
+  | "field-bw";
+
+export const TARGET_FACE_CONFIG: Record<
+  TargetFaceType,
+  {
+    name: string;
+    badge: string;
+    desc: string;
+    rings: string;
+  }
+> = {
+  "full-10": {
+    name: "Full 10-Ring Face",
+    badge: "Full Face (1-10)",
+    desc: "122cm / 80cm 5-Color Target",
+    rings: "Rings 1 to 10 + X",
+  },
+  "compound-80": {
+    name: "Compound 80cm Face",
+    badge: "Compound 80cm (5-10)",
+    desc: "Outdoor 50m / 25m Compound",
+    rings: "Rings 5 to 10 + X",
+  },
+  "triple-spot": {
+    name: "Vertical 3-Spot",
+    badge: "Indoor 3-Spot (6-10)",
+    desc: "WA Indoor 18m Tournament",
+    rings: "3 Spots · Rings 6 to 10 + X",
+  },
+  "field-wa": {
+    name: "WA Field (Black & Gold)",
+    badge: "WA Field (1-6)",
+    desc: "Official World Archery Field",
+    rings: "Rings 1 to 4 Black · 5-6 Gold",
+  },
+  "field-bw": {
+    name: "Classic Field (B&W)",
+    badge: "Classic Field (B&W)",
+    desc: "NFAA / IFAA Field Round",
+    rings: "Rings 1 to 4 Black · 5 White",
+  },
+};
+
+export const MODE_TARGET_FACES: Record<ModeOption, TargetFaceType[]> = {
+  Outdoor: ["full-10", "compound-80"],
+  Indoor: ["full-10", "triple-spot", "compound-80"],
+  Field: ["field-wa", "field-bw", "full-10"],
+};
+
+export const getDefaultTargetFace = (selectedMode: ModeOption, selectedBow: BowOption): TargetFaceType => {
+  if (selectedMode === "Field") return "field-wa";
+  if (selectedMode === "Indoor") {
+    return selectedBow === "Compound Bow" ? "triple-spot" : "full-10";
+  }
+  return selectedBow === "Compound Bow" ? "compound-80" : "full-10";
+};
 
 export const TITLE_PRESETS = [
   "Practice",
@@ -100,6 +162,7 @@ export type SessionSetupValues = {
   type: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
+  targetFace?: TargetFaceType;
 };
 
 interface SessionSetupProps {
@@ -114,6 +177,9 @@ export default function SessionSetup({ onStart, initialValues }: SessionSetupPro
   const [distance, setDistance] = useState<string>(
     initialValues?.distance || getDefaultDistance(mode, bow)
   );
+  const [targetFace, setTargetFace] = useState<TargetFaceType>(
+    initialValues?.targetFace || getDefaultTargetFace(mode, bow)
+  );
   const [type, setType] = useState(initialValues?.type || "Practice");
   const [date, setDate] = useState<string>(initialValues?.date || getTodayDateStr());
   const [time, setTime] = useState<string>(initialValues?.time || getCurrentTimeStr());
@@ -123,11 +189,17 @@ export default function SessionSetup({ onStart, initialValues }: SessionSetupPro
     BOW_DISTANCES[bow] ||
     DISTANCE_OPTIONS;
 
+  const availableTargetFaces = MODE_TARGET_FACES[mode] || ["full-10"];
+
   const handleModeSelect = (selectedMode: ModeOption) => {
     setMode(selectedMode);
     const validDistances = MODE_BOW_DISTANCES[selectedMode]?.[bow] || [];
     if (!validDistances.includes(distance)) {
       setDistance(getDefaultDistance(selectedMode, bow));
+    }
+    const validFaces = MODE_TARGET_FACES[selectedMode] || [];
+    if (!validFaces.includes(targetFace)) {
+      setTargetFace(getDefaultTargetFace(selectedMode, bow));
     }
   };
 
@@ -137,6 +209,7 @@ export default function SessionSetup({ onStart, initialValues }: SessionSetupPro
     if (!validDistances.includes(distance)) {
       setDistance(getDefaultDistance(mode, selectedBow));
     }
+    setTargetFace(getDefaultTargetFace(mode, selectedBow));
   };
 
   const handlePresetTitleClick = (preset: string) => {
@@ -305,6 +378,89 @@ export default function SessionSetup({ onStart, initialValues }: SessionSetupPro
             ))}
           </div>
 
+          {/* Target Face (Plot) Selection */}
+          <div className="mb-4 mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-accent" />
+                <span>Target Face (Plot)</span>
+              </label>
+              <span className="text-[11px] text-text-dim font-medium">
+                {TARGET_FACE_CONFIG[targetFace]?.desc}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {availableTargetFaces.map((faceKey) => {
+                const cfg = TARGET_FACE_CONFIG[faceKey];
+                const isSelected = targetFace === faceKey;
+                return (
+                  <button
+                    key={faceKey}
+                    type="button"
+                    onClick={() => setTargetFace(faceKey)}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+                      isSelected
+                        ? "border-accent bg-accent/5 ring-2 ring-accent/30 shadow-xs"
+                        : "border-black/10 bg-black/5 hover:bg-black/10 text-text"
+                    }`}
+                  >
+                    {/* Mini Ring Color Preview thumbnail */}
+                    <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center p-0.5 border border-slate-300 shadow-2xs relative bg-white">
+                      {faceKey === "compound-80" ? (
+                        <div className="w-full h-full rounded-full bg-sky-500 flex items-center justify-center">
+                          <div className="w-[66%] h-[66%] rounded-full bg-red-500 flex items-center justify-center">
+                            <div className="w-[48%] h-[48%] rounded-full bg-yellow-400" />
+                          </div>
+                        </div>
+                      ) : faceKey === "triple-spot" ? (
+                        <div className="w-full h-full rounded-full bg-slate-100 flex flex-col items-center justify-around py-0.5">
+                          <div className="w-2 h-2 rounded-full bg-sky-500 border border-red-500 flex items-center justify-center">
+                            <div className="w-1 h-1 rounded-full bg-yellow-400" />
+                          </div>
+                          <div className="w-2 h-2 rounded-full bg-sky-500 border border-red-500 flex items-center justify-center">
+                            <div className="w-1 h-1 rounded-full bg-yellow-400" />
+                          </div>
+                          <div className="w-2 h-2 rounded-full bg-sky-500 border border-red-500 flex items-center justify-center">
+                            <div className="w-1 h-1 rounded-full bg-yellow-400" />
+                          </div>
+                        </div>
+                      ) : faceKey === "field-wa" ? (
+                        <div className="w-full h-full rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center">
+                          <div className="w-[45%] h-[45%] rounded-full bg-yellow-400 border border-slate-900" />
+                        </div>
+                      ) : faceKey === "field-bw" ? (
+                        <div className="w-full h-full rounded-full bg-slate-950 border border-slate-700 flex items-center justify-center">
+                          <div className="w-[45%] h-[45%] rounded-full bg-white border border-slate-900" />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-white border border-slate-400 flex items-center justify-center">
+                          <div className="w-[82%] h-[82%] rounded-full bg-slate-800 flex items-center justify-center">
+                            <div className="w-[74%] h-[74%] rounded-full bg-sky-500 flex items-center justify-center">
+                              <div className="w-[66%] h-[66%] rounded-full bg-red-500 flex items-center justify-center">
+                                <div className="w-[45%] h-[45%] rounded-full bg-yellow-400" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[12.5px] font-bold truncate ${isSelected ? "text-accent" : "text-slate-800"}`}>
+                          {cfg.name}
+                        </span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-accent shrink-0 ml-1" />}
+                      </div>
+                      <p className="text-[10px] text-text-dim truncate">{cfg.rings}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Session Type */}
           <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-2 mt-4">
             Session Type
@@ -386,6 +542,9 @@ export default function SessionSetup({ onStart, initialValues }: SessionSetupPro
                     <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-bold">
                       {mode}
                     </span>
+                    <span className="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 text-[10px] font-bold">
+                      {TARGET_FACE_CONFIG[targetFace]?.badge}
+                    </span>
                     <span className="text-slate-400">•</span>
                     <span>{bow} at {distance}</span>
                   </span>
@@ -413,6 +572,7 @@ export default function SessionSetup({ onStart, initialValues }: SessionSetupPro
                 mode,
                 bow,
                 distance,
+                targetFace,
                 type,
                 date,
                 time,

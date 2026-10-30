@@ -10,6 +10,7 @@ import ArcheryTimer from "./ArcheryTimer";
 import { useVoiceScoring } from "@/hooks/useVoiceScoring";
 import SessionSetup, {
   SessionSetupValues,
+  TARGET_FACE_CONFIG,
   formatReadableDateTime,
   getTodayDateStr,
   getCurrentTimeStr,
@@ -342,6 +343,11 @@ export default function ScoreEntryContainer() {
       <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-900 text-white text-[11px] sm:text-[13px] font-semibold">
         {setup.mode || "Outdoor"}
       </span>
+      {setup.targetFace && TARGET_FACE_CONFIG[setup.targetFace] && (
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-[11px] sm:text-[13px] font-semibold border border-sky-200">
+          {TARGET_FACE_CONFIG[setup.targetFace].badge}
+        </span>
+      )}
       {setup.bow && (
         <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 text-[11px] sm:text-[13px] font-semibold border border-slate-200">
           {setup.bow}
@@ -628,6 +634,8 @@ export default function ScoreEntryContainer() {
             handleUndo={handleUndo}
             isSessionComplete={isSessionComplete}
             bowType={setup?.bow}
+            targetFace={setup?.targetFace}
+            disciplineMode={setup?.mode}
           />
         )}
         {mobileMode === "keypad" && (
@@ -644,6 +652,7 @@ export default function ScoreEntryContainer() {
             currentEndScore={currentEndScore}
             totalScore={totalScore}
             bowType={setup?.bow}
+            targetFace={setup?.targetFace}
             voiceScoring={{ ...voiceScoring, voiceFeedbackEnabled, setVoiceFeedbackEnabled }}
           />
         )}
@@ -669,6 +678,7 @@ export default function ScoreEntryContainer() {
           currentEndScore={currentEndScore}
           totalScore={totalScore}
           bowType={setup?.bow}
+          targetFace={setup?.targetFace}
           voiceScoring={{ ...voiceScoring, voiceFeedbackEnabled, setVoiceFeedbackEnabled }}
         />
       </div>
@@ -679,6 +689,8 @@ export default function ScoreEntryContainer() {
           handleUndo={handleUndo}
           isSessionComplete={isSessionComplete}
           bowType={setup?.bow}
+          targetFace={setup?.targetFace}
+          disciplineMode={setup?.mode}
         />
         <div className="mt-4">
           <ArcheryTimer resetCount={timerResetCount} />

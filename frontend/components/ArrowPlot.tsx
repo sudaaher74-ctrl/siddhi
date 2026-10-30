@@ -5,6 +5,14 @@ import Card from "@/components/ui/Card";
 import { ScoreValue, ArrowShot } from "./ScoreEntryContainer";
 import { Session } from "@/lib/data";
 import { Plus, Minus } from "lucide-react";
+import {
+  TargetFaceType,
+  TARGET_FACE_CONFIG,
+  MODE_TARGET_FACES,
+  getDefaultTargetFace,
+  BowOption,
+  ModeOption,
+} from "./SessionSetup";
 
 interface ArrowPlotProps {
   currentArrows?: ArrowShot[];
@@ -15,6 +23,8 @@ interface ArrowPlotProps {
   sessions?: Session[];
   mode?: "overall" | "daily";
   bowType?: string;
+  targetFace?: TargetFaceType;
+  disciplineMode?: ModeOption;
 }
 
 export default function ArrowPlot({
@@ -26,6 +36,8 @@ export default function ArrowPlot({
   sessions = [],
   mode = "overall",
   bowType = "Recurve Bow",
+  targetFace,
+  disciplineMode = "Outdoor",
 }: ArrowPlotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -33,12 +45,30 @@ export default function ArrowPlot({
   const [zoomScale, setZoomScale] = useState(1.0);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [pointerState, setPointerState] = useState<{ x: number; y: number; score: ScoreValue } | null>(null);
-  const [targetModeOverride, setTargetModeOverride] = useState<"compound" | "full" | null>(null);
 
-  const isCompound = useMemo(() => {
-    if (targetModeOverride !== null) return targetModeOverride === "compound";
-    return bowType?.toLowerCase().includes("compound") ?? false;
-  }, [targetModeOverride, bowType]);
+  // Active target face: defaults to passed prop or computes from discipline + bow
+  const [activeFace, setActiveFace] = useState<TargetFaceType>(
+    targetFace || getDefaultTargetFace(disciplineMode, (bowType as BowOption) || "Recurve Bow")
+  );
+
+  useEffect(() => {
+    if (targetFace) {
+      setActiveFace(targetFace);
+    }
+  }, [targetFace]);
+
+  const availableFaces = useMemo(() => {
+    return MODE_TARGET_FACES[disciplineMode] || ["full-10", "compound-80"];
+  }, [disciplineMode]);
+
+  // Cycle to next available target face on badge tap
+  const handleCycleTargetFace = () => {
+    const currentIndex = availableFaces.indexOf(activeFace);
+    const nextIndex = (currentIndex + 1) % availableFaces.length;
+    setActiveFace(availableFaces[nextIndex]);
+    setZoomScale(1.0);
+    setPanOffset({ x: 0, y: 0 });
+  };
 
   // Sync refs for high-frequency gesture calculations
   const zoomScaleRef = useRef(zoomScale);
@@ -96,12 +126,14 @@ export default function ArrowPlot({
    * If the arrow touches or breaks the dividing line between two scoring zones,
    * it scores the higher value.
    */
-  const calculateScoreFromDistance = useCallback(
-    (d: number): ScoreValue => {
+  const calculateScore = useCallback(
+    (ptX: number, ptY: number): ScoreValue => {
       const buffer = 1.8;
 
-      // WA Compound 80cm 6-ring Face (Rings 5 to 10 + X)
-      if (isCompound) {
+      if (activeFace === "compound-80") {
+        const dx = ptX - 115;
+        const dy = ptY - 115;
+        const d = Math.sqrt(dx * dx + dy * dy);
         if (d <= 8.0 + buffer) return "X";
         if (d <= 16.0 + buffer) return "10";
         if (d <= 32.0 + buffer) return "9";
@@ -109,10 +141,55 @@ export default function ArrowPlot({
         if (d <= 64.0 + buffer) return "7";
         if (d <= 80.0 + buffer) return "6";
         if (d <= 96.0 + buffer) return "5";
-        return "M"; // Outside the blue 5-ring is a Miss
+        return "M";
       }
 
-      // Full 122cm / 80cm 10-ring Face (Recurve & Indian Bow: Rings 1 to 10 + X)
+      if (activeFace === "field-wa") {
+        const dx = ptX - 115;
+        const dy = ptY - 115;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d <= 8.3 + buffer) return "X";
+        if (d <= 16.6 + buffer) return "6";
+        if (d <= 33.3 + buffer) return "5";
+        if (d <= 50.0 + buffer) return "4";
+        if (d <= 66.6 + buffer) return "3";
+        if (d <= 83.3 + buffer) return "2";
+        if (d <= 100.0 + buffer) return "1";
+        return "M";
+      }
+
+      if (activeFace === "field-bw") {
+        const dx = ptX - 115;
+        const dy = ptY - 115;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d <= 10.0 + buffer) return "X";
+        if (d <= 20.0 + buffer) return "5";
+        if (d <= 60.0 + buffer) return "4";
+        if (d <= 100.0 + buffer) return "3";
+        return "M";
+      }
+
+      if (activeFace === "triple-spot") {
+        const spotYCoords = [46, 115, 184];
+        let minD = Infinity;
+        spotYCoords.forEach((sy) => {
+          const dist = Math.hypot(ptX - 115, ptY - sy);
+          if (dist < minD) minD = dist;
+        });
+        const d = minD;
+        if (d <= 2.6 + buffer * 0.4) return "X";
+        if (d <= 5.0 + buffer * 0.4) return "10";
+        if (d <= 10.0 + buffer * 0.4) return "9";
+        if (d <= 15.0 + buffer * 0.4) return "8";
+        if (d <= 20.0 + buffer * 0.4) return "7";
+        if (d <= 30.0 + buffer * 0.4) return "6";
+        return "M";
+      }
+
+      // Default: full-10 (Full 10-ring face)
+      const dx = ptX - 115;
+      const dy = ptY - 115;
+      const d = Math.sqrt(dx * dx + dy * dy);
       if (d <= 5.5 + buffer) return "X";
       if (d <= 11.0 + buffer) return "10";
       if (d <= 22.0 + buffer) return "9";
@@ -126,7 +203,7 @@ export default function ArrowPlot({
       if (d <= 110.0 + buffer) return "1";
       return "M";
     },
-    [isCompound]
+    [activeFace]
   );
 
   const getSVGPoint = useCallback((clientX: number, clientY: number) => {
@@ -144,16 +221,12 @@ export default function ArrowPlot({
       const pt = getSVGPoint(clientX, clientY);
       if (!pt) return null;
 
-      const dx = pt.x - 115;
-      const dy = pt.y - 115;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const score = calculateScoreFromDistance(distance);
-
+      const score = calculateScore(pt.x, pt.y);
       const nextState = { x: pt.x, y: pt.y, score };
       setPointerState(nextState);
       return nextState;
     },
-    [getSVGPoint, calculateScoreFromDistance]
+    [getSVGPoint, calculateScore]
   );
 
   // Zoom button handlers
@@ -177,17 +250,17 @@ export default function ArrowPlot({
     setPanOffset({ x: 0, y: 0 });
   };
 
-  const setManualZoom = (scale: number) => {
+  const setManualZoom = (scale: number, panY = 0) => {
     setZoomScale(scale);
     if (scale <= 1.05) {
       setPanOffset({ x: 0, y: 0 });
     } else {
       const viewSize = 230 / scale;
       const maxPan = (230 - viewSize) / 2;
-      setPanOffset((prev) => ({
-        x: Math.max(-maxPan, Math.min(maxPan, prev.x)),
-        y: Math.max(-maxPan, Math.min(maxPan, prev.y)),
-      }));
+      setPanOffset({
+        x: 0,
+        y: Math.max(-maxPan, Math.min(maxPan, panY)),
+      });
     }
   };
 
@@ -280,7 +353,6 @@ export default function ArrowPlot({
 
     activePointersRef.current.delete(e.pointerId);
 
-    // If ended pinch gesture
     if (activePointersRef.current.size < 2 && pinchInitialRef.current) {
       pinchInitialRef.current = null;
       justPinchedRef.current = true;
@@ -314,6 +386,16 @@ export default function ArrowPlot({
 
   // Official World Archery score badge colors
   const getBadgeColor = (score: ScoreValue) => {
+    if (activeFace === "field-wa") {
+      if (score === "X" || score === "6" || score === "5") return { bg: "#FFD700", text: "#000000" };
+      if (score === "4" || score === "3" || score === "2" || score === "1") return { bg: "#1E293B", text: "#FFFFFF" };
+      return { bg: "#64748B", text: "#FFFFFF" };
+    }
+    if (activeFace === "field-bw") {
+      if (score === "X" || score === "5") return { bg: "#FFFFFF", text: "#0F172A" };
+      if (score === "4" || score === "3") return { bg: "#1E293B", text: "#FFFFFF" };
+      return { bg: "#64748B", text: "#FFFFFF" };
+    }
     if (score === "X" || score === "10" || score === "9") return { bg: "#FFD700", text: "#000000" };
     if (score === "8" || score === "7") return { bg: "#E53935", text: "#FFFFFF" };
     if (score === "6" || score === "5") return { bg: "#0EA5E9", text: "#FFFFFF" };
@@ -331,7 +413,56 @@ export default function ArrowPlot({
   const minY = 115 - viewSize / 2 + clampedPanY;
   const currentViewBox = `${minX} ${minY} ${viewSize} ${viewSize}`;
 
-  const isZoomed = zoomScale > 1.15;
+  // Zoom presets tailored to the active target face
+  const zoomPresets = useMemo(() => {
+    if (activeFace === "compound-80") {
+      return [
+        { label: "1x Full", scale: 1.0, panY: 0 },
+        { label: "1.5x", scale: 1.5, panY: 0 },
+        { label: "2.2x (7-10)", scale: 2.2, panY: 0 },
+        { label: "3x Gold", scale: 3.0, panY: 0 },
+      ];
+    }
+    if (activeFace === "field-wa") {
+      return [
+        { label: "1x Full", scale: 1.0, panY: 0 },
+        { label: "1.5x", scale: 1.5, panY: 0 },
+        { label: "2.2x (4-6)", scale: 2.2, panY: 0 },
+        { label: "3x Gold", scale: 3.0, panY: 0 },
+      ];
+    }
+    if (activeFace === "field-bw") {
+      return [
+        { label: "1x Full", scale: 1.0, panY: 0 },
+        { label: "1.5x", scale: 1.5, panY: 0 },
+        { label: "2.2x (4-5)", scale: 2.2, panY: 0 },
+        { label: "3x Center", scale: 3.0, panY: 0 },
+      ];
+    }
+    if (activeFace === "triple-spot") {
+      return [
+        { label: "1x Full", scale: 1.0, panY: 0 },
+        { label: "1.8x Top", scale: 1.8, panY: -50 },
+        { label: "1.8x Mid", scale: 1.8, panY: 0 },
+        { label: "1.8x Btm", scale: 1.8, panY: 50 },
+      ];
+    }
+    // Full 10-ring
+    return [
+      { label: "1x Full", scale: 1.0, panY: 0 },
+      { label: "1.5x", scale: 1.5, panY: 0 },
+      { label: "2.2x Center", scale: 2.2, panY: 0 },
+      { label: "3x Gold", scale: 3.0, panY: 0 },
+    ];
+  }, [activeFace]);
+
+  const footerText = useMemo(() => {
+    if (activeFace === "compound-80") return "Compound 50m Target: Rings 5-10";
+    if (activeFace === "field-wa") return "World Archery Field: Rings 1-6 (Black & Gold)";
+    if (activeFace === "field-bw") return "Classic Field: Rings 3-5 + X (Black & White)";
+    if (activeFace === "triple-spot") return "Indoor 18m Vertical 3-Spot: Rings 6-10";
+    return "World Archery Target Face: Rings 1-10";
+  }, [activeFace]);
 
   return (
     <Card className="border border-slate-200/90 shadow-xs">
@@ -344,15 +475,12 @@ export default function ArrowPlot({
 
           <button
             type="button"
-            onClick={() => setTargetModeOverride(isCompound ? "full" : "compound")}
-            className={`text-[10px] font-medium px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
-              isCompound
-                ? "bg-sky-100 text-sky-700 hover:bg-sky-200 border border-sky-200"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200"
-            }`}
-            title="Click to toggle target face"
+            onClick={handleCycleTargetFace}
+            className="text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 border border-sky-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+            title="Click to switch target plot face"
           >
-            {isCompound ? "Compound 80cm (5-10)" : "Full Face (1-10)"}
+            <span>{TARGET_FACE_CONFIG[activeFace]?.badge || "Target Face"}</span>
+            <span className="text-[9px] text-sky-500 font-bold">⇄</span>
           </button>
         </div>
 
@@ -418,24 +546,11 @@ export default function ArrowPlot({
           <span className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider mr-1">
             ZOOM:
           </span>
-          {(isCompound
-            ? [
-                { label: "1x Full", scale: 1.0 },
-                { label: "1.5x", scale: 1.5 },
-                { label: "2.2x (7-10)", scale: 2.2 },
-                { label: "3x Gold", scale: 3.0 },
-              ]
-            : [
-                { label: "1x Full", scale: 1.0 },
-                { label: "1.5x", scale: 1.5 },
-                { label: "2.2x Center", scale: 2.2 },
-                { label: "3x Gold", scale: 3.0 },
-              ]
-          ).map((preset) => (
+          {zoomPresets.map((preset) => (
             <button
               key={preset.label}
               type="button"
-              onClick={() => setManualZoom(preset.scale)}
+              onClick={() => setManualZoom(preset.scale, preset.panY)}
               className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
                 Math.abs(zoomScale - preset.scale) < 0.15
                   ? "bg-slate-900 text-white shadow-xs"
@@ -468,88 +583,144 @@ export default function ArrowPlot({
           onPointerCancel={handlePointerCancel}
           onDoubleClick={handleDoubleClick}
         >
-          {isCompound ? (
-            /* ========================================================================= */
-            /* World Archery 80cm 6-Ring Compound Target Face (Rings 5 to 10 + X)        */
-            /* ========================================================================= */
+          {/* ========================================================================= */}
+          {/* Target Face 1: Compound 80cm 6-Ring (Blue, Red, Gold)                     */}
+          {/* ========================================================================= */}
+          {activeFace === "compound-80" && (
             <g>
-              {/* White outer paper background */}
               <rect x="0" y="0" width="230" height="230" rx="16" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="1" />
-
-              {/* 5 & 6 Ring (Blue - outer radius 96, inner radius 80) */}
               <circle cx="115" cy="115" r="96" fill="#0284C7" stroke="#000000" strokeWidth="1.2" />
               <circle cx="115" cy="115" r="80" fill="none" stroke="#000000" strokeWidth="0.8" />
-
-              {/* 7 & 8 Ring (Red - outer radius 64, inner radius 48) */}
               <circle cx="115" cy="115" r="64" fill="#EF4444" stroke="#000000" strokeWidth="1.0" />
               <circle cx="115" cy="115" r="48" fill="none" stroke="#000000" strokeWidth="0.8" />
-
-              {/* 9 & 10 Ring (Gold - outer radius 32, inner radius 16) */}
               <circle cx="115" cy="115" r="32" fill="#FACC15" stroke="#000000" strokeWidth="1.0" />
               <circle cx="115" cy="115" r="16" fill="none" stroke="#000000" strokeWidth="0.8" />
-
-              {/* Inner X Ring (radius 8) */}
               <circle cx="115" cy="115" r="8" fill="none" stroke="#000000" strokeWidth="0.8" />
+              <line x1="112" y1="115" x2="118" y2="115" stroke="#000000" strokeWidth="0.75" strokeLinecap="round" />
+              <line x1="115" y1="112" x2="115" y2="118" stroke="#000000" strokeWidth="0.75" strokeLinecap="round" />
+              <g pointerEvents="none" className="select-none font-bold">
+                <text x="123" y="117.2" fontSize="6.5" textAnchor="middle" fill="#000000" fontWeight="bold">10</text>
+                <text x="139" y="117.2" fontSize="7" textAnchor="middle" fill="#000000" fontWeight="bold">9</text>
+                <text x="156" y="117.2" fontSize="7.5" textAnchor="middle" fill="#000000" fontWeight="bold">8</text>
+                <text x="172" y="117.2" fontSize="7.5" textAnchor="middle" fill="#000000" fontWeight="bold">7</text>
+                <text x="188" y="117.2" fontSize="7.5" textAnchor="middle" fill="#000000" fontWeight="bold">6</text>
+                <text x="204" y="117.2" fontSize="7.5" textAnchor="middle" fill="#000000" fontWeight="bold">5</text>
+              </g>
+            </g>
+          )}
 
-              {/* Center Crosshair (+) */}
+          {/* ========================================================================= */}
+          {/* Target Face 2: World Archery Field Face (Rings 1-4 Black, 5-6 Gold)       */}
+          {/* ========================================================================= */}
+          {activeFace === "field-wa" && (
+            <g>
+              <rect x="0" y="0" width="230" height="230" rx="16" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="1" />
+              {/* Outer Black rings 1-4 */}
+              <circle cx="115" cy="115" r="100" fill="#111827" stroke="#000000" strokeWidth="1.2" />
+              <circle cx="115" cy="115" r="83.3" fill="none" stroke="#FFFFFF" strokeWidth="0.75" strokeOpacity="0.6" />
+              <circle cx="115" cy="115" r="66.6" fill="none" stroke="#FFFFFF" strokeWidth="0.75" strokeOpacity="0.6" />
+              <circle cx="115" cy="115" r="50" fill="none" stroke="#FFFFFF" strokeWidth="0.75" strokeOpacity="0.6" />
+
+              {/* Center Gold rings 5-6 */}
+              <circle cx="115" cy="115" r="33.3" fill="#FACC15" stroke="#000000" strokeWidth="1.0" />
+              <circle cx="115" cy="115" r="16.6" fill="none" stroke="#000000" strokeWidth="0.8" />
+              <circle cx="115" cy="115" r="8.3" fill="none" stroke="#000000" strokeWidth="0.75" />
               <line x1="112" y1="115" x2="118" y2="115" stroke="#000000" strokeWidth="0.75" strokeLinecap="round" />
               <line x1="115" y1="112" x2="115" y2="118" stroke="#000000" strokeWidth="0.75" strokeLinecap="round" />
 
-              {/* Horizontal Ring Numbers (10, 9, 8, 7, 6, 5) matching World Archery 80cm face */}
+              {/* Horizontal Ring Numbers (6, 5 Gold, 4, 3, 2, 1 White) */}
               <g pointerEvents="none" className="select-none font-bold">
-                <text x="123" y="117.2" fontSize="6.5" textAnchor="middle" fill="#000000" fontWeight="bold">
-                  10
-                </text>
-                <text x="139" y="117.2" fontSize="7" textAnchor="middle" fill="#000000" fontWeight="bold">
-                  9
-                </text>
-                <text x="156" y="117.2" fontSize="7.5" textAnchor="middle" fill="#000000" fontWeight="bold">
-                  8
-                </text>
-                <text x="172" y="117.2" fontSize="7.5" textAnchor="middle" fill="#000000" fontWeight="bold">
-                  7
-                </text>
-                <text x="188" y="117.2" fontSize="7.5" textAnchor="middle" fill="#000000" fontWeight="bold">
-                  6
-                </text>
-                <text x="204" y="117.2" fontSize="7.5" textAnchor="middle" fill="#000000" fontWeight="bold">
-                  5
-                </text>
+                <text x="123" y="117.2" fontSize="6.5" textAnchor="middle" fill="#000000" fontWeight="bold">6</text>
+                <text x="131" y="117.2" fontSize="6.5" textAnchor="middle" fill="#000000" fontWeight="bold">5</text>
+                <text x="148" y="117.2" fontSize="7" textAnchor="middle" fill="#FFFFFF" fontWeight="bold">4</text>
+                <text x="165" y="117.2" fontSize="7" textAnchor="middle" fill="#FFFFFF" fontWeight="bold">3</text>
+                <text x="182" y="117.2" fontSize="7.5" textAnchor="middle" fill="#FFFFFF" fontWeight="bold">2</text>
+                <text x="199" y="117.2" fontSize="7.5" textAnchor="middle" fill="#FFFFFF" fontWeight="bold">1</text>
               </g>
             </g>
-          ) : (
-            /* ========================================================================= */
-            /* World Archery 122cm / 80cm Full Target Face (Rings 1 to 10 + X)           */
-            /* ========================================================================= */
+          )}
+
+          {/* ========================================================================= */}
+          {/* Target Face 3: Classic Field Face (Black & White)                         */}
+          {/* ========================================================================= */}
+          {activeFace === "field-bw" && (
             <g>
+              <rect x="0" y="0" width="230" height="230" rx="16" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="1" />
+              {/* Outer Black rings 1-4 */}
+              <circle cx="115" cy="115" r="100" fill="#0F172A" stroke="#000000" strokeWidth="1.2" />
+              <circle cx="115" cy="115" r="80" fill="none" stroke="#FFFFFF" strokeWidth="0.75" strokeOpacity="0.6" />
+              <circle cx="115" cy="115" r="60" fill="none" stroke="#FFFFFF" strokeWidth="0.75" strokeOpacity="0.6" />
+              <circle cx="115" cy="115" r="40" fill="none" stroke="#FFFFFF" strokeWidth="0.75" strokeOpacity="0.6" />
+
+              {/* Center Bullseye White (Ring 5 & X) */}
+              <circle cx="115" cy="115" r="20" fill="#FFFFFF" stroke="#000000" strokeWidth="1.2" />
+              <circle cx="115" cy="115" r="10" fill="none" stroke="#000000" strokeWidth="0.8" />
+              <line x1="112" y1="115" x2="118" y2="115" stroke="#000000" strokeWidth="0.75" strokeLinecap="round" />
+              <line x1="115" y1="112" x2="115" y2="118" stroke="#000000" strokeWidth="0.75" strokeLinecap="round" />
+
+              {/* Numbers */}
+              <g pointerEvents="none" className="select-none font-bold">
+                <text x="122" y="117.2" fontSize="6.5" textAnchor="middle" fill="#000000" fontWeight="bold">5</text>
+                <text x="145" y="117.2" fontSize="7" textAnchor="middle" fill="#FFFFFF" fontWeight="bold">4</text>
+                <text x="175" y="117.2" fontSize="7.5" textAnchor="middle" fill="#FFFFFF" fontWeight="bold">3</text>
+              </g>
+            </g>
+          )}
+
+          {/* ========================================================================= */}
+          {/* Target Face 4: Indoor Vertical 3-Spot Face (3 Stacked Targets)           */}
+          {/* ========================================================================= */}
+          {activeFace === "triple-spot" && (
+            <g>
+              <rect x="0" y="0" width="230" height="230" rx="16" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="1" />
+              {[46, 115, 184].map((sy, idx) => (
+                <g key={idx}>
+                  {/* Spot target index label */}
+                  <text x="65" y={sy + 3.5} fontSize="8" fill="#94A3B8" fontWeight="bold" textAnchor="middle">
+                    {idx + 1}
+                  </text>
+                  {/* 6 Ring (Blue) */}
+                  <circle cx="115" cy={sy} r="30" fill="#0284C7" stroke="#000000" strokeWidth="0.8" />
+                  {/* 7 & 8 Ring (Red) */}
+                  <circle cx="115" cy={sy} r="20" fill="#EF4444" stroke="#000000" strokeWidth="0.7" />
+                  <circle cx="115" cy={sy} r="15" fill="none" stroke="#000000" strokeWidth="0.6" />
+                  {/* 9 & 10 Ring (Gold) */}
+                  <circle cx="115" cy={sy} r="10" fill="#FACC15" stroke="#000000" strokeWidth="0.7" />
+                  <circle cx="115" cy={sy} r="5" fill="none" stroke="#000000" strokeWidth="0.6" />
+                  {/* Inner X Ring */}
+                  <circle cx="115" cy={sy} r="2.5" fill="none" stroke="#000000" strokeWidth="0.5" />
+                  <line x1="113.5" y1={sy} x2="116.5" y2={sy} stroke="#000000" strokeWidth="0.5" strokeLinecap="round" />
+                  <line x1="115" y1={sy - 1.5} x2="115" y2={sy + 1.5} stroke="#000000" strokeWidth="0.5" strokeLinecap="round" />
+                </g>
+              ))}
+            </g>
+          )}
+
+          {/* ========================================================================= */}
+          {/* Target Face 5: Standard Full 10-Ring Face (5 Colors)                      */}
+          {/* ========================================================================= */}
+          {activeFace === "full-10" && (
+            <g>
+              <rect x="0" y="0" width="230" height="230" rx="16" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="1" />
               {/* 1 & 2 ring (white) */}
-              <circle cx="115" cy="115" r="110" fill="var(--target-white)" />
-              <circle cx="115" cy="115" r="99" fill="none" stroke="rgba(0,0,0,.15)" strokeWidth="0.8" />
-
+              <circle cx="115" cy="115" r="104" fill="#F8FAFC" stroke="#000000" strokeWidth="1.0" />
+              <circle cx="115" cy="115" r="93.6" fill="none" stroke="#CBD5E1" strokeWidth="0.8" />
               {/* 3 & 4 ring (black) */}
-              <circle cx="115" cy="115" r="88" fill="var(--target-black)" />
-              <circle cx="115" cy="115" r="77" fill="none" stroke="rgba(255,255,255,.18)" strokeWidth="0.8" />
-
+              <circle cx="115" cy="115" r="83.2" fill="#1E293B" stroke="#000000" strokeWidth="1.0" />
+              <circle cx="115" cy="115" r="72.8" fill="none" stroke="#FFFFFF" strokeWidth="0.75" strokeOpacity="0.4" />
               {/* 5 & 6 ring (blue) */}
-              <circle cx="115" cy="115" r="66" fill="var(--target-blue)" />
-              <circle cx="115" cy="115" r="55" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth="0.8" />
-
+              <circle cx="115" cy="115" r="62.4" fill="#0284C7" stroke="#000000" strokeWidth="1.0" />
+              <circle cx="115" cy="115" r="52.0" fill="none" stroke="#000000" strokeWidth="0.8" />
               {/* 7 & 8 ring (red) */}
-              <circle cx="115" cy="115" r="44" fill="var(--target-red)" />
-              <circle cx="115" cy="115" r="33" fill="none" stroke="rgba(0,0,0,.18)" strokeWidth="0.8" />
-
+              <circle cx="115" cy="115" r="41.6" fill="#EF4444" stroke="#000000" strokeWidth="1.0" />
+              <circle cx="115" cy="115" r="31.2" fill="none" stroke="#000000" strokeWidth="0.8" />
               {/* 9 & 10 ring (gold) */}
-              <circle cx="115" cy="115" r="22" fill="var(--target-gold)" />
-
-              {/* 10 ring line (radius 11) */}
-              <circle cx="115" cy="115" r="11" fill="none" stroke="rgba(0,0,0,.35)" strokeWidth={isZoomed ? "0.7" : "0.9"} />
-
-              {/* X ring line (radius 5.5) */}
-              <circle cx="115" cy="115" r="5.5" fill="none" stroke="rgba(0,0,0,.45)" strokeWidth={isZoomed ? "0.55" : "0.75"} />
-
-              {/* Center Crosshair (+) */}
-              <line x1="112.5" y1="115" x2="117.5" y2="115" stroke="rgba(0,0,0,.7)" strokeWidth={isZoomed ? "0.45" : "0.75"} strokeLinecap="round" />
-              <line x1="115" y1="112.5" x2="115" y2="117.5" stroke="rgba(0,0,0,.7)" strokeWidth={isZoomed ? "0.45" : "0.75"} strokeLinecap="round" />
+              <circle cx="115" cy="115" r="20.8" fill="#FACC15" stroke="#000000" strokeWidth="1.0" />
+              <circle cx="115" cy="115" r="10.4" fill="none" stroke="#000000" strokeWidth="0.8" />
+              {/* Inner X Ring */}
+              <circle cx="115" cy="115" r="5.2" fill="none" stroke="#000000" strokeWidth="0.7" />
+              <line x1="112.5" y1="115" x2="117.5" y2="115" stroke="#000000" strokeWidth="0.7" strokeLinecap="round" />
+              <line x1="115" y1="112.5" x2="115" y2="117.5" stroke="#000000" strokeWidth="0.7" strokeLinecap="round" />
             </g>
           )}
 
@@ -571,14 +742,13 @@ export default function ArrowPlot({
 
               return (
                 <g key={i} className={isNew ? "animate-dotPop" : ""} style={{ transformOrigin: `${cx}px ${cy}px` }}>
-                  {/* Arrow Impact Dot */}
                   <circle
                     cx={cx}
                     cy={cy}
                     r={arrowRadius}
                     fill="#FFFFFF"
                     fillOpacity={heatmapMode ? 0.92 : 1}
-                    stroke="rgba(15, 23, 42, 0.8)"
+                    stroke="rgba(15, 23, 42, 0.85)"
                     strokeWidth={arrowStroke}
                   />
                 </g>
@@ -589,7 +759,6 @@ export default function ArrowPlot({
           {/* Live Aiming Reticle & Floating Score Pill */}
           {pointerState && !heatmapMode && !isSessionComplete && currentArrows.length < 6 && (
             <g pointerEvents="none">
-              {/* Aiming Reticle Ring */}
               <circle
                 cx={pointerState.x}
                 cy={pointerState.y}
@@ -617,10 +786,10 @@ export default function ArrowPlot({
                       y={badgeY}
                       width={badgeWidth}
                       height={badgeHeight}
-                      rx={isZoomed ? "2.2" : "3"}
+                      rx="2.5"
                       fill={colors.bg}
                       stroke="#000000"
-                      strokeWidth={isZoomed ? "0.4" : "0.6"}
+                      strokeWidth={0.5}
                     />
                     <text
                       x={pointerState.x}
@@ -652,7 +821,7 @@ export default function ArrowPlot({
 
         {!heatmapMode && (
           <span className="text-[10.5px] text-slate-400">
-            {isCompound ? "Compound 50m Target: Rings 5-10" : "Full Face Target: Rings 1-10"}
+            {footerText}
           </span>
         )}
       </div>

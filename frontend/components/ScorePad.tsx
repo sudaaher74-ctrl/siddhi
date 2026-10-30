@@ -4,6 +4,7 @@ import React from "react";
 import { Undo2, Check } from "lucide-react";
 import { ScoreValue, ArrowShot } from "./ScoreEntryContainer";
 import VoiceScoringWidget from "./VoiceScoringWidget";
+import { TargetFaceType, TARGET_FACE_CONFIG } from "./SessionSetup";
 
 interface ScorePadProps {
   currentArrows: ArrowShot[];
@@ -18,6 +19,7 @@ interface ScorePadProps {
   currentEndScore: number;
   totalScore: number;
   bowType?: string;
+  targetFace?: TargetFaceType;
   voiceScoring?: {
     isListening: boolean;
     isSupported: boolean;
@@ -43,13 +45,39 @@ export default function ScorePad({
   currentEndScore,
   totalScore,
   bowType,
+  targetFace,
   voiceScoring,
 }: ScorePadProps) {
   const isCompound = bowType?.toLowerCase().includes("compound") ?? false;
-  const scores: ScoreValue[] = isCompound
-    ? ["X", "10", "9", "8", "7", "6", "5", "M"]
-    : ["X", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "M"];
   
+  // Determine keypad scores based on the selected target face
+  const getScoresForFace = (): ScoreValue[] => {
+    if (targetFace === "compound-80") {
+      return ["X", "10", "9", "8", "7", "6", "5", "M"];
+    }
+    if (targetFace === "triple-spot") {
+      return ["X", "10", "9", "8", "7", "6", "M"];
+    }
+    if (targetFace === "field-wa") {
+      return ["X", "6", "5", "4", "3", "2", "1", "M"];
+    }
+    if (targetFace === "field-bw") {
+      return ["X", "5", "4", "3", "M"];
+    }
+    if (targetFace === "full-10") {
+      return ["X", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "M"];
+    }
+    // Fallback to bowType
+    return isCompound
+      ? ["X", "10", "9", "8", "7", "6", "5", "M"]
+      : ["X", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "M"];
+  };
+
+  const scores = getScoresForFace();
+  const faceBadge = targetFace && TARGET_FACE_CONFIG[targetFace]
+    ? TARGET_FACE_CONFIG[targetFace].badge
+    : isCompound ? "Compound (5–10)" : "Full Face (1–10)";
+
   // Display arrows (pad with dashes)
   const displayArrows: Array<ScoreValue | "-"> = currentArrows.map(a => a.score);
   while (displayArrows.length < 6) {
@@ -63,11 +91,9 @@ export default function ScorePad({
           <h3 className="text-[14px] font-semibold text-text">
             {isSessionComplete ? "Session Complete" : `Input Score (End ${currentEndIndex + 1}/6)`}
           </h3>
-          {isCompound && (
-            <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300">
-              Compound (5–10)
-            </span>
-          )}
+          <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300">
+            {faceBadge}
+          </span>
         </div>
         <div className="text-[12px] font-bold text-text-dim">Total: {totalScore}</div>
       </div>
@@ -88,30 +114,55 @@ export default function ScorePad({
         </div>
       )}
       
-      <div className={`grid ${isCompound ? 'grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 mb-4 sm:mb-6`}>
-        {scores.map((score, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => {
-              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(12);
-              handleScoreInput(score, null, null);
-            }}
-            disabled={isSessionComplete || currentArrows.length >= 6}
-            className={`
-              flex items-center justify-center h-[52px] sm:h-14 rounded-xl text-[18px] sm:text-xl font-bold border border-black/10 transition-all cursor-pointer select-none active:scale-95
-              ${isSessionComplete || currentArrows.length >= 6 ? 'opacity-40 cursor-not-allowed active:scale-100' : ''}
-              ${score === 'X' || score === '10' || score === '9' ? 'bg-[#FEF08A] text-[#854D0E] hover:bg-[#FDE047] border-amber-300 shadow-xs' : ''}
-              ${score === '8' || score === '7' ? 'bg-[#FECACA] text-[#991B1B] hover:bg-[#FCA5A5] border-rose-300 shadow-xs' : ''}
-              ${score === '6' || score === '5' ? 'bg-[#BAE6FD] text-[#075985] hover:bg-[#7DD3FC] border-sky-300 shadow-xs' : ''}
-              ${score === '4' || score === '3' ? 'bg-[#334155] text-white hover:bg-[#1E293B] border-slate-700 shadow-xs' : ''}
-              ${score === '2' || score === '1' ? 'bg-white text-slate-900 hover:bg-slate-50 border-slate-300 shadow-xs' : ''}
-              ${score === 'M' ? 'bg-slate-200 text-slate-600 hover:bg-slate-300 border-slate-300 shadow-xs' : ''}
-            `}
-          >
-            {score}
-          </button>
-        ))}
+      <div className={`grid ${scores.length <= 8 ? 'grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 mb-4 sm:mb-6`}>
+        {scores.map((score, i) => {
+          let colorClass = 'bg-slate-200 text-slate-600 hover:bg-slate-300 border-slate-300 shadow-xs';
+          if (targetFace === "field-wa") {
+            if (score === "X" || score === "6" || score === "5") {
+              colorClass = 'bg-[#FEF08A] text-[#854D0E] hover:bg-[#FDE047] border-amber-300 shadow-xs';
+            } else if (score === "4" || score === "3" || score === "2" || score === "1") {
+              colorClass = 'bg-[#334155] text-white hover:bg-[#1E293B] border-slate-700 shadow-xs';
+            }
+          } else if (targetFace === "field-bw") {
+            if (score === "X" || score === "5") {
+              colorClass = 'bg-white text-slate-900 hover:bg-slate-50 border-slate-300 shadow-xs';
+            } else if (score === "4" || score === "3") {
+              colorClass = 'bg-[#334155] text-white hover:bg-[#1E293B] border-slate-700 shadow-xs';
+            }
+          } else {
+            // Standard World Archery 5-color schema
+            if (score === 'X' || score === '10' || score === '9') {
+              colorClass = 'bg-[#FEF08A] text-[#854D0E] hover:bg-[#FDE047] border-amber-300 shadow-xs';
+            } else if (score === '8' || score === '7') {
+              colorClass = 'bg-[#FECACA] text-[#991B1B] hover:bg-[#FCA5A5] border-rose-300 shadow-xs';
+            } else if (score === '6' || score === '5') {
+              colorClass = 'bg-[#BAE6FD] text-[#075985] hover:bg-[#7DD3FC] border-sky-300 shadow-xs';
+            } else if (score === '4' || score === '3') {
+              colorClass = 'bg-[#334155] text-white hover:bg-[#1E293B] border-slate-700 shadow-xs';
+            } else if (score === '2' || score === '1') {
+              colorClass = 'bg-white text-slate-900 hover:bg-slate-50 border-slate-300 shadow-xs';
+            }
+          }
+
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(12);
+                handleScoreInput(score, null, null);
+              }}
+              disabled={isSessionComplete || currentArrows.length >= 6}
+              className={`
+                flex items-center justify-center h-[52px] sm:h-14 rounded-xl text-[18px] sm:text-xl font-bold border transition-all cursor-pointer select-none active:scale-95
+                ${isSessionComplete || currentArrows.length >= 6 ? 'opacity-40 cursor-not-allowed active:scale-100' : ''}
+                ${colorClass}
+              `}
+            >
+              {score}
+            </button>
+          );
+        })}
       </div>
       
       <div className="flex justify-between items-center bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-200/80">
