@@ -3,6 +3,7 @@
 import React from "react";
 import { Undo2, Check } from "lucide-react";
 import { ScoreValue, ArrowShot } from "./ScoreEntryContainer";
+import VoiceScoringWidget from "./VoiceScoringWidget";
 
 interface ScorePadProps {
   currentArrows: ArrowShot[];
@@ -17,6 +18,16 @@ interface ScorePadProps {
   currentEndScore: number;
   totalScore: number;
   bowType?: string;
+  voiceScoring?: {
+    isListening: boolean;
+    isSupported: boolean;
+    transcript: string;
+    lastDetected: string | null;
+    error: string | null;
+    toggleListening: () => void;
+    voiceFeedbackEnabled: boolean;
+    setVoiceFeedbackEnabled: (enabled: boolean) => void;
+  };
 }
 
 export default function ScorePad({
@@ -32,6 +43,7 @@ export default function ScorePad({
   currentEndScore,
   totalScore,
   bowType,
+  voiceScoring,
 }: ScorePadProps) {
   const isCompound = bowType?.toLowerCase().includes("compound") ?? false;
   const scores: ScoreValue[] = isCompound
@@ -59,6 +71,22 @@ export default function ScorePad({
         </div>
         <div className="text-[12px] font-bold text-text-dim">Total: {totalScore}</div>
       </div>
+
+      {/* Hands-Free Voice Input Scoring Widget */}
+      {voiceScoring && (
+        <div className="mb-3 sm:mb-4">
+          <VoiceScoringWidget
+            isListening={voiceScoring.isListening}
+            isSupported={voiceScoring.isSupported}
+            transcript={voiceScoring.transcript}
+            lastDetected={voiceScoring.lastDetected}
+            error={voiceScoring.error}
+            toggleListening={voiceScoring.toggleListening}
+            voiceFeedbackEnabled={voiceScoring.voiceFeedbackEnabled}
+            setVoiceFeedbackEnabled={voiceScoring.setVoiceFeedbackEnabled}
+          />
+        </div>
+      )}
       
       <div className={`grid ${isCompound ? 'grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 mb-4 sm:mb-6`}>
         {scores.map((score, i) => (

@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { apiPost } from "@/lib/api";
 import { Session } from "@/lib/data";
-import { Award, Check, Undo2, ChevronRight, Target, Hash, Clock, Calendar, Download } from "lucide-react";
+import { Award, Check, Undo2, ChevronRight, Target, Hash, Clock, Calendar, Download, Mic } from "lucide-react";
 import ScorePad from "./ScorePad";
 import ArrowPlot from "./ArrowPlot";
 import ArcheryTimer from "./ArcheryTimer";
+import { useVoiceScoring } from "@/hooks/useVoiceScoring";
 import SessionSetup, {
   SessionSetupValues,
   formatReadableDateTime,
@@ -149,6 +150,19 @@ export default function ScoreEntryContainer() {
       setTimerResetCount((prev) => prev + 1);
     }
   };
+
+  const [voiceFeedbackEnabled, setVoiceFeedbackEnabled] = useState(true);
+
+  // Hands-free Speech-to-Text Archery Voice Input
+  const voiceScoring = useVoiceScoring({
+    onScoreInput: handleScoreInput,
+    onUndo: handleUndo,
+    onSubmitEnd: handleSubmitEnd,
+    currentArrowsCount: currentArrows.length,
+    isSessionComplete,
+    bowType: setup?.bow,
+    voiceFeedbackEnabled,
+  });
 
   const handleSaveSession = async () => {
     if (isSaving) return;
@@ -476,7 +490,23 @@ export default function ScoreEntryContainer() {
         </div>
 
         {/* Action Buttons Row */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {voiceScoring.isSupported && (
+            <button
+              type="button"
+              onClick={voiceScoring.toggleListening}
+              className={`flex items-center justify-center gap-1 px-2.5 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                voiceScoring.isListening
+                  ? "bg-accent text-white ring-2 ring-accent/30 animate-pulse"
+                  : "bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700"
+              }`}
+              title={voiceScoring.isListening ? "Listening... Tap to stop" : "Tap to speak scores hands-free"}
+            >
+              <Mic className={`w-3.5 h-3.5 ${voiceScoring.isListening ? "animate-bounce text-white" : "text-accent"}`} />
+              <span>{voiceScoring.isListening ? "Listening" : "Speak"}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleUndo}
@@ -515,6 +545,22 @@ export default function ScoreEntryContainer() {
             </button>
           )}
         </div>
+
+        {/* Live Spoken Transcript Banner on Mobile */}
+        {voiceScoring.isListening && (
+          <div className="mt-2 p-2 rounded-lg bg-gradient-to-r from-red-50 to-amber-50 border border-accent/30 flex items-center justify-between text-xs text-slate-800">
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="w-2 h-2 rounded-full bg-accent animate-ping flex-shrink-0" />
+              <span className="font-semibold text-accent flex-shrink-0">Heard:</span>
+              <span className="truncate italic">{voiceScoring.transcript || "Say: Ten, Nine, X, Eight..."}</span>
+            </div>
+            {voiceScoring.lastDetected && (
+              <span className="px-2 py-0.5 rounded bg-accent text-white text-[10px] font-bold flex-shrink-0 ml-1.5">
+                +{voiceScoring.lastDetected}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Mode Switcher Segmented Control */}
@@ -593,6 +639,7 @@ export default function ScoreEntryContainer() {
             currentEndScore={currentEndScore}
             totalScore={totalScore}
             bowType={setup?.bow}
+            voiceScoring={{ ...voiceScoring, voiceFeedbackEnabled, setVoiceFeedbackEnabled }}
           />
         )}
         {mobileMode === "timer" && (
@@ -617,6 +664,7 @@ export default function ScoreEntryContainer() {
           currentEndScore={currentEndScore}
           totalScore={totalScore}
           bowType={setup?.bow}
+          voiceScoring={{ ...voiceScoring, voiceFeedbackEnabled, setVoiceFeedbackEnabled }}
         />
       </div>
       <div>
