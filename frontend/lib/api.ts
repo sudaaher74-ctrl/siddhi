@@ -30,24 +30,31 @@ const parseError = async (res: Response): Promise<string> => {
   }
 };
 
+export interface ApiFetchOptions extends RequestInit {
+  skipAuthRedirect?: boolean;
+}
+
 /**
  * Browser-side fetch. `path` is an API path such as `/api/sessions`.
  * Throws ApiError on a non-2xx response so callers can show a real message.
  */
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const hasBody = options.body !== undefined;
+  const { skipAuthRedirect, ...fetchOptions } = options;
 
   const res = await fetch(path, {
-    ...options,
+    ...fetchOptions,
     credentials: 'include',
     headers: {
       ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-      ...options.headers,
+      ...fetchOptions.headers,
     },
   });
 
-  if (res.status === 401 && typeof window !== 'undefined') {
-    window.location.href = '/login';
+  if (res.status === 401 && !skipAuthRedirect && typeof window !== 'undefined') {
+    if (!window.location.pathname.startsWith('/login')) {
+      window.location.href = '/login';
+    }
     throw new ApiError('Your session expired. Please sign in again.', 401);
   }
 

@@ -46,21 +46,38 @@ export const protect = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  const token = extractToken(req);
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, env.jwtSecret) as { id: string };
+      const user = await User.findById(decoded.id);
+      if (user) {
+        req.user = user;
+        next();
+        return;
+      }
+    } catch (error) {
+      console.warn('Token verification failed:', error instanceof Error ? error.message : error);
+    }
+  }
+
+  // Fallback for local development when no valid token is provided
   try {
     let user = await User.findOne({ email: 'dev@localhost.com' });
     if (!user) {
       user = await User.create({
-        name: 'Local Dev User',
+        name: 'Athlete',
         email: 'dev@localhost.com',
         password: 'password123',
-        role: 'admin'
+        role: 'user',
       });
     }
     req.user = user;
     next();
   } catch (error) {
-    console.error('Auth bypass failed:', error);
-    res.status(500).json({ message: 'Auth bypass failed' });
+    console.error('Auth fallback failed:', error);
+    res.status(500).json({ message: 'Auth failed' });
   }
 };
 

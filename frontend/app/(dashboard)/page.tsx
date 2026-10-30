@@ -71,7 +71,10 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <TopBar subtitle={user?.name ? `Welcome back, ${user.name.split(' ')[0]}` : undefined} />
+      <TopBar 
+        subtitle={user?.name ? `Welcome back, ${user.name.split(' ')[0]}` : undefined} 
+        initialUser={user}
+      />
       <HeroPerformanceCard sessions={sessions} initialUser={user} />
 
       <HomeKpiGrid sessions={sessions} />

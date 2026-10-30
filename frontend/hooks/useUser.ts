@@ -13,22 +13,35 @@ export interface UserProfile {
 }
 
 export function useUser() {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('archerx_user');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.name && parsed.name !== 'Local Dev User') {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async () => {
     try {
-      // Login system removed for local dev
-      const mockUser = {
-        _id: 'mock-user-id',
-        name: 'Local Dev User',
-        email: 'dev@localhost.com',
-        role: 'admin',
-      };
-      setUser(mockUser);
-      return mockUser;
+      const data = await apiFetch<UserProfile>('/api/auth/me', { skipAuthRedirect: true });
+      if (data && data.name) {
+        setUser(data);
+        try {
+          localStorage.setItem('archerx_user', JSON.stringify(data));
+        } catch {}
+        return data;
+      }
+      return null;
     } catch (error) {
-      console.error('Failed to fetch user', error);
+      console.warn('Failed to fetch user', error);
       return null;
     } finally {
       setLoading(false);

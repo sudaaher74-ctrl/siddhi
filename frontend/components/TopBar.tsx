@@ -7,12 +7,15 @@ import { useProfile } from "@/context/ProfileContext";
 interface TopBarProps {
   title?: string;
   subtitle?: string;
+  initialUser?: { name?: string; role?: string } | null;
 }
 
-export default function TopBar({ title = "Dashboard", subtitle }: TopBarProps) {
+export default function TopBar({ title = "Dashboard", subtitle, initialUser = null }: TopBarProps) {
   const { user } = useUser();
   const { openProfile } = useProfile();
-  const athleteName = user?.name || "";
+  const activeUser = user || initialUser;
+  const athleteName = activeUser?.name || "";
+  const athleteRole = activeUser?.role || "Athlete";
   const initials = athleteName
     ? athleteName
         .split(" ")
@@ -78,7 +81,7 @@ export default function TopBar({ title = "Dashboard", subtitle }: TopBarProps) {
                 {athleteName}
               </span>
               <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                {user?.role || "Athlete"}
+                {athleteRole}
               </span>
             </div>
           </button>
