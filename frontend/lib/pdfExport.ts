@@ -431,6 +431,7 @@ export interface ExportScorecardParams {
   formattedTime?: string;
   eventName: string;
   venueName?: string;
+  mode?: string;
   standardName?: string;
   round1Total: number;
   maxPossibleScore: number;
@@ -637,7 +638,11 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(226, 232, 240);
-  doc.text(`${params.selectedBow}  •  ${params.distance}`, pageWidth - margin, 46, { align: "right" });
+  const modeBadge = params.mode || params.session?.mode;
+  const bowDistStr = modeBadge
+    ? `${params.selectedBow}  •  ${params.distance}  •  ${modeBadge.toUpperCase()}`
+    : `${params.selectedBow}  •  ${params.distance}`;
+  doc.text(bowDistStr, pageWidth - margin, 46, { align: "right" });
 
   let y = 82;
 
@@ -663,7 +668,8 @@ export function exportScorecardPDF(params: ExportScorecardParams) {
   doc.setFontSize(8.5);
   doc.setTextColor(51, 65, 85);
   const timeInfo = formattedTime ? ` at ${formattedTime}` : "";
-  const detailsLine = `Session: ${formattedDate}${timeInfo}   |   Event: ${params.eventName}   |   Venue: ${params.venueName || "Outdoor Range"}`;
+  const venueMode = params.venueName || `${params.mode || params.session?.mode || "Outdoor"} Range`;
+  const detailsLine = `Session: ${formattedDate}${timeInfo}   |   Event: ${params.eventName}   |   Venue: ${venueMode}`;
   doc.text(detailsLine, margin + 14, y + 50);
 
   // World Archery Official 5-Zone Concentric Target Graphic

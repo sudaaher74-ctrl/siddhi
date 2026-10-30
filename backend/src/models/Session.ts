@@ -15,6 +15,8 @@ export interface ISession {
   note: string;
   distance?: string;
   bow?: string;
+  mode?: string;
+  environment?: string;
   arrowData?: string;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -34,6 +36,8 @@ const mapSessionRow = (row: any): ISession => ({
   note: String(row.note || ''),
   distance: String(row.distance || ''),
   bow: String(row.bow || ''),
+  mode: String(row.mode || row.environment || 'Outdoor'),
+  environment: String(row.environment || row.mode || 'Outdoor'),
   arrowData: row.arrow_data ? String(row.arrow_data) : undefined,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -45,7 +49,7 @@ const mapSessionRow = (row: any): ISession => ({
     await db.execute({
       sql: `
         UPDATE sessions
-        SET name = ?, type = ?, arrows = ?, score = ?, avg = ?, tens = ?, note = ?, distance = ?, bow = ?, arrow_data = ?, created_at = ?, updated_at = ?
+        SET name = ?, type = ?, arrows = ?, score = ?, avg = ?, tens = ?, note = ?, distance = ?, bow = ?, mode = ?, arrow_data = ?, created_at = ?, updated_at = ?
         WHERE id = ?
       `,
       args: [
@@ -58,6 +62,7 @@ const mapSessionRow = (row: any): ISession => ({
         this.note || '',
         this.distance || '',
         this.bow || '',
+        this.mode || 'Outdoor',
         this.arrowData || null,
         createdAt,
         now,
@@ -84,8 +89,8 @@ export class SessionModelInstance {
 
     await db.execute({
       sql: `
-        INSERT INTO sessions (id, user_id, name, type, arrows, score, avg, tens, note, distance, bow, arrow_data, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO sessions (id, user_id, name, type, arrows, score, avg, tens, note, distance, bow, mode, arrow_data, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       args: [
         id,
@@ -99,6 +104,7 @@ export class SessionModelInstance {
         this.data.note || '',
         this.data.distance || '',
         this.data.bow || '',
+        this.data.mode || this.data.environment || 'Outdoor',
         this.data.arrowData || null,
         createdAt,
         now,
@@ -117,6 +123,7 @@ export class SessionModelInstance {
       note: this.data.note,
       distance: this.data.distance,
       bow: this.data.bow,
+      mode: this.data.mode || this.data.environment || 'Outdoor',
       arrow_data: this.data.arrowData,
       created_at: createdAt,
       updated_at: now,
@@ -187,6 +194,8 @@ SessionConstructor.findOneAndUpdate = async function (
   if (updateData.type !== undefined) current.type = updateData.type;
   if (updateData.distance !== undefined) current.distance = updateData.distance;
   if (updateData.bow !== undefined) current.bow = updateData.bow;
+  if (updateData.mode !== undefined) current.mode = updateData.mode;
+  if (updateData.environment !== undefined) current.mode = updateData.environment;
   if (updateData.arrows !== undefined) current.arrows = Number(updateData.arrows);
   if (updateData.score !== undefined) current.score = Number(updateData.score);
   if (updateData.avg !== undefined) current.avg = Number(updateData.avg);

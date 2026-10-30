@@ -62,8 +62,13 @@ export default function SessionsTable({ sessions }: SessionsTableProps) {
                 className="p-4 flex flex-col gap-2.5 active:bg-slate-50 cursor-pointer"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <div className="font-bold text-sm text-slate-900 truncate">
-                    {s.name}
+                  <div className="font-bold text-sm text-slate-900 truncate flex items-center gap-1.5">
+                    <span>{s.name}</span>
+                    {s.mode && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
+                        {s.mode}
+                      </span>
+                    )}
                   </div>
                   {s.distance ? (
                     <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 text-xs font-bold whitespace-nowrap">
@@ -142,9 +147,16 @@ export default function SessionsTable({ sessions }: SessionsTableProps) {
                       )}
                     </td>
                     <td className="p-4">
-                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[12px] font-medium">
-                        {s.type}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[12px] font-medium">
+                          {s.type}
+                        </span>
+                        {s.mode && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                            {s.mode}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4">
                       {s.distance ? (

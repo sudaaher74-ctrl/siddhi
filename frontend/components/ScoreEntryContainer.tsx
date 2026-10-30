@@ -55,6 +55,8 @@ export default function ScoreEntryContainer() {
           if (parsed.setup) {
             const restoredSetup: SessionSetupValues = {
               ...parsed.setup,
+              title: parsed.setup.title || parsed.title || "Practice",
+              mode: parsed.setup.mode || parsed.mode || "Outdoor",
               date: parsed.setup.date || parsed.date || getTodayDateStr(),
               time: parsed.setup.time || parsed.time || getCurrentTimeStr(),
             };
@@ -97,6 +99,8 @@ export default function ScoreEntryContainer() {
             currentEndIndex,
             totalScore,
             arrows: allArrowsCount,
+            title: setup.title,
+            mode: setup.mode,
             distance: setup.distance,
             bow: setup.bow,
             date: setup.date || getTodayDateStr(),
@@ -174,16 +178,19 @@ export default function ScoreEntryContainer() {
 
       const distance = setup?.distance || "70m";
       const bow = setup?.bow || "Recurve Bow";
+      const sessionTitle = setup?.title?.trim() || `${bow ? `${bow} ` : ""}${distance ? `${distance} ` : ""}${setup?.type || "Practice"} - ${formattedDateForName}`;
       const payload = {
-        name: `${bow ? `${bow} ` : ""}${distance ? `${distance} ` : ""}${setup?.type || "Practice"} - ${formattedDateForName}`,
+        name: sessionTitle,
         type: setup?.type || "Practice",
         distance,
         bow,
+        mode: setup?.mode || "Outdoor",
+        environment: setup?.mode || "Outdoor",
         arrows: allArrows.length,
         score: calculatedTotal,
         avg: Number(average),
         tens: tensCount,
-        note: `Logged via Interactive Score Pad (${bow} at ${distance})`,
+        note: `Logged via Interactive Score Pad (${setup?.mode || "Outdoor"} • ${bow} at ${distance})`,
         arrowData: JSON.stringify(savedEnds),
         createdAt: sessionIsoString,
       };
@@ -242,9 +249,9 @@ export default function ScoreEntryContainer() {
       distance: setup?.distance || "70m",
       formattedDate,
       formattedTime,
-      eventName: `${setup?.distance || "70m"} ${setup?.bow || "Recurve"}`,
-      venueName: `Score Entry Round (${setup?.bow} at ${setup?.distance})`,
-      standardName: "World Archery Recognized Standard",
+      eventName: setup?.title?.trim() || `${setup?.distance || "70m"} ${setup?.bow || "Recurve"}`,
+      venueName: `${setup?.mode || "Outdoor"} Range (${setup?.bow} at ${setup?.distance})`,
+      standardName: setup?.mode === "Indoor" ? "World Archery Indoor Standard" : "World Archery Recognized Standard",
       round1Total: totalScore,
       maxPossibleScore: maxScore,
       scorePercentage: maxScore > 0 ? ((totalScore / maxScore) * 100).toFixed(1) : "0.0",
@@ -256,7 +263,7 @@ export default function ScoreEntryContainer() {
       ends: safeEnds.map(end => end.map(a => a.score)),
       endTotals,
       runningTotals,
-      sessionNote: `Logged via Score Entry with custom time: ${formattedDate} at ${formattedTime}`,
+      sessionNote: `Logged via Score Entry (${setup?.mode || "Outdoor"} • ${setup?.bow} at ${setup?.distance}): ${formattedDate} at ${formattedTime}`,
       session: liveSessionPreview,
     });
   };
@@ -279,15 +286,17 @@ export default function ScoreEntryContainer() {
   const sessionIsoString = sessionDate.toISOString();
 
   const liveSessionPreview: Session = {
-    name: `${setup?.bow ? `${setup.bow} ` : ""}${setup?.distance ? `${setup.distance} ` : ""}${setup?.type || "Practice"} - ${sessionDate.toLocaleDateString()}`,
+    name: setup?.title?.trim() || `${setup?.bow ? `${setup.bow} ` : ""}${setup?.distance ? `${setup.distance} ` : ""}${setup?.type || "Practice"} - ${sessionDate.toLocaleDateString()}`,
     type: setup?.type || "Practice",
     distance: setup?.distance || "70m",
     bow: setup?.bow,
+    mode: setup?.mode || "Outdoor",
+    environment: setup?.mode || "Outdoor",
     arrows: ends.flat().length,
     score: totalScore,
     avg: Number(ends.flat().length > 0 ? (totalScore / ends.flat().length).toFixed(2) : 0),
     tens: ends.flat().filter(a => a.score === "10" || a.score === "X").length,
-    note: `Logged via Interactive Score Pad${setup?.bow ? ` (${setup.bow})` : ""}${setup?.distance ? ` at ${setup.distance}` : ""}`,
+    note: `Logged via Interactive Score Pad (${setup?.mode || "Outdoor"} • ${setup?.bow || "Recurve"} at ${setup?.distance || "70m"})`,
     arrowData: JSON.stringify(ends.filter(e => Array.isArray(e) && e.length > 0)),
     createdAt: sessionIsoString,
   };
@@ -305,9 +314,17 @@ export default function ScoreEntryContainer() {
   return (
     <>
     {/* Setup Tags & Action Bar */}
-    <div className="flex items-center gap-1.5 sm:gap-3 mt-1 sm:mt-4 flex-wrap">
+    <div className="flex items-center gap-1.5 sm:gap-2.5 mt-1 sm:mt-4 flex-wrap">
+      {setup.title && (
+        <span className="inline-flex items-center px-3 py-1 rounded-full bg-accent text-white text-[11px] sm:text-[13px] font-bold shadow-2xs">
+          {setup.title}
+        </span>
+      )}
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-900 text-white text-[11px] sm:text-[13px] font-semibold">
+        {setup.mode || "Outdoor"}
+      </span>
       {setup.bow && (
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-900 text-white text-[11px] sm:text-[13px] font-semibold">
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 text-[11px] sm:text-[13px] font-semibold border border-slate-200">
           {setup.bow}
         </span>
       )}
@@ -378,13 +395,15 @@ export default function ScoreEntryContainer() {
           </div>
           <div>
             <div className="text-sm font-bold text-emerald-950">
-              Session Completed! (6 Ends • {totalScore} pts)
+              {setup.title ? `${setup.title} Completed!` : "Session Completed!"} (6 Ends • {totalScore} pts)
             </div>
             <div className="text-xs text-emerald-700 flex items-center gap-1.5 mt-0.5 flex-wrap">
-              <Calendar className="w-3 h-3 text-emerald-600" />
-              <span>{formatReadableDateTime(setup.date, setup.time)}</span>
+              <span className="font-semibold">{setup.mode || "Outdoor"}</span>
               <span>•</span>
               <span>{setup.bow} at {setup.distance}</span>
+              <span>•</span>
+              <Calendar className="w-3 h-3 text-emerald-600" />
+              <span>{formatReadableDateTime(setup.date, setup.time)}</span>
             </div>
           </div>
         </div>

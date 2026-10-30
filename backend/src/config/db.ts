@@ -40,6 +40,7 @@ export const initTables = async (client: Client = db) => {
       note TEXT DEFAULT '',
       distance TEXT DEFAULT '',
       bow TEXT DEFAULT '',
+      mode TEXT DEFAULT 'Outdoor',
       arrow_data TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -49,6 +50,12 @@ export const initTables = async (client: Client = db) => {
 
   try {
     await client.execute(`ALTER TABLE sessions ADD COLUMN bow TEXT DEFAULT ''`);
+  } catch {
+    // Column may already exist
+  }
+
+  try {
+    await client.execute(`ALTER TABLE sessions ADD COLUMN mode TEXT DEFAULT 'Outdoor'`);
   } catch {
     // Column may already exist
   }

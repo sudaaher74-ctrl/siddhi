@@ -353,7 +353,7 @@ export default function ScorecardView({
       .toUpperCase() || "AT";
 
   const eventDistance = selectedDistance || session?.distance || currentBowConfig.defaultDistance;
-  const eventName = `${eventDistance} ${currentBowConfig.shortName}`;
+  const eventName = session?.name || `${eventDistance} ${currentBowConfig.shortName}`;
 
   const sessionDate = session?.createdAt ? new Date(session.createdAt) : new Date();
   const formattedDate = sessionDate.toLocaleDateString("en-GB", {
@@ -397,7 +397,8 @@ export default function ScorecardView({
       formattedTime,
       eventName,
       venueName,
-      standardName: currentBowConfig.standardName,
+      mode: session?.mode,
+      standardName: session?.mode === "Indoor" ? "World Archery Indoor Standard" : currentBowConfig.standardName,
       round1Total,
       maxPossibleScore,
       scorePercentage,
@@ -758,6 +759,11 @@ export default function ScorecardView({
                     <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-white text-xs print:text-[9.5px] font-bold">
                       {selectedBow}
                     </span>
+                    {session.mode && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs print:text-[9.5px] font-semibold">
+                        {session.mode}
+                      </span>
+                    )}
                     <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs print:text-[9.5px] font-semibold">
                       {session.type || "Scoring"}
                     </span>

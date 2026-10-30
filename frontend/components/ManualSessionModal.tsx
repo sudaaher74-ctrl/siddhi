@@ -4,7 +4,18 @@ import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/lib/api";
-import { BOW_OPTIONS, BOW_DISTANCES, BowOption, DISTANCE_OPTIONS, SESSION_TYPES } from "./SessionSetup";
+import {
+  BOW_OPTIONS,
+  BOW_DISTANCES,
+  BowOption,
+  DISTANCE_OPTIONS,
+  SESSION_TYPES,
+  MODE_OPTIONS,
+  ModeOption,
+  MODE_BOW_DISTANCES,
+  getDefaultDistance,
+  TITLE_PRESETS,
+} from "./SessionSetup";
 
 export default function ManualSessionModal() {
   const router = useRouter();
@@ -12,8 +23,9 @@ export default function ManualSessionModal() {
   const [isSaving, setIsSaving] = useState(false);
   
   const [formData, setFormData] = useState({
-    name: `Practice Session - ${new Date().toLocaleDateString()}`,
+    name: "Practice",
     bow: "Recurve Bow" as BowOption,
+    mode: "Outdoor" as ModeOption,
     type: "Practice",
     distance: "70m",
     arrows: "36",
@@ -27,18 +39,26 @@ export default function ManualSessionModal() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleBowChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedBow = e.target.value as BowOption;
-    const validDistances = BOW_DISTANCES[selectedBow] || DISTANCE_OPTIONS;
+  const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedMode = e.target.value as ModeOption;
+    const validDistances = MODE_BOW_DISTANCES[selectedMode]?.[formData.bow] || [];
     let nextDistance = formData.distance;
     if (!validDistances.includes(formData.distance)) {
-      if (selectedBow === "Compound Bow") {
-        nextDistance = "50m";
-      } else if (selectedBow === "Indian Bow") {
-        nextDistance = "30m";
-      } else {
-        nextDistance = "70m";
-      }
+      nextDistance = getDefaultDistance(selectedMode, formData.bow);
+    }
+    setFormData((prev) => ({
+      ...prev,
+      mode: selectedMode,
+      distance: nextDistance,
+    }));
+  };
+
+  const handleBowChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedBow = e.target.value as BowOption;
+    const validDistances = MODE_BOW_DISTANCES[formData.mode]?.[selectedBow] || BOW_DISTANCES[selectedBow] || DISTANCE_OPTIONS;
+    let nextDistance = formData.distance;
+    if (!validDistances.includes(formData.distance)) {
+      nextDistance = getDefaultDistance(formData.mode, selectedBow);
     }
     setFormData((prev) => ({
       ...prev,
@@ -60,6 +80,8 @@ export default function ManualSessionModal() {
         type: formData.type,
         distance: formData.distance,
         bow: formData.bow,
+        mode: formData.mode,
+        environment: formData.mode,
         arrows: arrowsNum,
         score: scoreNum,
         tens: parseInt(formData.tens) || 0,
@@ -104,17 +126,54 @@ export default function ManualSessionModal() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Session Title / Event</label>
+                <input 
+                  type="text" 
+                  name="name" 
+                  value={formData.name} 
+                  onChange={handleChange}
+                  placeholder="e.g. Practice, State Championship..."
+                  className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] font-semibold text-text focus:outline-none focus:border-accent"
+                  required
+                />
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  {TITLE_PRESETS.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          name: p,
+                          type: p.toLowerCase().includes("practice") ? "Practice" : "Match",
+                        }))
+                      }
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all border ${
+                        formData.name === p
+                          ? "bg-accent/10 text-accent border-accent/30 font-bold"
+                          : "bg-black/5 text-text-dim border-transparent hover:bg-black/10"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Session Name</label>
-                  <input 
-                    type="text" 
-                    name="name" 
-                    value={formData.name} 
-                    onChange={handleChange}
+                  <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Mode</label>
+                  <select
+                    name="mode"
+                    value={formData.mode}
+                    onChange={handleModeChange}
                     className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
-                    required
-                  />
+                  >
+                    {MODE_OPTIONS.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-[11px] uppercase tracking-wider text-text-dim font-semibold mb-1">Date</label>
@@ -164,7 +223,7 @@ export default function ManualSessionModal() {
                     onChange={handleChange}
                     className="w-full bg-black/5 border border-black/10 rounded-lg p-2.5 text-[13px] text-text focus:outline-none focus:border-accent"
                   >
-                    {(BOW_DISTANCES[formData.bow] || DISTANCE_OPTIONS).map((d) => (
+                    {(MODE_BOW_DISTANCES[formData.mode]?.[formData.bow] || BOW_DISTANCES[formData.bow] || DISTANCE_OPTIONS).map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
