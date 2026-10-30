@@ -398,7 +398,12 @@ export default function ScorecardView({
       eventName,
       venueName,
       mode: session?.mode,
-      standardName: session?.mode === "Indoor" ? "World Archery Indoor Standard" : currentBowConfig.standardName,
+      standardName:
+        session?.mode === "Indoor"
+          ? "World Archery Indoor Standard"
+          : session?.mode === "Field"
+          ? "World Archery Field Standard"
+          : currentBowConfig.standardName,
       round1Total,
       maxPossibleScore,
       scorePercentage,

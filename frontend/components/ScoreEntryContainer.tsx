@@ -265,7 +265,12 @@ export default function ScoreEntryContainer() {
       formattedTime,
       eventName: setup?.title?.trim() || `${setup?.distance || "70m"} ${setup?.bow || "Recurve"}`,
       venueName: `${setup?.mode || "Outdoor"} Range (${setup?.bow} at ${setup?.distance})`,
-      standardName: setup?.mode === "Indoor" ? "World Archery Indoor Standard" : "World Archery Recognized Standard",
+      standardName:
+        setup?.mode === "Indoor"
+          ? "World Archery Indoor Standard"
+          : setup?.mode === "Field"
+          ? "World Archery Field Standard"
+          : "World Archery Recognized Standard",
       round1Total: totalScore,
       maxPossibleScore: maxScore,
       scorePercentage: maxScore > 0 ? ((totalScore / maxScore) * 100).toFixed(1) : "0.0",

@@ -2,12 +2,12 @@
 
 import React, { useState } from "react";
 import Card from "@/components/ui/Card";
-import { Target, Calendar, Clock, Sun, Building2, Trophy } from "lucide-react";
+import { Target, Calendar, Clock, Sun, Building2, Trophy, Trees } from "lucide-react";
 
 export const BOW_OPTIONS = ["Recurve Bow", "Compound Bow", "Indian Bow"] as const;
 export type BowOption = (typeof BOW_OPTIONS)[number];
 
-export const MODE_OPTIONS = ["Outdoor", "Indoor"] as const;
+export const MODE_OPTIONS = ["Outdoor", "Indoor", "Field"] as const;
 export type ModeOption = (typeof MODE_OPTIONS)[number];
 
 export const TITLE_PRESETS = [
@@ -29,6 +29,11 @@ export const MODE_BOW_DISTANCES: Record<ModeOption, Record<BowOption, string[]>>
     "Compound Bow": ["12m", "15m", "18m"],
     "Indian Bow": ["12m", "15m", "18m"],
   },
+  Field: {
+    "Recurve Bow": ["20m", "30m", "40m", "50m", "60m"],
+    "Compound Bow": ["20m", "30m", "40m", "50m", "60m"],
+    "Indian Bow": ["15m", "20m", "30m", "40m", "50m"],
+  },
 };
 
 // Default fallback for outdoor (backwards compatibility)
@@ -40,6 +45,10 @@ export const SESSION_TYPES = ["Practice", "Match"];
 export const getDefaultDistance = (selectedMode: ModeOption, selectedBow: BowOption): string => {
   if (selectedMode === "Indoor") {
     return "18m";
+  }
+  if (selectedMode === "Field") {
+    if (selectedBow === "Indian Bow") return "30m";
+    return "50m";
   }
   if (selectedBow === "Compound Bow") return "50m";
   if (selectedBow === "Indian Bow") return "30m";
@@ -214,10 +223,14 @@ export default function SessionSetup({ onStart, initialValues }: SessionSetupPro
                 Mode
               </label>
               <span className="text-[11px] text-text-dim font-medium">
-                {mode === "Outdoor" ? "Outdoor Field (World Archery)" : "Indoor Hall (12m / 15m / 18m)"}
+                {mode === "Outdoor"
+                  ? "Outdoor Target Field"
+                  : mode === "Indoor"
+                  ? "Indoor Hall (12m / 15m / 18m)"
+                  : "Field Course (Natural Terrain)"}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {MODE_OPTIONS.map((m) => {
                 const isSelected = mode === m;
                 return (
@@ -225,16 +238,18 @@ export default function SessionSetup({ onStart, initialValues }: SessionSetupPro
                     key={m}
                     type="button"
                     onClick={() => handleModeSelect(m)}
-                    className={`py-3 px-3 rounded-lg text-[13px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    className={`py-3 px-2 rounded-lg text-[13px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       isSelected
                         ? "bg-accent text-white shadow-sm"
                         : "bg-black/5 text-text hover:bg-black/10"
                     }`}
                   >
                     {m === "Outdoor" ? (
-                      <Sun className="w-4 h-4" />
+                      <Sun className="w-4 h-4 shrink-0" />
+                    ) : m === "Indoor" ? (
+                      <Building2 className="w-4 h-4 shrink-0" />
                     ) : (
-                      <Building2 className="w-4 h-4" />
+                      <Trees className="w-4 h-4 shrink-0" />
                     )}
                     <span>{m}</span>
                   </button>

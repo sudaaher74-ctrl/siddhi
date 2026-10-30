@@ -16,8 +16,8 @@ export type Session = {
   note: string;
   distance?: string;
   bow?: string;
-  mode?: "Outdoor" | "Indoor" | string;
-  environment?: "Outdoor" | "Indoor" | string;
+  mode?: "Outdoor" | "Indoor" | "Field" | string;
+  environment?: "Outdoor" | "Indoor" | "Field" | string;
   createdAt?: string;
   arrowData?: string;
 };
