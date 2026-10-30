@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Target, LineChart, Menu, X, Crosshair, Wrench, LogOut, ShieldCheck, MessageSquare, Calendar, Award } from "lucide-react";
+import { Home, Target, LineChart, Menu, X, Crosshair, Wrench, LogOut, ShieldCheck, MessageSquare, Calendar, Award, Trophy } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { useProfile } from "@/context/ProfileContext";
 
@@ -19,12 +19,17 @@ export default function MobileNav() {
     window.location.href = "/login";
   };
 
-
   const moreNav = [
     { label: "Practice", href: "/practice", icon: Crosshair },
+    { label: "Goals", href: "/goals", icon: Trophy },
     { label: "Monthly Log", href: "/monthly-log", icon: Calendar },
     { label: "Equipment", href: "/equipment", icon: Wrench },
   ];
+
+  // Whether user is currently viewing one of the secondary routes managed by the "More" drawer
+  const isMoreActive = ["/practice", "/goals", "/monthly-log", "/equipment", "/feedback", "/admin"].some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
 
   return (
     <>
@@ -211,12 +216,17 @@ export default function MobileNav() {
               setMenuOpen(!menuOpen);
               if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(8);
             }}
-            className={`flex flex-col items-center justify-center min-w-[54px] py-1 transition-all active:scale-95 cursor-pointer ${
-              menuOpen ? "text-slate-900 font-bold" : "text-slate-500 hover:text-slate-900"
+            className={`flex flex-col items-center justify-center min-w-[54px] py-1 transition-all active:scale-95 cursor-pointer relative ${
+              menuOpen || isMoreActive ? "text-accent font-bold" : "text-slate-500 hover:text-slate-900"
             }`}
           >
-            <div className={`p-1.5 rounded-xl transition-colors ${menuOpen ? "bg-slate-100" : ""}`}>
+            <div className={`p-1.5 rounded-xl transition-colors relative ${
+              menuOpen || isMoreActive ? "bg-accent/10" : ""
+            }`}>
               <Menu className="w-5 h-5" />
+              {isMoreActive && !menuOpen && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-white" />
+              )}
             </div>
             <span className="text-[10px] tracking-tight mt-0.5">More</span>
           </button>

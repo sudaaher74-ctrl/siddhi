@@ -35,14 +35,38 @@ async function getSessions(): Promise<Session[]> {
   }
 }
 
+async function getUser(): Promise<{ name: string; email: string; avatar?: string; role?: string } | null> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    if (!token) return null;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+    const res = await fetch(`${apiUrl}/api/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error("Error fetching user for practice:", error);
+    return null;
+  }
+}
+
 export default async function PracticePage() {
-  const sessions = await getSessions();
+  const [sessions, user] = await Promise.all([getSessions(), getUser()]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 -m-4 p-4 sm:m-0 sm:p-0 sm:bg-transparent sm:text-inherit">
-      <div className="flex items-center justify-between mb-6">
-        <TopBar title="Practice Sessions" />
-        <ManualSessionModal />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+        <TopBar title="Practice Sessions" initialUser={user} />
+        <div className="self-end sm:self-auto">
+          <ManualSessionModal />
+        </div>
       </div>
       
       <PracticeKPIs sessions={sessions} />

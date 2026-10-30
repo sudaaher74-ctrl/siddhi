@@ -56,15 +56,38 @@ async function getGoals(): Promise<Goal[]> {
   }
 }
 
+async function getUser(): Promise<{ name: string; email: string; avatar?: string; role?: string } | null> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    if (!token) return null;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+    const res = await fetch(`${apiUrl}/api/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error("Error fetching user for analytics:", error);
+    return null;
+  }
+}
+
 export default async function AnalyticsPage() {
-  const [sessions, goals] = await Promise.all([
+  const [sessions, goals, user] = await Promise.all([
     getSessions(),
     getGoals(),
+    getUser(),
   ]);
 
   return (
     <>
-      <TopBar title="Analytics" />
+      <TopBar title="Analytics" initialUser={user} />
       
       <div className="mt-4">
         <KpiGrid sessions={sessions} mode="daily" />

@@ -57,7 +57,7 @@ export default async function ScorecardPage() {
 
   return (
     <>
-      <TopBar title="Scorecard" />
+      <TopBar title="Scorecard" initialUser={user} />
       <ScorecardView session={sessions[0] || undefined} allSessions={sessions} initialUser={user} />
     </>
   );
